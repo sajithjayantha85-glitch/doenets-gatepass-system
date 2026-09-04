@@ -2,9 +2,20 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const { createClient } = require('@libsql/client');
+const { Pool } = require('pg');
 
+let pgPool = null;
 let tursoClient = null;
-if (process.env.TURSO_DATABASE_URL) {
+
+const postgresUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+if (postgresUrl && (postgresUrl.startsWith('postgres://') || postgresUrl.startsWith('postgresql://'))) {
+  console.log('Connecting to Render PostgreSQL Database...');
+  pgPool = new Pool({
+    connectionString: postgresUrl,
+    ssl: { rejectUnauthorized: false }
+  });
+} else if (process.env.TURSO_DATABASE_URL) {
   console.log('Connecting to Turso Cloud SQLite Database:', process.env.TURSO_DATABASE_URL);
   tursoClient = createClient({
     url: process.env.TURSO_DATABASE_URL,
@@ -12,13 +23,32 @@ if (process.env.TURSO_DATABASE_URL) {
   });
 }
 
+function convertSqlForPostgres(sql) {
+  let paramIndex = 1;
+  let converted = sql.replace(/\?/g, () => `$${paramIndex++}`);
+  
+  // Replace SQLite specific types and functions for Postgres
+  converted = converted.replace(/INTEGER PRIMARY KEY AUTOINCREMENT/gi, 'SERIAL PRIMARY KEY');
+  converted = converted.replace(/\bDATETIME\b/gi, 'TIMESTAMP');
+  converted = converted.replace(/DATE\('now',\s*'localtime'\)/gi, 'CURRENT_DATE');
+  converted = converted.replace(/DATE\('now'\)/gi, 'CURRENT_DATE');
+  converted = converted.replace(/datetime\('now',\s*'-30 days'\)/gi, "NOW() - INTERVAL '30 days'");
+
+  return converted;
+}
+
 const dbPath = path.resolve(__dirname, 'gatepass.db');
 const localDb = new sqlite3.Database(dbPath);
 
-// Unified Database Adapter (Works seamlessly with Local SQLite3 or Turso Cloud DB)
+// Unified Database Adapter (Supports Render PostgreSQL, Turso SQLite, and Local SQLite)
 const db = {
   get(sql, params = [], cb) {
-    if (tursoClient) {
+    if (pgPool) {
+      const pgSql = convertSqlForPostgres(sql);
+      pgPool.query(pgSql, params)
+        .then(res => cb(null, res.rows.length > 0 ? res.rows[0] : null))
+        .catch(err => cb(err, null));
+    } else if (tursoClient) {
       tursoClient.execute({ sql, args: params })
         .then(res => cb(null, res.rows.length > 0 ? res.rows[0] : null))
         .catch(err => cb(err, null));
@@ -28,7 +58,12 @@ const db = {
   },
 
   all(sql, params = [], cb) {
-    if (tursoClient) {
+    if (pgPool) {
+      const pgSql = convertSqlForPostgres(sql);
+      pgPool.query(pgSql, params)
+        .then(res => cb(null, res.rows))
+        .catch(err => cb(err, null));
+    } else if (tursoClient) {
       tursoClient.execute({ sql, args: params })
         .then(res => cb(null, res.rows))
         .catch(err => cb(err, null));
@@ -38,7 +73,23 @@ const db = {
   },
 
   run(sql, params = [], cb) {
-    if (tursoClient) {
+    if (pgPool) {
+      let pgSql = convertSqlForPostgres(sql);
+      if (/^INSERT\s+INTO/i.test(pgSql) && !/RETURNING/i.test(pgSql)) {
+        pgSql += ' RETURNING id';
+      }
+      pgPool.query(pgSql, params)
+        .then(res => {
+          const fakeThis = {
+            lastID: res.rows && res.rows[0] && res.rows[0].id ? Number(res.rows[0].id) : 0,
+            changes: res.rowCount || 0
+          };
+          if (cb) cb.call(fakeThis, null);
+        })
+        .catch(err => {
+          if (cb) cb(err);
+        });
+    } else if (tursoClient) {
       tursoClient.execute({ sql, args: params })
         .then(res => {
           const fakeThis = {
@@ -58,7 +109,7 @@ const db = {
   },
 
   serialize(cb) {
-    if (tursoClient) {
+    if (pgPool || tursoClient) {
       cb();
     } else {
       localDb.serialize(cb);
@@ -144,15 +195,11 @@ function initDatabase() {
     `);
 
     // 30-Day Public Visitor Pass Auto-Purge Cleanup (Keeps Database Light)
-    if (tursoClient) {
-      tursoClient.execute("DELETE FROM passes WHERE category = 'VISITOR' AND created_at < datetime('now', '-30 days')")
-        .then(r => console.log(`[Auto-Cleanup] Turso DB purged ${r.rowsAffected} public visitor passes older than 30 days.`))
-        .catch(e => console.log('Auto cleanup error:', e));
-    } else {
-      localDb.run("DELETE FROM passes WHERE category = 'VISITOR' AND created_at < datetime('now', '-30 days')", [], function(err) {
-        if (!err && this.changes > 0) console.log(`[Auto-Cleanup] Local DB purged ${this.changes} public visitor passes older than 30 days.`);
-      });
-    }
+    db.run("DELETE FROM passes WHERE category = 'VISITOR' AND created_at < datetime('now', '-30 days')", [], function(err) {
+      if (!err && this && this.changes > 0) {
+        console.log(`[Auto-Cleanup] Purged ${this.changes} public visitor passes older than 30 days.`);
+      }
+    });
 
     // Seed default users if empty
     db.get('SELECT COUNT(*) as count FROM users', [], async (err, row) => {
