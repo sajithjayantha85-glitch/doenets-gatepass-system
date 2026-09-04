@@ -83,14 +83,9 @@
     .brand-logo {
       width: clamp(54px, 4vw, 68px);
       height: clamp(54px, 4vw, 68px);
-      background: #ffffff;
-      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 3px solid rgba(255, 255, 255, 0.6);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      padding: 5px;
       flex-shrink: 0;
     }
 
@@ -98,6 +93,7 @@
       width: 100%;
       height: 100%;
       object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
     }
 
     .brand-title h1 {
@@ -962,16 +958,12 @@
   <header>
     <div class="header-container">
       <div class="brand" onclick="switchTab('visitor-register')">
-        <div class="brand-logo" title="ශ්‍රී ලංකා රාජ්‍ය ලාංජනය">
+        <div class="brand-logo" title="Emblem of Sri Lanka">
           <img src="/emblem.svg" alt="Emblem of Sri Lanka" onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/5/5f/Emblem_of_Sri_Lanka.svg';">
         </div>
         <div class="brand-title">
-          <h1 style="font-size: clamp(1.2rem, 1.6vw, 1.8rem); font-weight: 900; color: #ffffff;">
-            ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව
-          </h1>
-          <p style="font-size: clamp(0.85rem, 1.05vw, 1.1rem); color: #e2e8f0; font-weight: 600; margin-top: 2px;">
-            Department of Examinations, Sri Lanka | Main Gate Pass System
-          </p>
+          <h1>Department of Examinations, Sri Lanka</h1>
+          <p>Main Gate Pass & Visitor Regulation System (QR Code Based)</p>
         </div>
       </div>
 
