@@ -947,6 +947,28 @@
       }
 
     /* Gate Security Single-Screen No-Scroll Console Layout */
+    body.security-mode-active header {
+      display: none !important;
+    }
+
+    body.security-mode-active .container {
+      padding-top: 0.5rem !important;
+      padding-bottom: 0.5rem !important;
+      max-width: 100% !important;
+      width: 98% !important;
+    }
+
+    .security-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2.5px solid #e2e8f0;
+    }
+
     .security-console-card {
       padding: 1.25rem 1.75rem !important;
       margin-bottom: 1rem !important;
@@ -1268,8 +1290,27 @@
     <!-- TAB 2: SECURITY GATE SCANNER CONSOLE -->
     <div id="security-scan" class="tab-content">
       <div class="card security-console-card">
-        <div class="card-title" style="margin-bottom: 0.85rem; padding-bottom: 0.6rem;">
-          <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Gate Security Control Console (ආරක්ෂක ගේට්ටු පාලන පුවරුව)
+        <!-- Integrated Security Console Top Bar -->
+        <div class="security-card-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <i class="fa-solid fa-shield-halved" style="color: var(--primary); font-size: 1.4rem;"></i>
+            <span style="font-weight: 900; font-size: 1.35rem; color: var(--primary-dark);">Gate Security Control Console</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <button class="btn" onclick="switchTab('visitor-register')" style="background: #e2e8f0; color: #1e293b; padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px;">
+              <i class="fa-solid fa-house"></i> Home
+            </button>
+            <button id="secNavDashboardBtn" class="btn" onclick="switchTab('admin-dashboard')" style="display: none; background: #e2e8f0; color: #1e293b; padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px;">
+              <i class="fa-solid fa-chart-line"></i> Dashboard
+            </button>
+            <div id="secUserBadge" style="background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af; padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 800; border-radius: 20px; display: inline-flex; align-items: center; gap: 0.4rem;">
+              <i class="fa-solid fa-user-shield"></i> <span id="secUserDisplayName">Security Officer</span>
+            </div>
+            <button onclick="logout()" class="btn btn-danger" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px;">
+              <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+          </div>
         </div>
 
         <!-- Compact Control Topbar -->
@@ -1821,6 +1862,21 @@
       }
     }
 
+    function updateSecurityHeaderBadge() {
+      const secUserDisplayName = document.getElementById('secUserDisplayName');
+      const secNavDashboardBtn = document.getElementById('secNavDashboardBtn');
+      if (currentUser) {
+        if (secUserDisplayName) secUserDisplayName.innerText = currentUser.display_name || currentUser.username;
+        if (secNavDashboardBtn) {
+          if (['SUPER_ADMIN', 'CONFIDENTIAL_ADMIN', 'EVALUATION_ADMIN', 'HR_ADMIN'].includes(currentUser.role)) {
+            secNavDashboardBtn.style.display = 'inline-flex';
+          } else {
+            secNavDashboardBtn.style.display = 'none';
+          }
+        }
+      }
+    }
+
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -1835,6 +1891,8 @@
       if (tabId === 'admin-dashboard') loadAdminDashboard();
       if (tabId === 'confidential-portal' || tabId === 'evaluation-portal' || tabId === 'hr-portal') loadBranchPasses();
       if (tabId === 'security-scan') {
+        document.body.classList.add('security-mode-active');
+        updateSecurityHeaderBadge();
         setTimeout(() => {
           const usbInput = document.getElementById('usbInput');
           if (usbInput) {
@@ -1842,6 +1900,8 @@
             usbInput.select();
           }
         }, 150);
+      } else {
+        document.body.classList.remove('security-mode-active');
       }
     }
 
