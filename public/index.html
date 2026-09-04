@@ -257,31 +257,31 @@
       box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.2);
     }
 
-    /* STEPPER WIZARD */
+    /* COMPACT STEPPER WIZARD */
     .form-stepper {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 2rem;
-      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      gap: 0.5rem;
       background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
-      padding: 1.25rem 1.5rem;
-      border-radius: 20px;
-      border: 2px solid var(--border);
+      padding: 0.65rem 1rem;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
       flex-wrap: wrap;
     }
 
     .step-item {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
       flex: 1;
-      min-width: 200px;
+      min-width: 140px;
     }
 
     .step-num {
-      width: 42px;
-      height: 42px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
       background: #cbd5e1;
       color: #475569;
@@ -289,16 +289,16 @@
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 1.15rem;
+      font-size: 0.85rem;
       transition: all 0.3s ease;
       flex-shrink: 0;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     }
 
     .step-item.active .step-num {
       background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
       color: white;
-      box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
     }
 
     .step-item.completed .step-num {
@@ -312,14 +312,14 @@
     }
 
     .step-title {
-      font-size: 1.05rem;
+      font-size: 0.88rem;
       font-weight: 800;
       color: var(--primary-dark);
-      line-height: 1.2;
+      line-height: 1.15;
     }
 
     .step-desc {
-      font-size: 0.85rem;
+      font-size: 0.73rem;
       color: var(--text-muted);
       font-weight: 600;
     }
@@ -1010,14 +1010,9 @@
       <div class="card" style="max-width: 1200px; margin: 0 auto;">
         
         <!-- Header Title Bar -->
-        <div class="card-title" style="justify-content: space-between; flex-wrap: wrap;">
-          <div>
-            <i class="fa-solid fa-user-plus" style="color: var(--primary);"></i> 
-            <span>Visitor Self-Registration Form</span>
-          </div>
-          <button class="btn btn-success" onclick="switchTab('login-tab')" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
-            <i class="fa-solid fa-user-shield"></i> Staff Account Login (නිලධාරී ගිණුමට ලොග් වීම)
-          </button>
+        <div class="card-title">
+          <i class="fa-solid fa-user-plus" style="color: var(--primary);"></i> 
+          <span>Visitor Self-Registration Form</span>
         </div>
 
         <!-- 4-STEP VISUAL PROGRESS WIZARD STEPPER -->
