@@ -246,6 +246,32 @@ function initDatabase() {
       }
     });
 
+    // Seed default Visit Purposes if empty
+    db.get('SELECT COUNT(*) as count FROM visit_purposes', [], (err, row) => {
+      if (err) return;
+      const count = row ? Number(row.count) : 0;
+      if (count === 0) {
+        console.log('Seeding default visit purposes...');
+        const defaultPurposes = [
+          { branch_id: 1, en: 'Certificate Verification', si: 'සහතික පත්‍ර සත්‍යාපනය', ta: 'சான்றிதழ் சரிபார்ப்பு', icon: 'fa-certificate' },
+          { branch_id: 1, en: 'Issue Duplicate Certificate', si: 'පිටපත් සහතික පත්‍ර ලබාගැනීම', ta: 'இரண்டாம் பிரதி சான்றிதழ் பெற', icon: 'fa-copy' },
+          { branch_id: 2, en: 'General Inquiry', si: 'සාමාන්‍ය විමසීම්', ta: 'பொது விசாரணை', icon: 'fa-circle-question' },
+          { branch_id: 2, en: 'Exam Results Inquiry', si: 'විභාග ප්‍රතිඵල විමසීම්', ta: 'தேர்வு முடிவுகள் விசாரணை', icon: 'fa-square-poll-vertical' },
+          { branch_id: 3, en: 'Confidential Official Duty', si: 'නිල රහස්‍ය කාර්යයන්', ta: 'அதிகாரப்பூர்வ ரகசிய பணி', icon: 'fa-user-secret' },
+          { branch_id: 4, en: 'Answer Script Evaluation Duty', si: 'උත්තර පත්‍ර පරීක්ෂක කාර්යයන්', ta: 'விடைத்தாள் மதிப்பீட்டு பணி', icon: 'fa-pen-to-square' },
+          { branch_id: 5, en: 'HR & Service Matters', si: 'පිරිස් හා සේවා කටයුතු', ta: 'மனிதவள மற்றும் சேவை விவகாரங்கள்', icon: 'fa-id-badge' },
+          { branch_id: 6, en: 'Payments & Bill Settlement', si: 'ගෙවීම් හා බිල්පත් කටයුතු', ta: 'கட்டணம் மற்றும் பில் கொடுப்பனவு', icon: 'fa-money-bill-wave' },
+          { branch_id: 7, en: 'Administrative Duty', si: 'පරිපාලන සහ නිල හමුවීම්', ta: 'நிர்வாக மற்றும் உத்தியோகபூர்வ சந்திப்புகள்', icon: 'fa-building' },
+          { branch_id: 0, en: 'Official Meeting', si: 'නිල හමුවීම', ta: 'அதிகாரப்பூர்வ சந்திப்பு', icon: 'fa-handshake' },
+          { branch_id: 0, en: 'Document Submission', si: 'ලේඛන භාරදීම', ta: 'ஆவணங்கள் சமர்ப்பித்தல்', icon: 'fa-folder-open' }
+        ];
+
+        for (const p of defaultPurposes) {
+          db.run(`INSERT INTO visit_purposes (branch_id, purpose_en, purpose_si, purpose_ta, icon) VALUES (?, ?, ?, ?, ?)`, [p.branch_id, p.en, p.si, p.ta, p.icon]);
+        }
+      }
+    });
+
   });
 }
 
