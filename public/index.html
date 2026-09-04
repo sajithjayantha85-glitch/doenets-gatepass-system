@@ -1315,6 +1315,9 @@
           </div>
         </div>
 
+        <!-- Non-Blocking Toast Notification Banner for Security Console -->
+        <div id="secToastBanner" style="display: none; padding: 0.85rem 1.25rem; font-size: 1.15rem; font-weight: 800; border-radius: 12px; margin-bottom: 0.85rem; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);"></div>
+
         <!-- Compact Control Topbar -->
         <div class="security-topbar">
           <div class="sec-btn-group">
@@ -2564,10 +2567,34 @@
       }
     }
 
+    function showSecToast(msg, type = 'success') {
+      const toast = document.getElementById('secToastBanner');
+      if (!toast) return;
+
+      if (type === 'error') {
+        toast.style.background = '#fef2f2';
+        toast.style.color = '#dc2626';
+        toast.style.border = '2.5px solid #fca5a5';
+        toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}`;
+      } else {
+        toast.style.background = '#ecfdf5';
+        toast.style.color = '#047857';
+        toast.style.border = '2.5px solid #6ee7b7';
+        toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${msg}`;
+      }
+
+      toast.style.display = 'block';
+
+      if (window.secToastTimer) clearTimeout(window.secToastTimer);
+      window.secToastTimer = setTimeout(() => {
+        toast.style.display = 'none';
+      }, 2800);
+    }
+
     async function lookupPassCode(code) {
       if (!code) return;
       if (!token) {
-        alert('Please log in first to access the Security Gate Console!');
+        showSecToast('Please log in first to access Security Gate Console!', 'error');
         switchTab('login-tab');
         return;
       }
@@ -2665,7 +2692,7 @@
         }
 
       } catch (err) {
-        alert('Error: ' + err.message);
+        showSecToast(err.message, 'error');
       }
     }
 
@@ -2684,7 +2711,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Action failed');
 
-        alert(data.message);
+        showSecToast(data.message, 'success');
         document.getElementById('scanResultCard').style.display = 'none';
         const secPlaceholder = document.getElementById('secScanPlaceholder');
         if (secPlaceholder) secPlaceholder.style.display = 'block';
@@ -2696,7 +2723,7 @@
         activePassCode = null;
 
       } catch (err) {
-        alert('Error: ' + err.message);
+        showSecToast(err.message, 'error');
       }
     }
 
