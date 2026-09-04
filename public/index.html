@@ -2220,7 +2220,10 @@
       document.getElementById('passQrImg').src = pass.qr_code;
       document.getElementById('passCodeDisplay').innerText = pass.pass_code;
       document.getElementById('passPurposeDisplay').innerText = pass.purpose || 'Official Duty';
-      document.getElementById('passTimeDisplay').innerText = new Date(pass.created_at || Date.now()).toLocaleString();
+      const rawCreatedAt = pass.created_at || new Date().toISOString();
+      const safeIsoStr = typeof rawCreatedAt === 'string' ? rawCreatedAt.replace(' ', 'T') : rawCreatedAt;
+      const dateOnlyStr = safeIsoStr.split('T')[0];
+      document.getElementById('passTimeDisplay').innerText = new Date(safeIsoStr).toLocaleString();
 
       // Hide Visiting Branch for Special Passes (CONFIDENTIAL / EVALUATION)
       const passBranchRow = document.getElementById('passBranchRow');
@@ -2233,10 +2236,9 @@
 
       // 3. Daily Visitor No & Issued Date (Only for Visitor Self-Registration)
       const dailyNoRow = document.getElementById('passDailyNoRow');
-      if (pass.category === 'VISITOR') {
+      if (pass.category === 'VISITOR' || !pass.category) {
         const dailyNoFormatted = pass.daily_no_formatted || String(pass.daily_no || 1).padStart(3, '0');
-        const passDateStr = new Date(pass.created_at || Date.now()).toLocaleDateString();
-        document.getElementById('passDailyNoDisplay').innerHTML = `#${dailyNoFormatted} <span style="font-size:0.95rem; color:#475569; font-weight:700;">(දිනය / Date: ${passDateStr})</span>`;
+        document.getElementById('passDailyNoDisplay').innerHTML = `#${dailyNoFormatted} <span style="font-size:0.95rem; color:#1e40af; font-weight:800;">(දිනය / Date: ${dateOnlyStr})</span>`;
         if (dailyNoRow) dailyNoRow.style.display = 'block';
       } else {
         if (dailyNoRow) dailyNoRow.style.display = 'none';
