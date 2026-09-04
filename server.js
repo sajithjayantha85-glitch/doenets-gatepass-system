@@ -45,6 +45,27 @@ function authenticateToken(req, res, next) {
   });
 }
 
+// Rate Limiting & Anti-Spam Safeguards
+const registrationIpTracker = new Map();
+
+function checkRegistrationRateLimit(ip) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutes window
+  const maxAttempts = 6; // Max 6 pass creations per 15 minutes per IP
+
+  let record = registrationIpTracker.get(ip);
+  if (!record || now - record.startTime > windowMs) {
+    registrationIpTracker.set(ip, { count: 1, startTime: now });
+    return false;
+  }
+
+  record.count += 1;
+  if (record.count > maxAttempts) {
+    return true; // Exceeded limit!
+  }
+  return false;
+}
+
 // --- API ROUTES ---
 
 // 1. User Login
@@ -104,57 +125,86 @@ app.get('/api/options', (req, res) => {
   });
 });
 
-// 3. Visitor Self Registration (Public)
+// 3. Visitor Self Registration (Public - Secured with Anti-Spam & Rate Limits)
 app.post('/api/visitors/register', async (req, res) => {
-  const { person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose } = req.body;
+  const { person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose, honeypot_field } = req.body;
+
+  // 1. Anti-Bot Honeypot Check
+  if (honeypot_field) {
+    console.log('[Security] Automated bot pass creation attempt blocked via honeypot.');
+    return res.status(201).json({ message: 'Registration received' });
+  }
+
+  // 2. IP Rate Limiting (Max 6 passes per IP per 15 minutes)
+  const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  if (checkRegistrationRateLimit(clientIp)) {
+    return res.status(429).json({
+      error: 'Too many pass creation requests from your device. Please wait 15 minutes before creating another pass. / වැඩි වාර ගණනක් පාස් සෑදීමට උත්සාහ කර ඇත. කරුණාකර විනාඩි 15කින් පසු නැවත උත්සාහ කරන්න.'
+    });
+  }
 
   if (!person_name || !nic_number || !branch_name) {
     return res.status(400).json({ error: 'Name, NIC, and Target Branch are required' });
   }
 
-  // Calculate today's daily sequential visitor number
-  db.get(`SELECT COUNT(*) as count FROM passes WHERE DATE(created_at) = DATE('now', 'localtime')`, [], async (cErr, countRow) => {
-    const dailyNo = (countRow && countRow.count ? countRow.count : 0) + 1;
-    const formattedDailyNo = String(dailyNo).padStart(3, '0');
-    const passCode = generatePassCode('VISITOR');
-    const formattedVeh = vehicle_number ? vehicle_number.trim().toUpperCase() : null;
+  const cleanNic = nic_number.trim().toUpperCase();
 
-    try {
-      const qrDataUrl = await QRCode.toDataURL(passCode, { margin: 2, width: 320 });
-
-      const sql = `
-        INSERT INTO passes (pass_code, category, person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, status, created_by, daily_no)
-        VALUES (?, 'VISITOR', ?, ?, ?, ?, ?, ?, 'GENERAL_VISITOR', 'PENDING_VERIFICATION', 'SELF_REGISTRATION', ?)
-      `;
-
-      db.run(sql, [passCode, person_name, nic_number.trim().toUpperCase(), mobile_number, formattedVeh, branch_name, purpose || 'General Visit', dailyNo], function (err) {
-        if (err) {
-          console.error('Error creating visitor pass:', err);
-          return res.status(500).json({ error: 'Database insert error' });
-        }
-
-        res.status(201).json({
-          message: 'Registration successful!',
-          pass: {
-            id: this.lastID,
-            daily_no: dailyNo,
-            daily_no_formatted: formattedDailyNo,
-            pass_code: passCode,
-            person_name,
-            nic_number,
-            mobile_number,
-            vehicle_number: formattedVeh,
-            branch_name,
-            purpose,
-            status: 'PENDING_VERIFICATION',
-            qr_code: qrDataUrl
-          }
+  // 3. Same NIC Active Duplicate Pass Lockout for Today
+  db.get(
+    `SELECT * FROM passes WHERE nic_number = ? AND status IN ('PENDING_VERIFICATION', 'CHECKED_IN') AND DATE(created_at) = DATE('now', 'localtime')`,
+    [cleanNic],
+    (existErr, existingPass) => {
+      if (existingPass) {
+        return res.status(400).json({
+          error: `An active pass (${existingPass.pass_code}) already exists for NIC ${cleanNic} today. / මෙම හැඳුනුම්පත් අංකය සඳහා අද දිනට වලංගු පාස් එකක් (${existingPass.pass_code}) දැනටමත් සාදා ඇත.`
         });
+      }
+
+      // Calculate today's daily sequential visitor number
+      db.get(`SELECT COUNT(*) as count FROM passes WHERE DATE(created_at) = DATE('now', 'localtime')`, [], async (cErr, countRow) => {
+        const dailyNo = (countRow && countRow.count ? countRow.count : 0) + 1;
+        const formattedDailyNo = String(dailyNo).padStart(3, '0');
+        const passCode = generatePassCode('VISITOR');
+        const formattedVeh = vehicle_number ? vehicle_number.trim().toUpperCase() : null;
+
+        try {
+          const qrDataUrl = await QRCode.toDataURL(passCode, { margin: 2, width: 320 });
+
+          const sql = `
+            INSERT INTO passes (pass_code, category, person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, status, created_by, daily_no)
+            VALUES (?, 'VISITOR', ?, ?, ?, ?, ?, ?, 'GENERAL_VISITOR', 'PENDING_VERIFICATION', 'SELF_REGISTRATION', ?)
+          `;
+
+          db.run(sql, [passCode, person_name, cleanNic, mobile_number, formattedVeh, branch_name, purpose || 'General Visit', dailyNo], function (err) {
+            if (err) {
+              console.error('Error creating visitor pass:', err);
+              return res.status(500).json({ error: 'Database insert error' });
+            }
+
+            res.status(201).json({
+              message: 'Registration successful!',
+              pass: {
+                id: this.lastID,
+                daily_no: dailyNo,
+                daily_no_formatted: formattedDailyNo,
+                pass_code: passCode,
+                person_name,
+                nic_number: cleanNic,
+                mobile_number,
+                vehicle_number: formattedVeh,
+                branch_name,
+                purpose,
+                status: 'PENDING_VERIFICATION',
+                qr_code: qrDataUrl
+              }
+            });
+          });
+        } catch (qrErr) {
+          res.status(500).json({ error: 'Error generating QR code' });
+        }
       });
-    } catch (qrErr) {
-      res.status(500).json({ error: 'Error generating QR code' });
     }
-  });
+  );
 });
 
 // 4. Get Pass Details & QR Code
