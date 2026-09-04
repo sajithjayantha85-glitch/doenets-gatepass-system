@@ -1239,7 +1239,7 @@
             </span>
           </div>
           <div style="display: flex; gap: 1rem;">
-            <input type="text" id="usbInput" class="form-control" style="font-size: 1.25rem; font-weight: 800; padding: 1.1rem; border: 3px solid var(--primary-light);" placeholder="Scan QR code or type code here..." onkeypress="handleUsbKey(event)" autofocus>
+            <input type="text" id="usbInput" class="form-control" style="font-size: 1.25rem; font-weight: 800; padding: 1.1rem; border: 3px solid var(--primary-light);" placeholder="Scan QR code or type code here..." oninput="handleUsbInput(event)" onkeypress="handleUsbKey(event)" autofocus>
             <button class="btn btn-primary" style="padding: 1.1rem 1.75rem;" onclick="lookupPassCode(document.getElementById('usbInput').value)">
               <i class="fa-solid fa-magnifying-glass"></i> Search
             </button>
@@ -2390,8 +2390,38 @@
       input.select();
     }
 
+    let scanDebounceTimer = null;
+
+    function handleUsbInput(e) {
+      const val = e.target.value.trim();
+      if (!val) return;
+
+      // 1. Instant Auto-Search if full DOENETS pass code format detected
+      if (/^DOENETS-[A-Z]+-\d{6}$/i.test(val)) {
+        if (scanDebounceTimer) clearTimeout(scanDebounceTimer);
+        lookupPassCode(val);
+        return;
+      }
+
+      // 2. Instant Auto-Search if full NIC number format detected
+      if (/^(\d{9}[VX]|\d{12})$/i.test(val)) {
+        if (scanDebounceTimer) clearTimeout(scanDebounceTimer);
+        lookupPassCode(val);
+        return;
+      }
+
+      // 3. Hardware Barcode Scanner Auto-Search (150ms after scan stream finishes)
+      if (scanDebounceTimer) clearTimeout(scanDebounceTimer);
+      if (val.length >= 6) {
+        scanDebounceTimer = setTimeout(() => {
+          lookupPassCode(val);
+        }, 150);
+      }
+    }
+
     function handleUsbKey(e) {
       if (e.key === 'Enter') {
+        if (scanDebounceTimer) clearTimeout(scanDebounceTimer);
         lookupPassCode(e.target.value);
       }
     }
