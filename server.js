@@ -193,7 +193,7 @@ app.get('/api/passes/:code', async (req, res) => {
 // 5. Security Scan Lookup (Authenticated)
 app.post('/api/security/scan', authenticateToken, (req, res) => {
   const { code } = req.body;
-  if (!code) return res.status(400).json({ error: 'Pass code required' });
+  if (!code) return res.status(400).json({ error: 'Pass code or NIC required' });
 
   const rawCode = code.trim();
   const searchCode = rawCode.toUpperCase();
@@ -201,11 +201,11 @@ app.post('/api/security/scan', authenticateToken, (req, res) => {
 
   db.get(`
     SELECT * FROM passes 
-    WHERE UPPER(pass_code) = ? OR pass_code LIKE ?
+    WHERE UPPER(pass_code) = ? OR UPPER(pass_code) LIKE ? OR UPPER(nic_number) = ?
     ORDER BY id DESC LIMIT 1
-  `, [searchCode, partialCode], (err, pass) => {
+  `, [searchCode, partialCode, searchCode], (err, pass) => {
     if (err || !pass) {
-      return res.status(404).json({ error: 'No pass record found for this QR code' });
+      return res.status(404).json({ error: `No pass record found for "${rawCode}". Please verify pass code/NIC or issue a new pass.` });
     }
 
     db.all('SELECT * FROM gate_logs WHERE UPPER(pass_code) = ? ORDER BY timestamp DESC LIMIT 5', [pass.pass_code.toUpperCase()], (logErr, logs) => {
