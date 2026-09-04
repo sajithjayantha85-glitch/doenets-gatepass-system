@@ -208,45 +208,47 @@
 
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 1.75rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 0.45rem;
     }
 
     .form-group label {
-      font-size: clamp(1.05rem, 1.2vw, 1.25rem);
-      font-weight: 800;
+      font-size: clamp(0.92rem, 1vw, 1.05rem);
+      font-weight: 700;
       color: var(--text-main);
     }
 
     .trilingual-label {
       display: flex;
       flex-direction: column;
-      gap: 0.15rem;
+      gap: 0.1rem;
     }
 
     .trilingual-label .ta-sub {
-      font-size: 0.95rem;
+      font-size: 0.78rem;
       color: #047857;
-      font-weight: 700;
+      font-weight: 600;
+      opacity: 0.85;
     }
 
     .trilingual-label .si-sub {
-      font-size: 0.95rem;
+      font-size: 0.78rem;
       color: #1e40af;
       font-weight: 600;
+      opacity: 0.85;
     }
 
     .form-control {
-      padding: clamp(0.9rem, 1.2vw, 1.25rem) clamp(1rem, 1.4vw, 1.5rem);
-      border: 2.5px solid var(--border);
-      border-radius: 14px;
-      font-size: clamp(1rem, 1.15vw, 1.25rem);
+      padding: clamp(0.75rem, 1vw, 0.95rem) clamp(0.9rem, 1.2vw, 1.25rem);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: clamp(0.95rem, 1.05vw, 1.1rem);
       font-weight: 500;
       transition: all 0.2s ease;
       background-color: #f8fafc;
@@ -260,34 +262,49 @@
       box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.2);
     }
 
-    /* COMPACT STEPPER WIZARD */
+    /* CLEAN PROGRESS STEPPER */
     .form-stepper {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
-      margin-bottom: 1.25rem;
-      gap: 0.5rem;
-      background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
-      padding: 0.65rem 1rem;
-      border-radius: 12px;
-      border: 1.5px solid var(--border);
-      flex-wrap: wrap;
+      margin-bottom: 1.75rem;
+      gap: 0;
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+      border: none;
     }
 
     .step-item {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      flex: 1;
-      min-width: 140px;
+      gap: 0;
+      flex: 0 0 auto;
+    }
+
+    .step-item::after {
+      content: '';
+      width: 32px;
+      height: 2px;
+      background: #cbd5e1;
+      margin: 0 6px;
+      transition: background 0.3s ease;
+    }
+
+    .step-item:last-child::after {
+      display: none;
+    }
+
+    .step-item.completed::after {
+      background: #10b981;
     }
 
     .step-num {
-      width: 26px;
-      height: 26px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
-      background: #cbd5e1;
-      color: #475569;
+      background: #e2e8f0;
+      color: #94a3b8;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -295,13 +312,12 @@
       font-size: 0.85rem;
       transition: all 0.3s ease;
       flex-shrink: 0;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     }
 
     .step-item.active .step-num {
       background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
       color: white;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
     }
 
     .step-item.completed .step-num {
@@ -310,8 +326,7 @@
     }
 
     .step-text {
-      display: flex;
-      flex-direction: column;
+      display: none;
     }
 
     .step-title {
@@ -325,6 +340,56 @@
       font-size: 0.73rem;
       color: var(--text-muted);
       font-weight: 600;
+    }
+
+    /* STEP SECTION PANELS */
+    .step-section {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .step-section:hover {
+      border-color: #bfdbfe;
+    }
+
+    .step-section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1.5px solid #f1f5f9;
+    }
+
+    .step-section-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .step-section-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+
+    .step-section-subtitle {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-left: auto;
     }
 
     /* INPUT WITH ICON WRAPPER */
@@ -355,15 +420,15 @@
     .selection-summary-banner {
       background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
       border: 2px solid #34d399;
-      border-radius: 14px;
-      padding: 1rem 1.25rem;
-      margin-top: 1rem;
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      margin-top: 0.75rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       color: #065f46;
       font-weight: 700;
-      font-size: 1.05rem;
+      font-size: 0.92rem;
       animation: fadeIn 0.3s ease;
     }
 
@@ -375,20 +440,20 @@
     /* COMPACT CHOICE BOX GRID SYSTEM */
     .choice-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 0.85rem;
-      margin-top: 0.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+      gap: 0.6rem;
+      margin-top: 0.35rem;
     }
 
     .choice-card {
       background: #f8fafc;
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 0.85rem 1rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0.7rem 0.85rem;
       cursor: pointer;
       display: flex;
       flex-direction: column;
-      gap: 0.3rem;
+      gap: 0.2rem;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
       user-select: none;
@@ -402,17 +467,17 @@
     }
 
     .choice-card.selected {
-      background: #eff6ff;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
       border-color: #1d4ed8;
-      border-width: 2.5px;
-      box-shadow: 0 8px 22px rgba(29, 78, 216, 0.2);
+      border-width: 2px;
+      box-shadow: 0 4px 16px rgba(29, 78, 216, 0.15);
       transform: translateY(-1px);
     }
 
     .choice-card .choice-icon {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       color: var(--primary);
-      margin-bottom: 0.1rem;
+      margin-bottom: 0;
     }
 
     .choice-card.selected .choice-icon {
@@ -420,43 +485,45 @@
     }
 
     .choice-card .choice-title-en {
-      font-weight: 800;
-      font-size: 0.95rem;
+      font-weight: 700;
+      font-size: 0.85rem;
       color: var(--primary-dark);
-      line-height: 1.25;
+      line-height: 1.2;
     }
 
     .choice-card .choice-title-si {
-      font-size: 0.83rem;
+      font-size: 0.72rem;
       color: #1e40af;
       font-weight: 600;
+      opacity: 0.8;
     }
 
     .choice-card .choice-title-ta {
-      font-size: 0.83rem;
+      font-size: 0.72rem;
       color: #047857;
-      font-weight: 700;
+      font-weight: 600;
+      opacity: 0.8;
     }
 
     .choice-card .check-badge {
       position: absolute;
-      top: 0.65rem;
-      right: 0.65rem;
-      width: 22px;
-      height: 22px;
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
-      background: #cbd5e1;
+      background: #e2e8f0;
       color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.6rem;
       transition: all 0.2s ease;
     }
 
     .choice-card.selected .check-badge {
       background: #1d4ed8;
-      transform: scale(1.1);
+      transform: scale(1.05);
     }
 
     .btn {
@@ -714,28 +781,53 @@
 
       /* Stepper Wizard Mobile Layout */
       .form-stepper {
-        padding: 1rem;
-        gap: 0.75rem;
-        border-radius: 16px;
+        gap: 0;
       }
 
-      .step-item {
-        min-width: 130px;
-        gap: 0.5rem;
+      .step-item::after {
+        width: 20px;
+        margin: 0 4px;
       }
 
       .step-num {
-        width: 34px;
-        height: 34px;
-        font-size: 1rem;
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
       }
 
       .step-title {
-        font-size: 0.95rem;
+        font-size: 0.85rem;
       }
 
       .step-desc {
-        font-size: 0.78rem;
+        font-size: 0.7rem;
+      }
+
+      /* Step section panels mobile */
+      .step-section {
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+      }
+
+      .step-section-header {
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        gap: 0.5rem;
+      }
+
+      .step-section-num {
+        width: 24px;
+        height: 24px;
+        font-size: 0.7rem;
+      }
+
+      .step-section-title {
+        font-size: 0.9rem;
+      }
+
+      .step-section-subtitle {
+        font-size: 0.7rem;
       }
 
       /* Choice Box Grid: 2 Columns on Mobile Smart Phones */
@@ -1092,42 +1184,47 @@
 
     <!-- HOME PAGE: TAB 1: VISITOR SELF REGISTRATION -->
     <div id="visitor-register" class="tab-content active">
-      <div class="card" style="max-width: 1200px; margin: 0 auto;">
+      <div class="card" style="max-width: 900px; margin: 0 auto; padding: clamp(1.25rem, 2.5vw, 2.5rem);">
         
-        <!-- Header Title Bar -->
-        <div class="card-title">
-          <i class="fa-solid fa-user-plus" style="color: var(--primary);"></i> 
-          <span>Visitor Self-Registration Form</span>
+        <!-- Compact Header Title -->
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <div style="display: inline-flex; align-items: center; gap: 0.6rem; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 0.5rem 1.25rem; border-radius: 50px; border: 1.5px solid #bfdbfe;">
+            <i class="fa-solid fa-user-plus" style="color: var(--primary); font-size: 1.1rem;"></i>
+            <span style="font-weight: 800; font-size: 1rem; color: var(--primary-dark);">Visitor Registration</span>
+          </div>
+          <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">
+            පැමිණුම්කරුවන් ලියාපදිංචිය / பார்வையாளர் பதிவு
+          </p>
         </div>
 
-        <!-- 4-STEP VISUAL PROGRESS WIZARD STEPPER -->
+        <!-- 4-STEP PROGRESS DOTS -->
         <div class="form-stepper">
           <div class="step-item active" id="step1Indicator">
             <div class="step-num">1</div>
             <div class="step-text">
-              <span class="step-title">Personal Details</span>
-              <span class="step-desc">ඔබගේ විස්තර / உங்கள் தகவல்கள்</span>
+              <span class="step-title">Details</span>
+              <span class="step-desc">විස්තර</span>
             </div>
           </div>
           <div class="step-item" id="step2Indicator">
             <div class="step-num">2</div>
             <div class="step-text">
-              <span class="step-title">Department Branch</span>
-              <span class="step-desc">අංශය / பிரிவு</span>
+              <span class="step-title">Branch</span>
+              <span class="step-desc">අංශය</span>
             </div>
           </div>
           <div class="step-item" id="step3Indicator">
             <div class="step-num">3</div>
             <div class="step-text">
-              <span class="step-title">Visit Purpose</span>
-              <span class="step-desc">පැමිණි කරුණ / நோக்கம்</span>
+              <span class="step-title">Purpose</span>
+              <span class="step-desc">කරුණ</span>
             </div>
           </div>
           <div class="step-item" id="step4Indicator">
             <div class="step-num">4</div>
             <div class="step-text">
-              <span class="step-title">Digital QR Pass</span>
-              <span class="step-desc">QR Pass එක / QR கணவாய்</span>
+              <span class="step-title">QR Pass</span>
+              <span class="step-desc">පාස්</span>
             </div>
           </div>
         </div>
@@ -1137,62 +1234,68 @@
           <input type="hidden" id="vBranch" required>
           <input type="hidden" id="vPurpose" required>
 
-          <div class="form-grid">
-            <div class="form-group">
-              <label class="trilingual-label">
-                <span>Full Name (සම්පූර්ණ නම) *</span>
-                <span class="ta-sub">முழுப் பெயர் *</span>
-              </label>
-              <div class="input-icon-group">
-                <input type="text" id="vName" class="form-control" placeholder="e.g. K.A. Sunil Perera / கே.ஏ. சுனில் பெரேரா" required oninput="checkStep1Completion()">
-                <i class="fa-solid fa-user"></i>
-              </div>
+          <!-- STEP 1: Personal Details Panel -->
+          <div class="step-section">
+            <div class="step-section-header">
+              <div class="step-section-num">1</div>
+              <span class="step-section-title">Personal Details</span>
+              <span class="step-section-subtitle">ඔබගේ විස්තර / தகவல்கள்</span>
             </div>
 
-            <div class="form-group">
-              <label class="trilingual-label">
-                <span>National ID / Passport No (NIC) *</span>
-                <span class="si-sub">ජාතික හැඳුනුම්පත් අංකය *</span>
-                <span class="ta-sub">தேசிய அடையாள அட்டை எண் *</span>
-              </label>
-              <div class="input-icon-group">
-                <input type="text" id="vNic" class="form-control" placeholder="e.g. 198512345678 / 851234567V" required oninput="checkStep1Completion()">
-                <i class="fa-solid fa-address-card"></i>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="trilingual-label">
+                  <span>Full Name (සම්පූර්ණ නම) *</span>
+                  <span class="ta-sub">முழுப் பெயர் *</span>
+                </label>
+                <div class="input-icon-group">
+                  <input type="text" id="vName" class="form-control" placeholder="e.g. K.A. Sunil Perera" required oninput="checkStep1Completion()">
+                  <i class="fa-solid fa-user"></i>
+                </div>
               </div>
-            </div>
 
-            <div class="form-group">
-              <label class="trilingual-label">
-                <span>Mobile Phone Number *</span>
-                <span class="si-sub">දුරකථන අංකය *</span>
-                <span class="ta-sub">கைப்பேசி எண் *</span>
-              </label>
-              <div class="input-icon-group">
-                <input type="tel" id="vMobile" class="form-control" placeholder="e.g. 0771234567" required oninput="checkStep1Completion()">
-                <i class="fa-solid fa-phone"></i>
+              <div class="form-group">
+                <label class="trilingual-label">
+                  <span>NIC / Passport No *</span>
+                  <span class="si-sub">ජා.හැ.අං / විදේශ ගමන් බලපත්‍ර අංකය</span>
+                </label>
+                <div class="input-icon-group">
+                  <input type="text" id="vNic" class="form-control" placeholder="e.g. 198512345678 / 851234567V" required oninput="checkStep1Completion()">
+                  <i class="fa-solid fa-address-card"></i>
+                </div>
               </div>
-            </div>
 
-            <div class="form-group">
-              <label class="trilingual-label">
-                <span>Vehicle Number (Optional / නොකැමති නම් හිස්ව තබන්න)</span>
-                <span class="si-sub">වාහන අංකය (පැමිණෙන වාහනයේ අංකය)</span>
-                <span class="ta-sub">வாகன எண் (விருப்பத்தேர்வு)</span>
-              </label>
-              <div class="input-icon-group">
-                <input type="text" id="vVehicle" class="form-control" placeholder="e.g. WP CAB-1234 / NC GH-5678">
-                <i class="fa-solid fa-car"></i>
+              <div class="form-group">
+                <label class="trilingual-label">
+                  <span>Mobile Number *</span>
+                  <span class="si-sub">දුරකථන අංකය / கைப்பேசி</span>
+                </label>
+                <div class="input-icon-group">
+                  <input type="tel" id="vMobile" class="form-control" placeholder="e.g. 0771234567" required oninput="checkStep1Completion()">
+                  <i class="fa-solid fa-phone"></i>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="trilingual-label">
+                  <span>Vehicle No <span style="font-weight: 500; color: var(--text-muted);">(Optional)</span></span>
+                  <span class="si-sub">වාහන අංකය / வாகன எண்</span>
+                </label>
+                <div class="input-icon-group">
+                  <input type="text" id="vVehicle" class="form-control" placeholder="e.g. WP CAB-1234">
+                  <i class="fa-solid fa-car"></i>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- STEP 2: SELECTION BOX: DEPARTMENT BRANCH TO VISIT -->
-          <div class="form-group" style="margin-top: 2rem;" id="step2Anchor">
-            <label class="trilingual-label">
-              <span>Step 2: Select Department Branch to Visit (Click Card) *</span>
-              <span class="si-sub">2 වෙනි පියවර: හමුවීමට යන අංශය / ශාඛාව (තෝරාගැනීමට Box එක මත Click කරන්න) *</span>
-              <span class="ta-sub">2வது படி: சந்திக்க வேண்டிய பிரிவு (தேர்ந்தெடுக்க கிளிக் செய்யவும்) *</span>
-            </label>
+          <!-- STEP 2: Department Branch Selection Panel -->
+          <div class="step-section" id="step2Anchor">
+            <div class="step-section-header">
+              <div class="step-section-num">2</div>
+              <span class="step-section-title">Select Branch</span>
+              <span class="step-section-subtitle">හමුවීමට යන අංශය / பிரிவு</span>
+            </div>
 
             <div class="choice-grid" id="branchChoiceGrid">
               <!-- Dynamically populated branch choice cards -->
@@ -1201,19 +1304,19 @@
             <!-- Selected Branch Confirmation Banner -->
             <div id="selectedBranchSummaryBanner" class="selection-summary-banner" style="display: none;">
               <div>
-                <i class="fa-solid fa-circle-check"></i> Selected Branch: <span id="selectedBranchLabel" style="font-weight: 900; font-size: 1.1rem; color: #047857;">-</span>
+                <i class="fa-solid fa-circle-check"></i> Selected: <span id="selectedBranchLabel" style="font-weight: 800; font-size: 0.95rem; color: #047857;">-</span>
               </div>
-              <span style="font-size: 0.9rem; opacity: 0.85;">(Click any card above to change)</span>
+              <span style="font-size: 0.78rem; opacity: 0.75;">(Tap to change)</span>
             </div>
           </div>
 
-          <!-- STEP 3: DYNAMIC BRANCH-DEPENDENT PURPOSE SELECTION BOXES -->
-          <div class="form-group" style="margin-top: 2.25rem;" id="step3Anchor">
-            <label class="trilingual-label">
-              <span>Step 3: Select Purpose of Visit (Click Card) *</span>
-              <span class="si-sub">3 වෙනි පියවර: පැමිණි කරුණ (අංශය තෝරාගත් පසු අදාළ කරුණ තෝරන්න) *</span>
-              <span class="ta-sub">3வது படி: வருகையின் நோக்கம் (பிரிவைத் தேர்ந்தெடுத்த பின் தேர்வு செய்யவும்) *</span>
-            </label>
+          <!-- STEP 3: Visit Purpose Selection Panel -->
+          <div class="step-section" id="step3Anchor">
+            <div class="step-section-header">
+              <div class="step-section-num">3</div>
+              <span class="step-section-title">Purpose of Visit</span>
+              <span class="step-section-subtitle">පැමිණි කරුණ / நோக்கம்</span>
+            </div>
 
             <!-- Dynamic Purpose Choice Cards Box Grid -->
             <div class="choice-grid" id="purposeChoiceGrid">
@@ -1223,20 +1326,23 @@
             <!-- Selected Purpose Confirmation Banner -->
             <div id="selectedPurposeSummaryBanner" class="selection-summary-banner" style="display: none; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #3b82f6; color: #1e40af;">
               <div>
-                <i class="fa-solid fa-circle-check"></i> Selected Purpose: <span id="selectedPurposeLabel" style="font-weight: 900; font-size: 1.1rem; color: #1d4ed8;">-</span>
+                <i class="fa-solid fa-circle-check"></i> Selected: <span id="selectedPurposeLabel" style="font-weight: 800; font-size: 0.95rem; color: #1d4ed8;">-</span>
               </div>
-              <span style="font-size: 0.9rem; opacity: 0.85;">(Click any card above to change)</span>
+              <span style="font-size: 0.78rem; opacity: 0.75;">(Tap to change)</span>
             </div>
 
             <!-- Custom / Other Purpose Input Box (Shown when 'Other' selected) -->
-            <div id="customPurposeBox" style="display: none; margin-top: 1rem;">
-              <input type="text" id="vCustomPurpose" class="form-control" placeholder="Specify custom purpose / වෙනත් කරුණ සටහන් කරන්න / வேறு நோக்கம்">
+            <div id="customPurposeBox" style="display: none; margin-top: 0.75rem;">
+              <input type="text" id="vCustomPurpose" class="form-control" placeholder="Specify purpose / වෙනත් කරුණ / வேறு நோக்கம்">
             </div>
           </div>
 
-          <button type="submit" id="submitRegBtn" class="btn btn-primary btn-block" style="margin-top: 2.5rem; font-size: 1.35rem; padding: 1.4rem;">
-            <i class="fa-solid fa-qrcode"></i> Generate Digital QR Pass (QR කෝඩ් එක ලබාගන්න / QR கணவாய் பெறுக)
+          <button type="submit" id="submitRegBtn" class="btn btn-primary btn-block" style="margin-top: 1.25rem; font-size: 1.15rem; padding: 1.1rem; border-radius: 12px;">
+            <i class="fa-solid fa-qrcode"></i> Generate QR Gate Pass
           </button>
+          <p style="text-align: center; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">
+            QR කෝඩ් එක ලබාගන්න / QR கணவாய் பெறுக
+          </p>
         </form>
 
         <!-- QR Display Card (Optimized for Web Screen & A6 Slip Printing) -->
