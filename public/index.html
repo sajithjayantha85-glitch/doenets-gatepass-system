@@ -1175,7 +1175,7 @@
           <img id="passQrImg" src="" alt="Gate Pass QR Code">
 
           <div class="qr-details-box" style="background: #ffffff; padding: 1.15rem; border-radius: 16px; font-size: 1.1rem; text-align: left; border: 2px solid var(--border);">
-            <p id="passDailyNoRow" style="margin-bottom: 0.4rem;"><strong>Daily Visitor No:</strong> <span id="passDailyNoDisplay" style="color: #059669; font-weight: 900; font-size: 1.25rem;">#001</span></p>
+            <p id="passDailyNoRow" style="margin-bottom: 0.4rem;"><strong>Daily Visitor No (දිනයේ පැමිණීමේ අංකය):</strong> <span id="passDailyNoDisplay" style="color: #059669; font-weight: 900; font-size: 1.2rem;">#001</span></p>
             <p style="margin-bottom: 0.4rem;"><strong>Pass Code:</strong> <span id="passCodeDisplay" style="color: var(--primary); font-weight: 800;">DOENETS-VIS-0000</span> <button onclick="copyPassCode()" class="btn print-hide" style="padding: 0.2rem 0.6rem; font-size: 0.85rem; margin-left: 0.5rem; background: #e2e8f0; color: #1e293b;"><i class="fa-solid fa-copy"></i> Copy</button></p>
             <p id="passBranchRow" style="margin-bottom: 0.4rem;"><strong>Visiting Branch:</strong> <span id="passBranchDisplay" style="font-weight: 700;">-</span></p>
             <p style="margin-bottom: 0.4rem;"><strong>Purpose:</strong> <span id="passPurposeDisplay" style="font-weight: 700;">-</span></p>
@@ -2231,11 +2231,12 @@
         document.getElementById('passBranchDisplay').innerText = pass.branch_name;
       }
 
-      // 3. Daily Visitor No (Only for Visitor Self-Registration)
+      // 3. Daily Visitor No & Issued Date (Only for Visitor Self-Registration)
       const dailyNoRow = document.getElementById('passDailyNoRow');
       if (pass.category === 'VISITOR') {
         const dailyNoFormatted = pass.daily_no_formatted || String(pass.daily_no || 1).padStart(3, '0');
-        document.getElementById('passDailyNoDisplay').innerText = '#' + dailyNoFormatted;
+        const passDateStr = new Date(pass.created_at || Date.now()).toLocaleDateString();
+        document.getElementById('passDailyNoDisplay').innerHTML = `#${dailyNoFormatted} <span style="font-size:0.95rem; color:#475569; font-weight:700;">(දිනය / Date: ${passDateStr})</span>`;
         if (dailyNoRow) dailyNoRow.style.display = 'block';
       } else {
         if (dailyNoRow) dailyNoRow.style.display = 'none';
