@@ -946,9 +946,67 @@
         line-height: 1.3 !important;
       }
 
-      .print-note span {
-        color: #000000 !important;
-      }
+    /* Gate Security Single-Screen No-Scroll Console Layout */
+    .security-console-card {
+      padding: 1.25rem 1.75rem !important;
+      margin-bottom: 1rem !important;
+      max-width: 1350px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .security-topbar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: #f8fafc;
+      padding: 0.75rem 1.1rem;
+      border-radius: 16px;
+      border: 2.5px solid #e2e8f0;
+      margin-bottom: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .sec-btn-group {
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    .sec-search-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex: 1;
+      min-width: 320px;
+    }
+
+    .sec-status-badge {
+      background: #10b981;
+      color: white;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.85rem;
+      font-weight: 800;
+      border-radius: 20px;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .sec-placeholder-box {
+      text-align: center;
+      padding: 2.25rem 1.5rem;
+      background: #f8fafc;
+      border: 2.5px dashed #cbd5e1;
+      border-radius: 16px;
+      margin-top: 0.5rem;
+    }
+
+    .scan-result-popup {
+      padding: 1.25rem 1.6rem !important;
+      margin-top: 0.5rem !important;
+      border-radius: 18px !important;
     }
   </style>
 </head>
@@ -1209,78 +1267,84 @@
 
     <!-- TAB 2: SECURITY GATE SCANNER CONSOLE -->
     <div id="security-scan" class="tab-content">
-      <div class="card">
-        <div class="card-title">
-          <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Gate Security Control Console
+      <div class="card security-console-card">
+        <div class="card-title" style="margin-bottom: 0.85rem; padding-bottom: 0.6rem;">
+          <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Gate Security Control Console (ආරක්ෂක ගේට්ටු පාලන පුවරුව)
         </div>
 
-        <div style="display: flex; gap: 1.5rem; margin-bottom: 2.25rem; flex-wrap: wrap;">
-          <button class="btn btn-primary" onclick="startCameraScanner()" style="font-size: 1.2rem; padding: 1.1rem 1.75rem;">
-            <i class="fa-solid fa-camera"></i> Mobile / Web Camera Scanner
-          </button>
-          <button class="btn btn-primary" style="background: var(--primary-dark); font-size: 1.2rem; padding: 1.1rem 1.75rem;" onclick="focusUsbScanner()">
-            <i class="fa-solid fa-barcode"></i> Hardware USB Scanner Mode
-          </button>
+        <!-- Compact Control Topbar -->
+        <div class="security-topbar">
+          <div class="sec-btn-group">
+            <button class="btn btn-primary" onclick="startCameraScanner()" style="font-size: 1.05rem; padding: 0.85rem 1.25rem;">
+              <i class="fa-solid fa-camera"></i> Camera Scan
+            </button>
+            <button class="btn btn-primary" style="background: var(--primary-dark); font-size: 1.05rem; padding: 0.85rem 1.25rem;" onclick="focusUsbScanner()">
+              <i class="fa-solid fa-barcode"></i> USB Mode
+            </button>
+          </div>
+
+          <div class="sec-search-group">
+            <input type="text" id="usbInput" class="form-control" style="font-size: 1.2rem; font-weight: 800; padding: 0.85rem 1.1rem; border: 3px solid var(--primary-light);" placeholder="Scan QR code or type code here..." oninput="handleUsbInput(event)" onkeypress="handleUsbKey(event)" autofocus>
+            <button class="btn btn-primary" style="padding: 0.85rem 1.5rem; font-size: 1.1rem;" onclick="lookupPassCode(document.getElementById('usbInput').value)">
+              <i class="fa-solid fa-magnifying-glass"></i> Search
+            </button>
+            <span class="sec-status-badge">
+              <i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #a7f3d0;"></i> Ready
+            </span>
+          </div>
         </div>
 
-        <div class="scanner-box" id="cameraBox" style="display: none;">
+        <div class="scanner-box" id="cameraBox" style="display: none; margin-bottom: 0.85rem;">
           <div id="reader"></div>
-          <button class="btn btn-danger btn-block" onclick="stopCameraScanner()" style="border-radius: 0; padding: 1.1rem;">
+          <button class="btn btn-danger btn-block" onclick="stopCameraScanner()" style="border-radius: 0; padding: 0.85rem;">
             <i class="fa-solid fa-stop"></i> Stop Camera Scanner
           </button>
         </div>
 
-        <div class="form-group" style="max-width: 700px; margin-bottom: 2.25rem;">
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.6rem;">
-            <label style="font-size: 1.2rem; font-weight: 700; margin: 0;">USB Barcode Reader Input / Manual Pass Code:</label>
-            <span style="background: #10b981; color: white; padding: 0.4rem 0.85rem; font-size: 0.92rem; font-weight: 800; border-radius: 20px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); display: inline-flex; align-items: center; gap: 0.4rem;">
-              <i class="fa-solid fa-circle" style="font-size: 0.55rem; color: #a7f3d0;"></i> Scanner Auto-Ready / ස්කෑනරය සූදානම්
-            </span>
-          </div>
-          <div style="display: flex; gap: 1rem;">
-            <input type="text" id="usbInput" class="form-control" style="font-size: 1.25rem; font-weight: 800; padding: 1.1rem; border: 3px solid var(--primary-light);" placeholder="Scan QR code or type code here..." oninput="handleUsbInput(event)" onkeypress="handleUsbKey(event)" autofocus>
-            <button class="btn btn-primary" style="padding: 1.1rem 1.75rem;" onclick="lookupPassCode(document.getElementById('usbInput').value)">
-              <i class="fa-solid fa-magnifying-glass"></i> Search
-            </button>
-          </div>
+        <!-- Initial Placeholder State when no pass is scanned -->
+        <div id="secScanPlaceholder" class="sec-placeholder-box">
+          <i class="fa-solid fa-qrcode" style="font-size: 2.75rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+          <h3 style="font-size: 1.3rem; color: #1e293b; margin-bottom: 0.25rem; font-weight: 800;">Ready to Scan Gate Pass</h3>
+          <p style="color: #64748b; font-size: 0.95rem; margin: 0;">Scan QR code using hardware scanner, or type pass code in search bar above.</p>
         </div>
 
+        <!-- Scan Result Card -->
         <div id="scanResultCard" class="scan-result-popup" style="display: none;">
           <!-- HIGH VISIBILITY SPECIAL AUTHORIZED PASS ALERT BANNER -->
-          <div id="secSpecialBanner" class="special-badge" style="display: none; font-size: 1.25rem; padding: 1rem;"></div>
+          <div id="secSpecialBanner" class="special-badge" style="display: none; font-size: 1.15rem; padding: 0.75rem; margin-bottom: 0.85rem;"></div>
 
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
             <div>
-              <span class="badge badge-pending" id="secBadge" style="font-size: 1.15rem;">STATUS</span>
-              <h2 style="font-size: 2.1rem; color: var(--primary-dark); margin-top: 0.6rem;" id="secName">Person Name</h2>
-              <p style="font-size: 1.25rem; color: var(--text-muted); font-weight: 800;" id="secCategory">Category: VISITOR</p>
+              <span class="badge badge-pending" id="secBadge" style="font-size: 1.05rem;">STATUS</span>
+              <h2 style="font-size: 1.75rem; color: var(--primary-dark); margin-top: 0.4rem; margin-bottom: 0.2rem;" id="secName">Person Name</h2>
+              <p style="font-size: 1.1rem; color: var(--text-muted); font-weight: 800; margin: 0;" id="secCategory">Category: VISITOR</p>
             </div>
             <div style="text-align: right;">
-              <p style="font-size: 1.6rem; font-weight: 900; color: var(--accent);" id="secNic">NIC: 000000000V</p>
-              <p style="font-size: 1.1rem; color: var(--text-muted); font-weight: 700;" id="secPassCode">Code: DOENETS-VIS-000</p>
+              <p style="font-size: 1.45rem; font-weight: 900; color: var(--accent); margin: 0;" id="secNic">NIC: 000000000V</p>
+              <p style="font-size: 1.05rem; color: var(--text-muted); font-weight: 700; margin-top: 0.25rem;" id="secPassCode">Code: DOENETS-VIS-000</p>
             </div>
           </div>
 
-          <hr style="margin: 1.5rem 0; border: none; border-top: 3px solid var(--border);">
+          <hr style="margin: 0.85rem 0; border: none; border-top: 2px solid var(--border);">
 
-          <div class="form-grid" style="font-size: 1.2rem;">
+          <div class="form-grid" style="font-size: 1.1rem; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
             <div>
-              <p id="secBranchRow" style="margin-bottom: 0.6rem;"><strong>Visiting Branch:</strong> <span id="secBranch" style="font-weight: 800;">-</span></p>
-              <p style="margin-bottom: 0.6rem;"><strong>Purpose of Visit / Duty:</strong> <span id="secPurpose">-</span></p>
-              <p><strong id="secVehicleLabel">Vehicle Number:</strong> <span id="secVehicle" style="font-weight: 900; color: #d97706;">None</span></p>
+              <p id="secBranchRow" style="margin-bottom: 0.4rem;"><strong>Visiting Branch:</strong> <span id="secBranch" style="font-weight: 800;">-</span></p>
+              <p style="margin-bottom: 0.4rem;"><strong>Purpose / Duty:</strong> <span id="secPurpose">-</span></p>
+              <p style="margin-bottom: 0;"><strong id="secVehicleLabel">Vehicle Number:</strong> <span id="secVehicle" style="font-weight: 900; color: #d97706;">None</span></p>
             </div>
             <div>
-              <p style="margin-bottom: 0.6rem;"><strong>Access Permission Zone:</strong> <span id="secZone" style="font-weight: 900; color: var(--primary);">-</span></p>
-              <p><strong id="secValidLabel">Validity Period:</strong> <span id="secValid" style="font-weight: 800; color: #2563eb;">-</span></p>
+              <p style="margin-bottom: 0.4rem;"><strong>Permission Zone:</strong> <span id="secZone" style="font-weight: 900; color: var(--primary);">-</span></p>
+              <p style="margin-bottom: 0;"><strong id="secValidLabel">Validity Period:</strong> <span id="secValid" style="font-weight: 800; color: #2563eb;">-</span></p>
             </div>
           </div>
 
-          <div style="display: flex; gap: 1.5rem; margin-top: 2.25rem; flex-wrap: wrap;">
-            <button class="btn btn-success" id="btnCheckIn" onclick="verifyEntryAction('CHECK_IN')" style="flex: 1; padding: 1.35rem; font-size: 1.25rem;">
-              <i class="fa-solid fa-id-card-clip"></i> Verify Physical NIC & Grant Entry (Check-In)
+          <div style="display: flex; gap: 1.25rem; margin-top: 1.25rem; flex-wrap: wrap;">
+            <button class="btn btn-success" id="btnCheckIn" onclick="verifyEntryAction('CHECK_IN')" style="flex: 1; padding: 1rem 1.25rem; font-size: 1.15rem; font-weight: 800; border-radius: 14px;">
+              <i class="fa-solid fa-id-card-clip"></i> Verify NIC & Check-In (ඇතුළු වීම)
             </button>
-            <button class="btn btn-danger" id="btnCheckOut" onclick="verifyEntryAction('CHECK_OUT')" style="flex: 1; padding: 1.35rem; font-size: 1.25rem;">
-              <i class="fa-solid fa-person-walking-arrow-right"></i> Register Departure (Check-Out)
+            <button class="btn btn-danger" id="btnCheckOut" onclick="verifyEntryAction('CHECK_OUT')" style="flex: 1; padding: 1rem 1.25rem; font-size: 1.15rem; font-weight: 800; border-radius: 14px;">
+              <i class="fa-solid fa-person-walking-arrow-right"></i> Register Check-Out (පිටවීම)
             </button>
           </div>
         </div>
@@ -2460,6 +2524,8 @@
         if (!res.ok) throw new Error(data.error || 'Scan error');
 
         activePassCode = data.pass.pass_code;
+        const placeholder = document.getElementById('secScanPlaceholder');
+        if (placeholder) placeholder.style.display = 'none';
         const card = document.getElementById('scanResultCard');
         card.style.display = 'block';
 
@@ -2558,6 +2624,8 @@
 
         alert(data.message);
         document.getElementById('scanResultCard').style.display = 'none';
+        const secPlaceholder = document.getElementById('secScanPlaceholder');
+        if (secPlaceholder) secPlaceholder.style.display = 'block';
         const usbIn = document.getElementById('usbInput');
         if (usbIn) {
           usbIn.value = '';
