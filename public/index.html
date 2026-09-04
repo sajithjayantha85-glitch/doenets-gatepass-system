@@ -1603,11 +1603,16 @@
       </div>
 
       <div class="card">
-        <div class="card-title" style="justify-content: space-between;">
+        <div class="card-title" style="justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
           <span><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Real-Time Gate Activity Stream</span>
-          <button class="btn btn-primary" onclick="loadAdminDashboard()" style="padding: 0.75rem 1.4rem; font-size: 1.05rem;">
-            <i class="fa-solid fa-rotate"></i> Refresh Feed
-          </button>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button class="btn btn-success" onclick="downloadDatabaseBackup()" style="padding: 0.65rem 1.2rem; font-size: 1.02rem;">
+              <i class="fa-solid fa-file-export"></i> 📥 Backup DB (දත්ත ඩවුන්ලෝඩ් කරන්න)
+            </button>
+            <button class="btn btn-primary" onclick="loadAdminDashboard()" style="padding: 0.65rem 1.2rem; font-size: 1.02rem;">
+              <i class="fa-solid fa-rotate"></i> Refresh Feed
+            </button>
+          </div>
         </div>
 
         <div class="table-container">
@@ -2760,6 +2765,29 @@
         loadFormOptions();
       } catch (err) {
         alert('Error: ' + err.message);
+      }
+    }
+
+    // Admin Download Full System Database Backup
+    async function downloadDatabaseBackup() {
+      if (!token) return;
+      try {
+        const res = await fetch('/api/admin/backup/export', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('Backup download failed');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const dateStr = new Date().toISOString().split('T')[0];
+        a.href = url;
+        a.download = `DoENets_GatePass_Backup_${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        alert('✓ Complete System Database Backup downloaded successfully!');
+      } catch (err) {
+        alert('Backup Error: ' + err.message);
       }
     }
 

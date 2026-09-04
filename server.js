@@ -445,6 +445,37 @@ app.get('/api/admin/dashboard', authenticateToken, (req, res) => {
   });
 });
 
+// 11. Full System Database Backup Export API (Authenticated Super Admin)
+app.get('/api/admin/backup/export', authenticateToken, (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin access required for database backups' });
+  }
+
+  db.all('SELECT * FROM passes ORDER BY id DESC', [], (pErr, passes) => {
+    db.all('SELECT * FROM gate_logs ORDER BY id DESC', [], (lErr, logs) => {
+      db.all('SELECT * FROM branches ORDER BY id ASC', [], (bErr, branches) => {
+        db.all('SELECT * FROM visit_purposes ORDER BY id ASC', [], (purpErr, purposes) => {
+          const backupPayload = {
+            system: 'Department of Examinations Sri Lanka - Gate Pass System',
+            backup_timestamp: new Date().toISOString(),
+            total_passes: passes ? passes.length : 0,
+            total_gate_logs: logs ? logs.length : 0,
+            passes: passes || [],
+            gate_logs: logs || [],
+            branches: branches || [],
+            visit_purposes: purposes || []
+          };
+
+          const dateStr = new Date().toISOString().split('T')[0];
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Content-Disposition', `attachment; filename=DoENets_GatePass_Backup_${dateStr}.json`);
+          res.send(JSON.stringify(backupPayload, null, 2));
+        });
+      });
+    });
+  });
+});
+
 // Fallback SPA Route
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
