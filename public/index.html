@@ -441,21 +441,21 @@
     /* COMPACT CHOICE BOX GRID SYSTEM */
     .choice-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-      gap: 0.6rem;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.45rem;
       margin-top: 0.35rem;
     }
 
     .choice-card {
       background: #f8fafc;
       border: 1.5px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 0.7rem 0.85rem;
+      border-radius: 8px;
+      padding: 0.45rem 0.6rem;
       cursor: pointer;
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      gap: 0.12rem;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
       user-select: none;
     }
@@ -463,22 +463,22 @@
     .choice-card:hover {
       border-color: var(--primary-light);
       background: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(30, 58, 138, 0.12);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(30, 58, 138, 0.1);
     }
 
     .choice-card.selected {
       background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
       border-color: #1d4ed8;
       border-width: 2px;
-      box-shadow: 0 4px 16px rgba(29, 78, 216, 0.15);
+      box-shadow: 0 3px 12px rgba(29, 78, 216, 0.15);
       transform: translateY(-1px);
     }
 
     .choice-card .choice-icon {
-      font-size: 1.25rem;
+      font-size: 1.05rem;
       color: var(--primary);
-      margin-bottom: 0;
+      margin-bottom: 0.05rem;
     }
 
     .choice-card.selected .choice-icon {
@@ -487,38 +487,40 @@
 
     .choice-card .choice-title-en {
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       color: var(--primary-dark);
-      line-height: 1.2;
+      line-height: 1.15;
     }
 
     .choice-card .choice-title-si {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       color: #1e40af;
       font-weight: 600;
-      opacity: 0.8;
+      opacity: 0.85;
+      line-height: 1.15;
     }
 
     .choice-card .choice-title-ta {
-      font-size: 0.72rem;
+      font-size: 0.64rem;
       color: #047857;
       font-weight: 600;
       opacity: 0.8;
+      line-height: 1.15;
     }
 
     .choice-card .check-badge {
       position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      width: 18px;
-      height: 18px;
+      top: 0.35rem;
+      right: 0.35rem;
+      width: 15px;
+      height: 15px;
       border-radius: 50%;
       background: #e2e8f0;
       color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.6rem;
+      font-size: 0.52rem;
       transition: all 0.2s ease;
     }
 
@@ -889,37 +891,45 @@
         font-size: 0.7rem;
       }
 
-      /* Choice Box Grid: 2 Columns on Mobile Smart Phones */
+      /* Choice Box Grid: Compact on Mobile Smart Phones */
       .choice-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 0.85rem;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 0.4rem;
       }
 
       .choice-card {
-        padding: 1rem 0.85rem;
-        border-radius: 14px;
+        padding: 0.45rem 0.55rem;
+        border-radius: 8px;
         -webkit-tap-highlight-color: transparent;
+        gap: 0.12rem;
       }
 
       .choice-card .choice-icon {
-        font-size: 1.6rem;
+        font-size: 1.05rem;
+        margin-bottom: 0.05rem;
       }
 
       .choice-card .choice-title-en {
-        font-size: 0.95rem;
+        font-size: 0.75rem;
+        line-height: 1.15;
       }
 
-      .choice-card .choice-title-si,
+      .choice-card .choice-title-si {
+        font-size: 0.66rem;
+        line-height: 1.15;
+      }
+
       .choice-card .choice-title-ta {
-        font-size: 0.85rem;
+        font-size: 0.62rem;
+        line-height: 1.15;
       }
 
       .choice-card .check-badge {
-        width: 22px;
-        height: 22px;
-        font-size: 0.75rem;
-        top: 0.6rem;
-        right: 0.6rem;
+        width: 15px;
+        height: 15px;
+        font-size: 0.52rem;
+        top: 0.3rem;
+        right: 0.3rem;
       }
 
       /* QR Display Card Mobile Optimizations */
