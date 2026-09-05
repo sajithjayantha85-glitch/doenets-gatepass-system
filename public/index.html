@@ -969,45 +969,68 @@
     /* THERMAL & A6 PRINT SLIP STYLES */
     @page {
       size: auto;
-      margin: 2mm;
+      margin: 5mm;
     }
 
     @media print {
-      /* Hide all website clutter */
+      /* Reset all transforms, transitions and animations */
+      *, *::before, *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        animation: none !important;
+        transition: none !important;
+      }
+
+      /* Strictly enforce single-page boundary */
+      html, body {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        display: block !important;
+        overflow: hidden !important;
+      }
+
+      /* Hide all website clutter, headers, footers, navigation, forms, stepper, buttons, and modals */
       header, footer, nav, .nav-tabs, .form-stepper, #visitorForm, 
       .selection-summary-banner, .btn, .card-title, button, .user-info,
-      .print-hide, .tab-content:not(.active) {
+      .modal, .print-hide, .tab-content:not(.active) {
         display: none !important;
       }
 
-      html, body, main {
-        background: #ffffff !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        box-shadow: none !important;
-        color: #000000 !important;
-        width: 100% !important;
+      /* Hide every element inside the active card except the pass slip card itself */
+      .card > *:not(#qrResultCard) {
+        display: none !important;
       }
 
-      .card {
-        background: #ffffff !important;
+      main, .tab-content, .card {
+        background: transparent !important;
         border: none !important;
         box-shadow: none !important;
         padding: 0 !important;
         margin: 0 !important;
+        width: 100% !important;
         max-width: 100% !important;
+        display: block !important;
+        flex: none !important;
+        height: auto !important;
+        min-height: 0 !important;
       }
 
       .print-slip-header {
         display: block !important;
         text-align: center;
         border-bottom: 2px solid #000000;
-        padding-bottom: 4px;
-        margin-bottom: 6px;
+        padding-bottom: 3px;
+        margin-bottom: 4px;
       }
 
       .print-slip-header h3 {
-        font-size: 10pt !important;
+        font-size: 9.5pt !important;
         font-weight: 900 !important;
         margin: 0 !important;
         color: #000000 !important;
@@ -1021,45 +1044,49 @@
         color: #000000 !important;
       }
 
-      /* High-Contrast Thermal / A6 Visitor Slip Container */
+      /* High-Contrast Thermal / A6 Visitor Slip Container (Fits cleanly on 1 Page) */
       #qrResultCard {
         display: block !important;
         position: relative !important;
         width: 100% !important;
-        max-width: 80mm !important; /* Fits both 80mm Thermal Receipt Printers & A6 Printers */
+        max-width: 80mm !important; /* Fits both 80mm Thermal Receipt Printers & A6 / A4 Printers */
         border: 2px solid #000000 !important;
         border-radius: 6px !important;
-        padding: 6px 8px !important;
+        padding: 5px 8px !important;
         margin: 0 auto !important;
         box-shadow: none !important;
         box-sizing: border-box !important;
         background: #ffffff !important;
+        page-break-before: avoid !important;
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
+        break-before: avoid !important;
+        break-after: avoid !important;
+        break-inside: avoid !important;
         text-align: center !important;
         color: #000000 !important;
       }
 
       #passName {
-        font-size: 12.5pt !important;
-        margin: 4px 0 1px 0 !important;
+        font-size: 12pt !important;
+        margin: 3px 0 1px 0 !important;
         font-weight: 900 !important;
         color: #000000 !important;
         text-align: center !important;
       }
 
       #passNic {
-        font-size: 9.5pt !important;
-        margin: 0 0 4px 0 !important;
+        font-size: 9pt !important;
+        margin: 0 0 3px 0 !important;
         color: #000000 !important;
         font-weight: 800 !important;
         text-align: center !important;
       }
 
       #passQrImg {
-        width: 130px !important;
-        height: 130px !important;
-        margin: 4px auto !important;
+        width: 120px !important;
+        height: 120px !important;
+        margin: 3px auto !important;
         display: block !important;
         border: 1.5px solid #000000 !important;
         padding: 2px !important;
@@ -1069,18 +1096,18 @@
 
       .qr-details-box {
         border: 1.5px solid #000000 !important;
-        padding: 5px 8px !important;
+        padding: 4px 6px !important;
         border-radius: 6px !important;
-        font-size: 8.5pt !important;
-        line-height: 1.35 !important;
-        margin-top: 5px !important;
+        font-size: 8pt !important;
+        line-height: 1.3 !important;
+        margin-top: 4px !important;
         text-align: left !important;
         background: #ffffff !important;
         color: #000000 !important;
       }
 
       .qr-details-box p {
-        margin: 2.5px 0 !important;
+        margin: 1.5px 0 !important;
         color: #000000 !important;
       }
 
@@ -1099,12 +1126,12 @@
       }
 
       .print-note {
-        font-size: 7pt !important;
-        margin-top: 5px !important;
+        font-size: 6.8pt !important;
+        margin-top: 4px !important;
         font-weight: 800 !important;
         color: #000000 !important;
         text-align: center !important;
-        line-height: 1.3 !important;
+        line-height: 1.25 !important;
       }
     }
 
@@ -1259,7 +1286,7 @@
       <div class="card" style="max-width: 900px; margin: 0 auto; padding: clamp(1.25rem, 2.5vw, 2.5rem);">
         
         <!-- Compact Header Title -->
-        <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div class="print-hide" style="text-align: center; margin-bottom: 1.5rem;">
           <div style="display: inline-flex; align-items: center; gap: 0.6rem; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 0.5rem 1.25rem; border-radius: 50px; border: 1.5px solid #bfdbfe;">
             <i class="fa-solid fa-user-plus" style="color: var(--primary); font-size: 1.1rem;"></i>
             <span style="font-weight: 800; font-size: 1rem; color: var(--primary-dark);">Visitor Registration</span>
