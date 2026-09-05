@@ -1175,10 +1175,13 @@
         </button>
       </nav>
 
-      <div class="user-info" id="userBadge" style="display: none;">
+      <div class="user-info" id="userBadge" style="display: none; align-items: center;">
         <i class="fa-solid fa-circle-user"></i>
         <span id="userDisplayName">User</span>
-        <button onclick="logout()" style="background:none; border:none; color:#f87171; cursor:pointer; margin-left:0.75rem; font-size:1.2rem;" title="Logout">
+        <button type="button" onclick="openChangePasswordModal()" style="background:none; border:none; color:#fbbf24; cursor:pointer; margin-left:0.75rem; font-size:1.1rem; padding: 0.2rem;" title="Change Password / මුරපදය වෙනස් කිරීම">
+          <i class="fa-solid fa-key"></i>
+        </button>
+        <button type="button" onclick="logout()" style="background:none; border:none; color:#f87171; cursor:pointer; margin-left:0.4rem; font-size:1.2rem; padding: 0.2rem;" title="Logout">
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>
       </div>
@@ -1830,6 +1833,71 @@
 
       </div>
 
+      <!-- SYSTEM USER ACCOUNTS & ROLE MANAGEMENT PORTAL -->
+      <div class="card" style="margin-bottom: 2.5rem; border: 3px solid #8b5cf6;">
+        <div class="card-title">
+          <i class="fa-solid fa-users-gear" style="color: #8b5cf6;"></i> System User Accounts & Role Management (පද්ධති ගිණුම් සහ භූමිකා පාලනය)
+        </div>
+        <p style="font-size: 1.05rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          Create new administrative accounts for the 4 core roles, manage user access, and reset passwords.
+        </p>
+
+        <!-- Create User Account Form -->
+        <div style="background: #f5f3ff; padding: 1.5rem; border-radius: 16px; border: 2px solid #ddd6fe; margin-bottom: 2rem;">
+          <h4 style="font-size: 1.25rem; color: #5b21b6; margin-bottom: 1rem;"><i class="fa-solid fa-user-plus"></i> Create New System User Account (නව ගිණුමක් සකස් කිරීම)</h4>
+          <form onsubmit="handleCreateUserSubmit(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label style="font-size: 0.95rem; font-weight: 700;">Username (පරිශීලක නමය) *</label>
+                <input type="text" id="newUsername" class="form-control" placeholder="e.g. security_gate2" required>
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.95rem; font-weight: 700;">Password (මුරපදය) *</label>
+                <input type="password" id="newUserPassword" class="form-control" placeholder="Password (min 4 chars)" required minlength="4">
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.95rem; font-weight: 700;">Account Role (ගිණුම් භූමිකාව) *</label>
+                <select id="newUserRole" class="form-control" required style="font-weight: 700;">
+                  <option value="SECURITY_OFFICER">🛡️ Gate Security Officer (ආරක්ෂක ගේට්ටු නිලධාරී)</option>
+                  <option value="CONFIDENTIAL_ADMIN">🔒 Confidential Branch Officer (රහස්‍ය අංශයේ නිලධාරී)</option>
+                  <option value="EVALUATION_ADMIN">📝 Evaluation Branch Officer (ඇගයීම් අංශයේ නිලධාරී)</option>
+                  <option value="HR_ADMIN">🪪 Establishment HR Officer (ආයතන අංශයේ නිලධාරී)</option>
+                  <option value="SUPER_ADMIN">👑 System Super Admin (සුපිරි පාලක ගිණුම)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.95rem; font-weight: 700;">Display Name (පෙන්වන නම) *</label>
+                <input type="text" id="newUserDisplayName" class="form-control" placeholder="e.g. Security Officer - Gate 02" required>
+              </div>
+              <div class="form-group">
+                <label style="font-size: 0.95rem; font-weight: 700;">Branch Name (අනුයුක්ත අංශය)</label>
+                <input type="text" id="newUserBranchName" class="form-control" placeholder="e.g. Main Gate Security">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 1.25rem; font-size: 1.1rem; padding: 0.85rem 1.75rem; background: #7c3aed; border-color: #6d28d9;">
+              <i class="fa-solid fa-user-check"></i> Create New Account (ගිණුම සාදන්න)
+            </button>
+          </form>
+        </div>
+
+        <!-- Registered Accounts Table -->
+        <h4 style="font-size: 1.2rem; color: #5b21b6; margin-bottom: 0.75rem;"><i class="fa-solid fa-address-book"></i> Active System User Accounts</h4>
+        <div class="table-container">
+          <table id="usersAdminTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Display Name & Branch</th>
+                <th>Role (භූමිකාව)</th>
+                <th>Actions (ක්‍රියාමාර්ග)</th>
+              </tr>
+            </thead>
+            <tbody><!-- Dynamic Rows --></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title" style="justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
           <span><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Real-Time Gate Activity Stream</span>
@@ -1933,6 +2001,33 @@
 
   </main>
 
+  <!-- Change Password Modal -->
+  <div id="changePasswordModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: white; width: 90%; max-width: 450px; border-radius: 16px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="margin: 0; font-size: 1.3rem; color: #1e293b;"><i class="fa-solid fa-key" style="color: var(--warning);"></i> Change My Password</h3>
+        <button type="button" onclick="closeChangePasswordModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">&times;</button>
+      </div>
+      <form onsubmit="handleSelfChangePasswordSubmit(event)">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="font-weight: 700; font-size: 0.95rem;">Current Password (පවතින මුරපදය) *</label>
+          <input type="password" id="selfCurrentPass" class="form-control" required style="padding: 0.75rem;">
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="font-weight: 700; font-size: 0.95rem;">New Password (නව මුරපදය) *</label>
+          <input type="password" id="selfNewPass" class="form-control" required style="padding: 0.75rem;" minlength="4">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label style="font-weight: 700; font-size: 0.95rem;">Confirm New Password (නව මුරපදය නැවත) *</label>
+          <input type="password" id="selfConfirmPass" class="form-control" required style="padding: 0.75rem;" minlength="4">
+        </div>
+        <button type="submit" class="btn btn-warning btn-block" style="padding: 0.9rem; font-weight: 800; font-size: 1.05rem;">
+          <i class="fa-solid fa-check-circle"></i> Update Password
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="footer">
     <p>© 2026 Department of Examinations, Sri Lanka</p>
@@ -2014,7 +2109,10 @@
         window.event.currentTarget.classList.add('active');
       }
 
-      if (tabId === 'admin-dashboard') loadAdminDashboard();
+      if (tabId === 'admin-dashboard') {
+        loadAdminDashboard();
+        loadAdminUsers();
+      }
       if (tabId === 'confidential-portal' || tabId === 'evaluation-portal' || tabId === 'hr-portal') loadBranchPasses();
       if (tabId === 'security-scan') {
         document.body.classList.add('security-mode-active');
@@ -3266,6 +3364,168 @@
       localStorage.removeItem('gatepass_user');
       updateUserUI();
       switchTab('visitor-register');
+    }
+
+    // User Account & Role Management JS Functions
+    async function loadAdminUsers() {
+      if (!token || !currentUser || currentUser.role !== 'SUPER_ADMIN') return;
+      try {
+        const res = await fetch('/api/admin/users', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!res.ok) return;
+
+        const body = document.querySelector('#usersAdminTable tbody');
+        if (body) {
+          body.innerHTML = data.users.map(u => {
+            let roleBadge = `<span class="badge" style="background:#64748b; color:#fff;">${u.role}</span>`;
+            if (u.role === 'SECURITY_OFFICER') roleBadge = `<span class="badge" style="background:#0284c7; color:#fff;">🛡️ Gate Security</span>`;
+            else if (u.role === 'CONFIDENTIAL_ADMIN') roleBadge = `<span class="badge" style="background:#7c3aed; color:#fff;">🔒 Confidential Admin</span>`;
+            else if (u.role === 'EVALUATION_ADMIN') roleBadge = `<span class="badge" style="background:#be185d; color:#fff;">📝 Evaluation Admin</span>`;
+            else if (u.role === 'HR_ADMIN') roleBadge = `<span class="badge" style="background:#059669; color:#fff;">🪪 Establishment HR</span>`;
+            else if (u.role === 'SUPER_ADMIN') roleBadge = `<span class="badge" style="background:#d97706; color:#fff;">👑 Super Admin</span>`;
+
+            const isSelf = currentUser && currentUser.id === u.id;
+            const deleteBtn = isSelf ? '' : `<button onclick="deleteUserAccount(${u.id}, '${u.username}')" class="btn btn-sm btn-danger" style="padding:0.35rem 0.65rem; font-size:0.82rem; margin-left:0.35rem;"><i class="fa-solid fa-trash"></i> Delete</button>`;
+
+            return `
+              <tr>
+                <td><strong>#${u.id}</strong></td>
+                <td><strong style="color:var(--primary);">${u.username}</strong></td>
+                <td>
+                  <div style="font-weight:700;">${u.display_name}</div>
+                  <small style="color:#64748b;">${u.branch_name}</small>
+                </td>
+                <td>${roleBadge}</td>
+                <td>
+                  <button onclick="resetUserPasswordPrompt(${u.id}, '${u.username}')" class="btn btn-sm" style="background:#f59e0b; color:#fff; padding:0.35rem 0.65rem; font-size:0.82rem;" title="Reset Password">
+                    <i class="fa-solid fa-key"></i> Reset Pass
+                  </button>
+                  ${deleteBtn}
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    }
+
+    async function handleCreateUserSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newUserPassword').value;
+      const role = document.getElementById('newUserRole').value;
+      const display_name = document.getElementById('newUserDisplayName').value.trim();
+      const branch_name = document.getElementById('newUserBranchName').value.trim();
+
+      try {
+        const res = await fetch('/api/admin/users/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ username, password, role, display_name, branch_name })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create user');
+
+        alert(`✓ Account "${username}" created successfully!`);
+        e.target.reset();
+        loadAdminUsers();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function resetUserPasswordPrompt(userId, username) {
+      const newPassword = prompt(`🔑 Enter new password for account "${username}":`);
+      if (!newPassword || !newPassword.trim()) return;
+
+      if (newPassword.trim().length < 4) {
+        alert('Password must be at least 4 characters long.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/users/reset-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ userId, newPassword: newPassword.trim() })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to reset password');
+
+        alert(`✓ Password for "${username}" reset successfully!`);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function deleteUserAccount(userId, username) {
+      if (!confirm(`Are you sure you want to delete user account "${username}"?`)) return;
+
+      try {
+        const res = await fetch('/api/admin/users/' + userId, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to delete user');
+
+        alert(`✓ User "${username}" deleted successfully.`);
+        loadAdminUsers();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    function openChangePasswordModal() {
+      document.getElementById('changePasswordModal').style.display = 'flex';
+    }
+
+    function closeChangePasswordModal() {
+      document.getElementById('changePasswordModal').style.display = 'none';
+      document.getElementById('selfCurrentPass').value = '';
+      document.getElementById('selfNewPass').value = '';
+      document.getElementById('selfConfirmPass').value = '';
+    }
+
+    async function handleSelfChangePasswordSubmit(e) {
+      e.preventDefault();
+      const currentPassword = document.getElementById('selfCurrentPass').value;
+      const newPassword = document.getElementById('selfNewPass').value;
+      const confirmPassword = document.getElementById('selfConfirmPass').value;
+
+      if (newPassword !== confirmPassword) {
+        alert('New password and confirm password do not match / නව මුරපද දෙක ගැලපෙන්නේ නැත!');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/user/change-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ currentPassword, newPassword })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to change password');
+
+        alert('✓ ' + data.message);
+        closeChangePasswordModal();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
     }
   </script>
 </body>

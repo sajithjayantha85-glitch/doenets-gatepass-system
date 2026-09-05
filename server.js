@@ -462,6 +462,110 @@ app.delete('/api/admin/purposes/:id', authenticateToken, (req, res) => {
   });
 });
 
+// 9.5 User Management & Password Reset APIs (Authenticated)
+app.get('/api/admin/users', authenticateToken, (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
+  }
+  db.all('SELECT id, username, role, branch_name, display_name, created_at FROM users ORDER BY id ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to load user accounts' });
+    res.json({ users: rows });
+  });
+});
+
+app.post('/api/admin/users/create', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
+  }
+
+  const { username, password, role, branch_name, display_name } = req.body;
+  if (!username || !password || !role || !display_name) {
+    return res.status(400).json({ error: 'Username, password, role, and display name are required' });
+  }
+
+  const cleanUsername = username.trim().toLowerCase();
+
+  db.get('SELECT id FROM users WHERE LOWER(username) = ?', [cleanUsername], async (err, existing) => {
+    if (existing) {
+      return res.status(400).json({ error: `Username "${cleanUsername}" is already in use.` });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password.trim(), salt);
+    const branch = branch_name ? branch_name.trim() : 'Department Branch';
+
+    db.run(
+      `INSERT INTO users (username, password_hash, role, branch_name, display_name) VALUES (?, ?, ?, ?, ?)`,
+      [cleanUsername, password_hash, role, branch, display_name.trim()],
+      function(err) {
+        if (err) return res.status(500).json({ error: 'Failed to create user account' });
+        res.json({ message: 'User account created successfully', userId: this.lastID });
+      }
+    );
+  });
+});
+
+app.post('/api/admin/users/reset-password', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
+  }
+
+  const { userId, newPassword } = req.body;
+  if (!userId || !newPassword || newPassword.trim().length < 4) {
+    return res.status(400).json({ error: 'Valid user ID and new password (at least 4 characters) are required' });
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const password_hash = await bcrypt.hash(newPassword.trim(), salt);
+
+  db.run('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash, userId], function(err) {
+    if (err) return res.status(500).json({ error: 'Failed to reset password' });
+    if (this.changes === 0) return res.status(404).json({ error: 'User account not found' });
+    res.json({ message: 'Password reset successfully' });
+  });
+});
+
+app.delete('/api/admin/users/:id', authenticateToken, (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
+  }
+
+  const targetId = parseInt(req.params.id, 10);
+  if (targetId === req.user.id) {
+    return res.status(400).json({ error: 'Cannot delete your own active Super Admin account' });
+  }
+
+  db.run('DELETE FROM users WHERE id = ?', [targetId], function(err) {
+    if (err) return res.status(500).json({ error: 'Failed to delete user account' });
+    if (this.changes === 0) return res.status(404).json({ error: 'User account not found' });
+    res.json({ message: 'User account deleted successfully' });
+  });
+});
+
+app.post('/api/user/change-password', authenticateToken, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword || newPassword.trim().length < 4) {
+    return res.status(400).json({ error: 'Current password and new password (at least 4 chars) are required' });
+  }
+
+  db.get('SELECT * FROM users WHERE id = ?', [req.user.id], async (err, user) => {
+    if (err || !user) return res.status(404).json({ error: 'User account not found' });
+
+    const isValid = await bcrypt.compare(currentPassword.trim(), user.password_hash);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Current password is incorrect / පවතින මුරපදය වැරදියි!' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const new_hash = await bcrypt.hash(newPassword.trim(), salt);
+
+    db.run('UPDATE users SET password_hash = ? WHERE id = ?', [new_hash, req.user.id], function(err) {
+      if (err) return res.status(500).json({ error: 'Failed to change password' });
+      res.json({ message: 'Password updated successfully / මුරපදය සාර්ථකව වෙනස් කරන ලදී' });
+    });
+  });
+});
+
 // 10. Admin Live Dashboard Statistics (Authenticated)
 app.get('/api/admin/dashboard', authenticateToken, (req, res) => {
   const stats = {
