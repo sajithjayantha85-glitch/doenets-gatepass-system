@@ -1410,7 +1410,7 @@
           </div>
 
           <!-- STEP 3: Visit Purpose Selection Panel -->
-          <div class="step-section" id="step3Anchor">
+          <div class="step-section" id="step3Anchor" style="display: none;">
             <div class="step-section-header">
               <div class="step-section-num">3</div>
               <span class="step-section-title">Purpose of Visit</span>
@@ -2369,19 +2369,15 @@
 
     function renderPurposeChoiceGrid(branchId) {
       const grid = document.getElementById('purposeChoiceGrid');
+      const step3Anchor = document.getElementById('step3Anchor');
       
       if (!branchId) {
-        grid.innerHTML = `
-          <div style="grid-column: 1 / -1; background: #eff6ff; border: 2px dashed #93c5fd; padding: 1.75rem; border-radius: 16px; text-align: center; color: #1e40af;">
-            <p style="font-weight: 800; font-size: 1.2rem; margin-bottom: 0.4rem;">
-              <i class="fa-solid fa-hand-point-up" style="color: #2563eb; font-size: 1.5rem;"></i> Please click on a Department Branch Box above first
-            </p>
-            <p style="font-size: 1.05rem;" class="si-sub">කරුණාකර පළමුව 2 වෙනි පියවරෙන් ඔබ හමුවීමට යන **අංශයේ Box එක මත Click කරන්න**.</p>
-            <p style="font-size: 1rem; color: #047857; font-weight: 700;" class="ta-sub">தயவுசெய்து மேலே உள்ள பிரிவைக் கிளிக் செய்து தேர்வு செய்யவும்.</p>
-          </div>
-        `;
+        grid.innerHTML = '';
+        if (step3Anchor) step3Anchor.style.display = 'none';
         return;
       }
+
+      if (step3Anchor) step3Anchor.style.display = 'block';
 
       const filteredPurposes = loadedPurposes.filter(p => p.branch_id === branchId || p.branch_id === 0);
 
