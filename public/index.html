@@ -657,6 +657,12 @@
       border: 2.5px solid #34d399;
     }
 
+    .special-badge.staff-badge {
+      background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+      color: #ecfdf5;
+      border: 2.5px solid #34d399;
+    }
+
     /* Dashboard Metrics Cards */
     .metrics-grid {
       display: grid;
@@ -2450,6 +2456,13 @@
           badgeBanner.style.display = 'flex';
         }
         if (printSubTitle) printSubTitle.innerText = 'EVALUATION SPECIAL AUTHORIZED PASS SLIP';
+      } else if (pass.category === 'STAFF') {
+        if (badgeBanner) {
+          badgeBanner.className = 'special-badge staff-badge';
+          badgeBanner.innerHTML = `<i class="fa-solid fa-id-card"></i> 🪪 INTERNAL STAFF OFFICIAL AUTHORIZED PASS`;
+          badgeBanner.style.display = 'flex';
+        }
+        if (printSubTitle) printSubTitle.innerText = 'INTERNAL STAFF OFFICIAL AUTHORIZED PASS SLIP';
       } else {
         if (badgeBanner) badgeBanner.style.display = 'none';
         if (printSubTitle) printSubTitle.innerText = 'VISITOR GATE PASS SLIP';
@@ -2734,6 +2747,10 @@
           } else if (data.pass.category === 'EVALUATION') {
             secSpecialBanner.className = 'special-badge evaluation-badge';
             secSpecialBanner.innerHTML = `<i class="fa-solid fa-file-pen"></i> 📝 EVALUATION SPECIAL AUTHORIZED PASS`;
+            secSpecialBanner.style.display = 'flex';
+          } else if (data.pass.category === 'STAFF') {
+            secSpecialBanner.className = 'special-badge staff-badge';
+            secSpecialBanner.innerHTML = `<i class="fa-solid fa-id-card"></i> 🪪 INTERNAL STAFF OFFICIAL AUTHORIZED PASS`;
             secSpecialBanner.style.display = 'flex';
           } else {
             secSpecialBanner.style.display = 'none';
