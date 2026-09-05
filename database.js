@@ -194,6 +194,20 @@ function initDatabase() {
       )
     `);
 
+    // 6. Administrative Security Audit Logs Table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS admin_audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        admin_username TEXT NOT NULL,
+        admin_role TEXT NOT NULL,
+        action_name TEXT NOT NULL,
+        target_user TEXT,
+        details TEXT,
+        ip_address TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // 30-Day Public Visitor Pass Auto-Purge Cleanup (Keeps Database Light)
     db.run("DELETE FROM passes WHERE category = 'VISITOR' AND created_at < datetime('now', '-30 days')", [], function(err) {
       if (!err && this && this.changes > 0) {

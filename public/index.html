@@ -1929,6 +1929,35 @@
           </table>
         </div>
       </div>
+
+      <!-- ADMINISTRATIVE SECURITY AUDIT TRAIL CARD -->
+      <div class="card" style="margin-top: 2.5rem; border: 3px solid #0284c7;">
+        <div class="card-title" style="justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <span><i class="fa-solid fa-shield-halved" style="color: #0284c7;"></i> System Security & Administrative Audit Trail (සයිබර් ආරක්ෂක ක්‍රියාකාරකම් සටහන්)</span>
+          <button class="btn btn-primary" onclick="loadAuditLogs()" style="padding: 0.55rem 1.1rem; font-size: 0.95rem; background: #0284c7; border-color: #0369a1;">
+            <i class="fa-solid fa-rotate"></i> Refresh Audit Trail
+          </button>
+        </div>
+        <p style="font-size: 1rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Security audit logs of all administrative actions, account changes, password resets, and backup exports.
+        </p>
+
+        <div class="table-container">
+          <table id="auditLogsTable">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Admin Username</th>
+                <th>Role (භූමිකාව)</th>
+                <th>Action (සිදු කළ ක්‍රියාව)</th>
+                <th>Target User</th>
+                <th>Details & IP Address</th>
+              </tr>
+            </thead>
+            <tbody><!-- Dynamic Audit Rows --></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- TAB 7: LOGIN MODAL -->
@@ -2112,6 +2141,7 @@
       if (tabId === 'admin-dashboard') {
         loadAdminDashboard();
         loadAdminUsers();
+        loadAuditLogs();
       }
       if (tabId === 'confidential-portal' || tabId === 'evaluation-portal' || tabId === 'hr-portal') loadBranchPasses();
       if (tabId === 'security-scan') {
@@ -3525,6 +3555,45 @@
         closeChangePasswordModal();
       } catch (err) {
         alert('Error: ' + err.message);
+      }
+    }
+
+    async function loadAuditLogs() {
+      if (!token || !currentUser || currentUser.role !== 'SUPER_ADMIN') return;
+      try {
+        const res = await fetch('/api/admin/audit-logs', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!res.ok) return;
+
+        const body = document.querySelector('#auditLogsTable tbody');
+        if (body) {
+          body.innerHTML = data.audit_logs.map(l => {
+            let actionBadge = `<span class="badge" style="background:#64748b; color:#fff;">${l.action_name}</span>`;
+            if (l.action_name === 'CREATE_USER') actionBadge = `<span class="badge" style="background:#059669; color:#fff;">➕ CREATE_USER</span>`;
+            else if (l.action_name === 'RESET_PASSWORD') actionBadge = `<span class="badge" style="background:#d97706; color:#fff;">🔑 RESET_PASSWORD</span>`;
+            else if (l.action_name === 'DELETE_USER') actionBadge = `<span class="badge" style="background:#dc2626; color:#fff;">🗑️ DELETE_USER</span>`;
+            else if (l.action_name === 'EXPORT_DB_BACKUP') actionBadge = `<span class="badge" style="background:#2563eb; color:#fff;">📥 EXPORT_BACKUP</span>`;
+            else if (l.action_name === 'CHANGE_PASSWORD_SELF') actionBadge = `<span class="badge" style="background:#7c3aed; color:#fff;">🔑 CHANGE_PASS_SELF</span>`;
+
+            return `
+              <tr>
+                <td>${new Date(l.timestamp).toLocaleString()}</td>
+                <td><strong style="color:var(--primary);">${l.admin_username}</strong></td>
+                <td><small style="font-weight:700;">${l.admin_role}</small></td>
+                <td>${actionBadge}</td>
+                <td><strong>${l.target_user || '-'}</strong></td>
+                <td>
+                  <div>${l.details}</div>
+                  <small style="color:#64748b;">IP: ${l.ip_address || '127.0.0.1'}</small>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        console.log(e);
       }
     }
   </script>

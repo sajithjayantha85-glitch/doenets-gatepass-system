@@ -10,13 +10,17 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'doenets_gatepass_secret_key_2026';
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Initialize SQLite DB
-initDatabase();
+// HTTP Security Headers Middleware (OWASP Security Hardening)
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self';");
+  next();
+});
 
 // Utility Functions
 function generatePassCode(category) {
@@ -29,6 +33,17 @@ function generatePassCode(category) {
 
   const randomNum = Math.floor(100000 + Math.random() * 900000);
   return `${prefix}-${randomNum}`;
+}
+
+function logAdminAuditAction(username, role, actionName, targetUser, details, ip) {
+  const cleanIp = ip ? String(ip).replace('::ffff:', '') : '127.0.0.1';
+  db.run(
+    `INSERT INTO admin_audit_logs (admin_username, admin_role, action_name, target_user, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)`,
+    [username || 'SYSTEM', role || 'UNKNOWN', actionName, targetUser || '-', details || '-', cleanIp],
+    (err) => {
+      if (err) console.error('Audit Log Error:', err.message);
+    }
+  );
 }
 
 // Authentication Middleware
@@ -428,6 +443,7 @@ app.post('/api/admin/branches', authenticateToken, (req, res) => {
 
   db.run('INSERT INTO branches (name_en, name_si, name_ta, icon) VALUES (?, ?, ?, ?)', [name_en, name_si, name_ta, icon || 'fa-building'], function(err) {
     if (err) return res.status(500).json({ error: 'Error adding branch' });
+    logAdminAuditAction(req.user.username, req.user.role, 'ADD_BRANCH', name_en, `Branch Card Added: ${name_si}`, req.ip);
     res.json({ message: 'Branch added successfully', id: this.lastID });
   });
 });
@@ -436,6 +452,7 @@ app.delete('/api/admin/branches/:id', authenticateToken, (req, res) => {
   if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Super Admin access required' });
   db.run('DELETE FROM branches WHERE id = ?', [req.params.id], function(err) {
     if (err) return res.status(500).json({ error: 'Error deleting branch' });
+    logAdminAuditAction(req.user.username, req.user.role, 'DELETE_BRANCH', String(req.params.id), 'Department branch card deleted', req.ip);
     res.json({ message: 'Branch deleted successfully' });
   });
 });
@@ -450,6 +467,7 @@ app.post('/api/admin/purposes', authenticateToken, (req, res) => {
 
   db.run('INSERT INTO visit_purposes (branch_id, purpose_en, purpose_si, purpose_ta, icon) VALUES (?, ?, ?, ?, ?)', [branch_id || 0, purpose_en, purpose_si, purpose_ta, icon || 'fa-file-lines'], function(err) {
     if (err) return res.status(500).json({ error: 'Error adding purpose option' });
+    logAdminAuditAction(req.user.username, req.user.role, 'ADD_PURPOSE', purpose_en, `Purpose Card Added for Branch #${branch_id}`, req.ip);
     res.json({ message: 'Purpose option added successfully', id: this.lastID });
   });
 });
@@ -458,6 +476,7 @@ app.delete('/api/admin/purposes/:id', authenticateToken, (req, res) => {
   if (req.user.role !== 'SUPER_ADMIN') return res.status(403).json({ error: 'Super Admin access required' });
   db.run('DELETE FROM visit_purposes WHERE id = ?', [req.params.id], function(err) {
     if (err) return res.status(500).json({ error: 'Error deleting purpose option' });
+    logAdminAuditAction(req.user.username, req.user.role, 'DELETE_PURPOSE', String(req.params.id), 'Visit purpose choice card deleted', req.ip);
     res.json({ message: 'Purpose option deleted successfully' });
   });
 });
@@ -499,6 +518,7 @@ app.post('/api/admin/users/create', authenticateToken, async (req, res) => {
       [cleanUsername, password_hash, role, branch, display_name.trim()],
       function(err) {
         if (err) return res.status(500).json({ error: 'Failed to create user account' });
+        logAdminAuditAction(req.user.username, req.user.role, 'CREATE_USER', cleanUsername, `Role: ${role}, Display: ${display_name.trim()}`, req.ip);
         res.json({ message: 'User account created successfully', userId: this.lastID });
       }
     );
@@ -515,13 +535,17 @@ app.post('/api/admin/users/reset-password', authenticateToken, async (req, res) 
     return res.status(400).json({ error: 'Valid user ID and new password (at least 4 characters) are required' });
   }
 
-  const salt = await bcrypt.genSalt(10);
-  const password_hash = await bcrypt.hash(newPassword.trim(), salt);
+  db.get('SELECT username FROM users WHERE id = ?', [userId], async (uErr, uRow) => {
+    const targetUsername = uRow ? uRow.username : String(userId);
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(newPassword.trim(), salt);
 
-  db.run('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash, userId], function(err) {
-    if (err) return res.status(500).json({ error: 'Failed to reset password' });
-    if (this.changes === 0) return res.status(404).json({ error: 'User account not found' });
-    res.json({ message: 'Password reset successfully' });
+    db.run('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash, userId], function(err) {
+      if (err) return res.status(500).json({ error: 'Failed to reset password' });
+      if (this.changes === 0) return res.status(404).json({ error: 'User account not found' });
+      logAdminAuditAction(req.user.username, req.user.role, 'RESET_PASSWORD', targetUsername, 'Password reset by admin', req.ip);
+      res.json({ message: 'Password reset successfully' });
+    });
   });
 });
 
@@ -535,10 +559,14 @@ app.delete('/api/admin/users/:id', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Cannot delete your own active Super Admin account' });
   }
 
-  db.run('DELETE FROM users WHERE id = ?', [targetId], function(err) {
-    if (err) return res.status(500).json({ error: 'Failed to delete user account' });
-    if (this.changes === 0) return res.status(404).json({ error: 'User account not found' });
-    res.json({ message: 'User account deleted successfully' });
+  db.get('SELECT username FROM users WHERE id = ?', [targetId], (uErr, uRow) => {
+    const targetUsername = uRow ? uRow.username : String(targetId);
+    db.run('DELETE FROM users WHERE id = ?', [targetId], function(err) {
+      if (err) return res.status(500).json({ error: 'Failed to delete user account' });
+      if (this.changes === 0) return res.status(404).json({ error: 'User account not found' });
+      logAdminAuditAction(req.user.username, req.user.role, 'DELETE_USER', targetUsername, 'User account deleted', req.ip);
+      res.json({ message: 'User account deleted successfully' });
+    });
   });
 });
 
@@ -561,8 +589,20 @@ app.post('/api/user/change-password', authenticateToken, async (req, res) => {
 
     db.run('UPDATE users SET password_hash = ? WHERE id = ?', [new_hash, req.user.id], function(err) {
       if (err) return res.status(500).json({ error: 'Failed to change password' });
+      logAdminAuditAction(user.username, user.role, 'CHANGE_PASSWORD_SELF', user.username, 'Changed own password', req.ip);
       res.json({ message: 'Password updated successfully / මුරපදය සාර්ථකව වෙනස් කරන ලදී' });
     });
+  });
+});
+
+// 9.8 Administrative Security Audit Logs API (Authenticated Super Admin)
+app.get('/api/admin/audit-logs', authenticateToken, (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin access required for security audit logs' });
+  }
+  db.all('SELECT * FROM admin_audit_logs ORDER BY id DESC LIMIT 50', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch audit logs' });
+    res.json({ audit_logs: rows || [] });
   });
 });
 
@@ -620,6 +660,7 @@ app.get('/api/admin/backup/export', authenticateToken, (req, res) => {
             visit_purposes: purposes || []
           };
 
+          logAdminAuditAction(req.user.username, req.user.role, 'EXPORT_DB_BACKUP', '-', 'Full JSON Database Backup Downloaded', req.ip);
           const dateStr = new Date().toISOString().split('T')[0];
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Content-Disposition', `attachment; filename=DoENets_GatePass_Backup_${dateStr}.json`);
