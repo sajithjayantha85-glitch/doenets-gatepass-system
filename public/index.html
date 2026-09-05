@@ -1395,14 +1395,6 @@
               <!-- Dynamically filtered depending on selected branch -->
             </div>
 
-            <!-- Selected Purpose Confirmation Banner -->
-            <div id="selectedPurposeSummaryBanner" class="selection-summary-banner" style="display: none; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #3b82f6; color: #1e40af;">
-              <div>
-                <i class="fa-solid fa-circle-check"></i> Selected: <span id="selectedPurposeLabel" style="font-weight: 800; font-size: 0.95rem; color: #1d4ed8;">-</span>
-              </div>
-              <span style="font-size: 0.78rem; opacity: 0.75;">(Tap to change)</span>
-            </div>
-
             <!-- Custom / Other Purpose Input Box (Shown when 'Other' selected) -->
             <div id="customPurposeBox" style="display: none; margin-top: 0.75rem;">
               <input type="text" id="vCustomPurpose" class="form-control" placeholder="Specify purpose / වෙනත් කරුණ / வேறு நோக்கம்">
@@ -2321,8 +2313,6 @@
       if (step3) step3.classList.add('active');
 
       document.getElementById('vPurpose').value = '';
-      const purposeSummary = document.getElementById('selectedPurposeSummaryBanner');
-      if (purposeSummary) purposeSummary.style.display = 'none';
       document.getElementById('customPurposeBox').style.display = 'none';
 
       renderPurposeChoiceGrid(branchId);
@@ -2396,21 +2386,14 @@
       cardElement.classList.add('selected');
 
       const customBox = document.getElementById('customPurposeBox');
-      const purposeSummary = document.getElementById('selectedPurposeSummaryBanner');
-      const label = document.getElementById('selectedPurposeLabel');
 
       if (purposeValue === 'OTHER') {
         customBox.style.display = 'block';
         document.getElementById('vPurpose').value = '';
         document.getElementById('vCustomPurpose').focus();
-        if (purposeSummary) purposeSummary.style.display = 'none';
       } else {
         customBox.style.display = 'none';
         document.getElementById('vPurpose').value = purposeValue;
-        if (purposeSummary && label) {
-          label.innerText = purposeValue;
-          purposeSummary.style.display = 'flex';
-        }
       }
 
       // Update Stepper Progress
@@ -2830,9 +2813,6 @@
 
       const sBranchBanner = document.getElementById('selectedBranchSummaryBanner');
       if (sBranchBanner) sBranchBanner.style.display = 'none';
-
-      const sPurposeBanner = document.getElementById('selectedPurposeSummaryBanner');
-      if (sPurposeBanner) sPurposeBanner.style.display = 'none';
 
       // Reset Stepper
       ['step1Indicator', 'step2Indicator', 'step3Indicator', 'step4Indicator'].forEach((id, idx) => {
