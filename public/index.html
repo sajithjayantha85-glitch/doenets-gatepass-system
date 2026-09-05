@@ -3468,6 +3468,12 @@
     }
 
     function logout() {
+      if (token) {
+        fetch('/api/logout', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        }).catch(() => {});
+      }
       token = '';
       currentUser = null;
       localStorage.removeItem('gatepass_token');
@@ -3656,6 +3662,9 @@
             else if (l.action_name === 'DELETE_USER') actionBadge = `<span class="badge" style="background:#dc2626; color:#fff;">🗑️ DELETE_USER</span>`;
             else if (l.action_name === 'EXPORT_DB_BACKUP') actionBadge = `<span class="badge" style="background:#2563eb; color:#fff;">📥 EXPORT_BACKUP</span>`;
             else if (l.action_name === 'CHANGE_PASSWORD_SELF') actionBadge = `<span class="badge" style="background:#7c3aed; color:#fff;">🔑 CHANGE_PASS_SELF</span>`;
+            else if (l.action_name === 'LOGIN_SUCCESS') actionBadge = `<span class="badge" style="background:#10b981; color:#fff;">🔓 LOGIN_SUCCESS</span>`;
+            else if (l.action_name === 'LOGIN_FAILED') actionBadge = `<span class="badge" style="background:#ef4444; color:#fff;">⚠️ LOGIN_FAILED</span>`;
+            else if (l.action_name === 'LOGOUT') actionBadge = `<span class="badge" style="background:#6b7280; color:#fff;">🚪 LOGOUT</span>`;
 
             return `
               <tr>

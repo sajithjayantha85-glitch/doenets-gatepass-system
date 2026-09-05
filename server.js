@@ -44,7 +44,8 @@ function generatePassCode(category) {
 }
 
 function logAdminAuditAction(username, role, actionName, targetUser, details, ip) {
-  const cleanIp = ip ? String(ip).replace('::ffff:', '') : '127.0.0.1';
+  let cleanIp = ip ? String(ip).replace('::ffff:', '') : '127.0.0.1';
+  if (cleanIp === '::1') cleanIp = '127.0.0.1';
   db.run(
     `INSERT INTO admin_audit_logs (admin_username, admin_role, action_name, target_user, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)`,
     [username || 'SYSTEM', role || 'UNKNOWN', actionName, targetUser || '-', details || '-', cleanIp],
@@ -104,13 +105,17 @@ app.post('/api/login', (req, res) => {
 
   db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanUsername], async (err, user) => {
     if (err || !user) {
+      logAdminAuditAction(cleanUsername, 'GUEST/UNKNOWN', 'LOGIN_FAILED', cleanUsername, 'Invalid credentials - User not found', req.ip);
       return res.status(401).json({ error: 'Invalid credentials. Please check your username and password.\nපරිශීලක නමය හෝ මුරපදය වැරදියි!' });
     }
 
     const validPassword = await bcrypt.compare(cleanPassword, user.password_hash);
     if (!validPassword) {
+      logAdminAuditAction(user.username, user.role, 'LOGIN_FAILED', user.username, 'Invalid credentials - Incorrect password attempt', req.ip);
       return res.status(401).json({ error: 'Invalid credentials. Please check your username and password.\nපරිශීලක නමය හෝ මුරපදය වැරදියි!' });
     }
+
+    logAdminAuditAction(user.username, user.role, 'LOGIN_SUCCESS', user.username, `Successful session started for ${user.display_name || user.username}`, req.ip);
 
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role, branch_name: user.branch_name, display_name: user.display_name },
@@ -130,6 +135,12 @@ app.post('/api/login', (req, res) => {
       }
     });
   });
+});
+
+// 1.1 User Logout (Audit Trail)
+app.post('/api/logout', authenticateToken, (req, res) => {
+  logAdminAuditAction(req.user.username, req.user.role, 'LOGOUT', req.user.username, `User logged out of session`, req.ip);
+  res.json({ message: 'Logged out successfully' });
 });
 
 // 2. Public Options API: Fetch Dynamic Branches and Branch-Linked Visit Purposes
