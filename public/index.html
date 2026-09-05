@@ -1459,6 +1459,7 @@
             <p style="margin-bottom: 0.4rem;"><strong>Pass Code:</strong> <span id="passCodeDisplay" style="color: var(--primary); font-weight: 800;">DOENETS-VIS-0000</span> <button onclick="copyPassCode()" class="btn print-hide" style="padding: 0.2rem 0.6rem; font-size: 0.85rem; margin-left: 0.5rem; background: #e2e8f0; color: #1e293b;"><i class="fa-solid fa-copy"></i> Copy</button></p>
             <p id="passBranchRow" style="margin-bottom: 0.4rem;"><strong>Visiting Branch:</strong> <span id="passBranchDisplay" style="font-weight: 700;">-</span></p>
             <p style="margin-bottom: 0.4rem;"><strong>Purpose:</strong> <span id="passPurposeDisplay" style="font-weight: 700;">-</span></p>
+            <p id="passRfidRow" style="margin-bottom: 0.4rem; display: none;"><strong>RFID Smart Card:</strong> <span id="passRfidDisplay" style="font-weight: 800; color: #4338ca;">-</span></p>
             <p id="passVehicleRow" style="margin-bottom: 0.4rem; display: none;"><strong id="passVehicleLabel">Vehicle No:</strong> <span id="passVehicleDisplay" style="font-weight: 800; color: #d97706;">-</span></p>
             <p id="passValidRow" style="margin-bottom: 0.4rem; display: none;"><strong id="passValidLabel">Validity Period:</strong> <span id="passValidDisplay" style="font-weight: 800; color: #2563eb;">-</span></p>
             <p style="margin-bottom: 0;"><strong>Issued Timestamp:</strong> <span id="passTimeDisplay">-</span></p>
@@ -1527,7 +1528,7 @@
           </div>
 
           <div class="sec-search-group">
-            <input type="text" id="usbInput" class="form-control" style="font-size: 1.2rem; font-weight: 800; padding: 0.85rem 1.1rem; border: 3px solid var(--primary-light);" placeholder="Scan QR code or type code here..." oninput="handleUsbInput(event)" onkeypress="handleUsbKey(event)" autofocus>
+            <input type="text" id="usbInput" class="form-control" style="font-size: 1.2rem; font-weight: 800; padding: 0.85rem 1.1rem; border: 3px solid var(--primary-light);" placeholder="Scan QR Code, Tap RFID Card, or Enter Pass Code..." oninput="handleUsbInput(event)" onkeypress="handleUsbKey(event)" autofocus>
             <button class="btn btn-primary" style="padding: 0.85rem 1.5rem; font-size: 1.1rem;" onclick="lookupPassCode(document.getElementById('usbInput').value)">
               <i class="fa-solid fa-magnifying-glass"></i> Search
             </button>
@@ -1553,8 +1554,8 @@
         <!-- Initial Placeholder State when no pass is scanned -->
         <div id="secScanPlaceholder" class="sec-placeholder-box">
           <i class="fa-solid fa-qrcode" style="font-size: 2.75rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
-          <h3 style="font-size: 1.3rem; color: #1e293b; margin-bottom: 0.25rem; font-weight: 800;">Ready to Scan Gate Pass</h3>
-          <p style="color: #64748b; font-size: 0.95rem; margin: 0;">Scan QR code using hardware scanner, or type pass code in search bar above.</p>
+          <h3 style="font-size: 1.3rem; color: #1e293b; margin-bottom: 0.25rem; font-weight: 800;">Ready to Scan Gate Pass / RFID Card</h3>
+          <p style="color: #64748b; font-size: 0.95rem; margin: 0;">Scan QR code with scanner/camera, tap RFID Card on reader, or enter pass code above.</p>
         </div>
 
         <!-- Scan Result Card -->
@@ -1580,6 +1581,7 @@
             <div>
               <p id="secBranchRow" style="margin-bottom: 0.4rem;"><strong>Visiting Branch:</strong> <span id="secBranch" style="font-weight: 800;">-</span></p>
               <p style="margin-bottom: 0.4rem;"><strong>Purpose / Duty:</strong> <span id="secPurpose">-</span></p>
+              <p id="secRfidRow" style="margin-bottom: 0.4rem; display: none;"><strong>RFID Smart Card:</strong> <span id="secRfid" style="font-weight: 800; color: #4338ca;">-</span></p>
               <p style="margin-bottom: 0;"><strong id="secVehicleLabel">Vehicle Number:</strong> <span id="secVehicle" style="font-weight: 900; color: #d97706;">None</span></p>
             </div>
             <div>
@@ -1754,6 +1756,11 @@
               <label>Vehicle Number (වාහන අංකය)</label>
               <input type="text" id="stfVehicle" class="form-control" placeholder="e.g. WP CAR-9999">
             </div>
+            <div class="form-group">
+              <label><i class="fa-solid fa-wifi" style="color: #4f46e5;"></i> RFID Smart Card UID (Optional / කාඩ්පත Tap කරන්න)</label>
+              <input type="text" id="stfRfid" class="form-control" placeholder="Tap RFID Card on reader (e.g. 0008432190)">
+              <small style="color: var(--text-muted); font-size: 0.85rem;">Reader එකට කාඩ්පත තැබූ විට Card UID අංකය මෙහි සටහන් වේ.</small>
+            </div>
           </div>
           <button type="submit" class="btn btn-success" style="margin-top: 1.75rem; font-size: 1.2rem; padding: 1.1rem 1.75rem;">
             <i class="fa-solid fa-user-shield"></i> Issue Permanent Staff Pass
@@ -1768,6 +1775,7 @@
                 <th>Staff Pass Code</th>
                 <th>Employee Name</th>
                 <th>NIC No</th>
+                <th>RFID Card</th>
                 <th>Vehicle No</th>
                 <th>Designation & Branch</th>
                 <th>Status</th>
@@ -2161,6 +2169,38 @@
         <button type="submit" class="btn btn-warning btn-block" style="padding: 0.9rem; font-weight: 800; font-size: 1.05rem;">
           <i class="fa-solid fa-check-circle"></i> Update Password
         </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Link / Enroll RFID Card Modal for Internal Staff -->
+  <div id="linkRfidModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: white; width: 90%; max-width: 480px; border-radius: 16px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="margin: 0; font-size: 1.3rem; color: #1e293b;"><i class="fa-solid fa-wifi" style="color: #4f46e5;"></i> Link Staff RFID Card</h3>
+        <button type="button" onclick="closeLinkRfidModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">&times;</button>
+      </div>
+      <form onsubmit="handleLinkRfidSubmit(event)">
+        <input type="hidden" id="linkRfidPassId">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem; margin-bottom: 1.2rem;">
+          <p style="margin: 0 0 0.3rem 0; font-size: 0.95rem;"><strong>Employee:</strong> <span id="linkRfidStaffName" style="color: #1e3a8a; font-weight: 700;">-</span></p>
+          <p style="margin: 0; font-size: 0.9rem; color: #64748b;"><strong>Pass Code:</strong> <span id="linkRfidPassCode">-</span></p>
+        </div>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label style="font-weight: 700; font-size: 0.95rem;">RFID Smart Card UID (කාඩ්පත් අංකය) *</label>
+          <input type="text" id="linkRfidUid" class="form-control" placeholder="Tap RFID Card on USB Reader or enter UID" style="padding: 0.85rem; font-size: 1.1rem; font-weight: 700; border: 2px solid #4f46e5;" autofocus>
+          <small style="color: #64748b; font-size: 0.85rem; margin-top: 0.35rem; display: block;">
+            <i class="fa-solid fa-circle-info"></i> USB RFID Reader එකට කාඩ්පත තබන්න (Tap Card), හෝ හිස් කර (Blank) Save කිරීමෙන් කාඩ්පත ඉවත් කරන්න.
+          </small>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" class="btn" onclick="clearRfidCardInput()" style="background: #f1f5f9; color: #475569; font-weight: 700; padding: 0.85rem 1.1rem;">
+            <i class="fa-solid fa-eraser"></i> Clear
+          </button>
+          <button type="submit" class="btn btn-primary" style="flex: 1; padding: 0.85rem; font-weight: 800; font-size: 1.05rem; background: #4f46e5;">
+            <i class="fa-solid fa-save"></i> Save RFID Assignment
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -2723,6 +2763,17 @@
         document.getElementById('passBranchDisplay').innerText = pass.branch_name;
       }
 
+      // RFID Card Display (If assigned to Staff)
+      const passRfidRow = document.getElementById('passRfidRow');
+      if (pass.rfid_card_uid) {
+        if (passRfidRow) {
+          document.getElementById('passRfidDisplay').innerHTML = `<i class="fa-solid fa-wifi"></i> ${pass.rfid_card_uid}`;
+          passRfidRow.style.display = 'block';
+        }
+      } else {
+        if (passRfidRow) passRfidRow.style.display = 'none';
+      }
+
       // 3. Daily Visitor No & Issued Date Rows (Only for Visitor Self-Registration)
       const dailyNoRow = document.getElementById('passDailyNoRow');
       const dateRow = document.getElementById('passDateRow');
@@ -3066,7 +3117,8 @@
             secSpecialBanner.style.display = 'flex';
           } else if (data.pass.category === 'STAFF') {
             secSpecialBanner.className = 'special-badge staff-badge';
-            secSpecialBanner.innerHTML = `<i class="fa-solid fa-id-card"></i> 🪪 INTERNAL STAFF OFFICIAL AUTHORIZED PASS`;
+            const rfidTag = data.pass.rfid_card_uid ? ` <span style="font-size:0.92rem; margin-left:0.5rem; background:rgba(255,255,255,0.25); padding:2px 8px; border-radius:6px;"><i class="fa-solid fa-wifi"></i> RFID: ${data.pass.rfid_card_uid}</span>` : '';
+            secSpecialBanner.innerHTML = `<i class="fa-solid fa-id-card"></i> 🪪 INTERNAL STAFF OFFICIAL AUTHORIZED PASS${rfidTag}`;
             secSpecialBanner.style.display = 'flex';
           } else {
             secSpecialBanner.style.display = 'none';
@@ -3079,6 +3131,17 @@
         document.getElementById('secPassCode').innerText = 'Code: ' + data.pass.pass_code;
         document.getElementById('secPurpose').innerText = data.pass.purpose;
         document.getElementById('secZone').innerText = data.pass.access_zones || 'GENERAL';
+
+        // Display RFID row if present
+        const secRfidRow = document.getElementById('secRfidRow');
+        if (data.pass.rfid_card_uid) {
+          if (secRfidRow) {
+            document.getElementById('secRfid').innerHTML = `<i class="fa-solid fa-wifi"></i> ${data.pass.rfid_card_uid}`;
+            secRfidRow.style.display = 'block';
+          }
+        } else {
+          if (secRfidRow) secRfidRow.style.display = 'none';
+        }
         
         // Hide Visiting Branch for Special Passes (CONFIDENTIAL / EVALUATION)
         const secBranchRow = document.getElementById('secBranchRow');
@@ -3197,6 +3260,7 @@
         payload.branch_name = document.getElementById('stfBranch').value;
         payload.mobile_number = document.getElementById('stfMobile').value;
         payload.vehicle_number = document.getElementById('stfVehicle').value;
+        payload.rfid_card_uid = document.getElementById('stfRfid') ? document.getElementById('stfRfid').value.trim() : null;
       }
 
       try {
@@ -3292,13 +3356,23 @@
               <td><strong>${p.pass_code}</strong></td>
               <td>${p.person_name}</td>
               <td>${p.nic_number}</td>
+              <td>
+                ${p.rfid_card_uid ? 
+                  `<span class="badge" style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; display:inline-flex; align-items:center; gap:0.3rem;"><i class="fa-solid fa-wifi"></i> ${p.rfid_card_uid}</span>` : 
+                  `<span class="badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">Not Linked</span>`}
+              </td>
               <td><span style="font-weight:700; color:#d97706;">${p.vehicle_number || '-'}</span></td>
-              <td>${p.branch_name}</td>
+              <td>${p.branch_name || '-'}</td>
               <td><span class="badge badge-checkedin">${p.status}</span></td>
               <td>
-                <button class="btn btn-success" style="padding:0.4rem 0.85rem; font-size:0.88rem;" onclick="fetchAndDisplayPass('${p.pass_code}')">
-                  <i class="fa-solid fa-print"></i> View / Print
-                </button>
+                <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                  <button class="btn btn-success" style="padding:0.4rem 0.75rem; font-size:0.88rem;" onclick="fetchAndDisplayPass('${p.pass_code}')">
+                    <i class="fa-solid fa-print"></i> Pass
+                  </button>
+                  <button class="btn" style="padding:0.4rem 0.75rem; font-size:0.88rem; background:#4f46e5; color:white;" onclick="openLinkRfidModal(${p.id}, '${p.person_name.replace(/'/g, "\\'")}', '${p.pass_code}', '${p.rfid_card_uid || ''}')">
+                    <i class="fa-solid fa-id-card-clip"></i> RFID
+                  </button>
+                </div>
               </td>
             </tr>
           `).join('');
@@ -3306,6 +3380,55 @@
 
       } catch (e) {
         console.log(e);
+      }
+    }
+
+    // RFID Smart Card Linking Functions for Staff
+    function openLinkRfidModal(passId, staffName, passCode, currentRfid) {
+      document.getElementById('linkRfidPassId').value = passId;
+      document.getElementById('linkRfidStaffName').innerText = staffName;
+      document.getElementById('linkRfidPassCode').innerText = passCode;
+      const rfidIn = document.getElementById('linkRfidUid');
+      rfidIn.value = currentRfid || '';
+      document.getElementById('linkRfidModal').style.display = 'flex';
+      setTimeout(() => {
+        rfidIn.focus();
+        rfidIn.select();
+      }, 100);
+    }
+
+    function closeLinkRfidModal() {
+      document.getElementById('linkRfidModal').style.display = 'none';
+    }
+
+    function clearRfidCardInput() {
+      document.getElementById('linkRfidUid').value = '';
+      document.getElementById('linkRfidUid').focus();
+    }
+
+    async function handleLinkRfidSubmit(e) {
+      e.preventDefault();
+      const passId = document.getElementById('linkRfidPassId').value;
+      const rfidVal = document.getElementById('linkRfidUid').value.trim();
+
+      try {
+        const res = await fetch(`/api/branch/passes/${passId}/link-rfid`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ rfid_card_uid: rfidVal || null })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update RFID');
+
+        alert('✓ ' + data.message);
+        closeLinkRfidModal();
+        loadBranchPasses();
+      } catch (err) {
+        alert('Error: ' + err.message);
       }
     }
 

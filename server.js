@@ -249,9 +249,9 @@ app.get('/api/passes/:code', async (req, res) => {
 
   db.get(`
     SELECT * FROM passes 
-    WHERE UPPER(pass_code) = ? OR pass_code LIKE ?
+    WHERE UPPER(pass_code) = ? OR pass_code LIKE ? OR UPPER(rfid_card_uid) = ?
     ORDER BY id DESC LIMIT 1
-  `, [searchCode, partialCode], async (err, pass) => {
+  `, [searchCode, partialCode, searchCode], async (err, pass) => {
     if (err || !pass) {
       return res.status(404).json({ error: 'Pass not found' });
     }
@@ -277,7 +277,7 @@ app.get('/api/passes/:code', async (req, res) => {
 // 5. Security Scan Lookup (Authenticated)
 app.post('/api/security/scan', authenticateToken, (req, res) => {
   const { code } = req.body;
-  if (!code) return res.status(400).json({ error: 'Pass code or NIC required' });
+  if (!code) return res.status(400).json({ error: 'Pass code, NIC, or RFID card required' });
 
   const rawCode = code.trim();
   const searchCode = rawCode.toUpperCase();
@@ -285,11 +285,11 @@ app.post('/api/security/scan', authenticateToken, (req, res) => {
 
   db.get(`
     SELECT * FROM passes 
-    WHERE UPPER(pass_code) = ? OR UPPER(pass_code) LIKE ? OR UPPER(nic_number) = ?
+    WHERE UPPER(pass_code) = ? OR UPPER(pass_code) LIKE ? OR UPPER(nic_number) = ? OR UPPER(rfid_card_uid) = ?
     ORDER BY id DESC LIMIT 1
-  `, [searchCode, partialCode, searchCode], (err, pass) => {
+  `, [searchCode, partialCode, searchCode, searchCode], (err, pass) => {
     if (err || !pass) {
-      return res.status(404).json({ error: `No pass record found for "${rawCode}". Please verify pass code/NIC or issue a new pass.` });
+      return res.status(404).json({ error: `No pass record found for "${rawCode}". Please verify pass code/NIC/RFID or issue a new pass.` });
     }
 
     db.all('SELECT * FROM gate_logs WHERE UPPER(pass_code) = ? ORDER BY timestamp DESC LIMIT 5', [pass.pass_code.toUpperCase()], (logErr, logs) => {
@@ -315,9 +315,9 @@ app.post('/api/security/verify-entry', authenticateToken, (req, res) => {
 
   db.get(`
     SELECT * FROM passes 
-    WHERE UPPER(pass_code) = ? OR pass_code LIKE ?
+    WHERE UPPER(pass_code) = ? OR pass_code LIKE ? OR UPPER(rfid_card_uid) = ?
     ORDER BY id DESC LIMIT 1
-  `, [searchCode, partialCode], (err, pass) => {
+  `, [searchCode, partialCode, searchCode], (err, pass) => {
     if (err || !pass) return res.status(404).json({ error: 'Pass not found' });
 
     let newStatus = pass.status;
@@ -352,7 +352,7 @@ app.post('/api/security/verify-entry', authenticateToken, (req, res) => {
 
 // 7. Branch Administrative Pass Creation (Role Scoped)
 app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
-  const { category, person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, valid_days, valid_from, valid_to } = req.body;
+  const { category, person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, valid_days, valid_from, valid_to, rfid_card_uid } = req.body;
   const userRole = req.user.role;
 
   if (category === 'CONFIDENTIAL' && !['CONFIDENTIAL_ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
@@ -371,6 +371,18 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Name and NIC number are required' });
   }
 
+  const cleanRfid = (category === 'STAFF' && rfid_card_uid && rfid_card_uid.trim()) ? rfid_card_uid.trim() : null;
+
+  // Validate RFID uniqueness if provided
+  if (cleanRfid) {
+    const existingRfid = await new Promise(resolve => {
+      db.get('SELECT id, person_name, pass_code FROM passes WHERE UPPER(rfid_card_uid) = ?', [cleanRfid.toUpperCase()], (err, row) => resolve(row));
+    });
+    if (existingRfid) {
+      return res.status(400).json({ error: `RFID Card "${cleanRfid}" is already assigned to ${existingRfid.person_name} (${existingRfid.pass_code})` });
+    }
+  }
+
   const passCode = generatePassCode(category);
   const days = parseInt(valid_days, 10) || (category === 'STAFF' ? 365 : 1);
   
@@ -384,8 +396,8 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
     const qrDataUrl = await QRCode.toDataURL(passCode, { margin: 2, width: 320 });
 
     const sql = `
-      INSERT INTO passes (pass_code, category, person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, valid_from, valid_to, status, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
+      INSERT INTO passes (pass_code, category, person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, valid_from, valid_to, status, created_by, rfid_card_uid)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
     `;
 
     const branch = branch_name || req.user.branch_name;
@@ -404,11 +416,16 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
       accessZoneVal, 
       validFrom.toISOString(), 
       validTo.toISOString(), 
-      req.user.username
+      req.user.username,
+      cleanRfid
     ], function (err) {
       if (err) {
         console.error('Pass creation DB error:', err);
         return res.status(500).json({ error: 'Pass creation failed' });
+      }
+
+      if (cleanRfid) {
+        logAdminAuditAction(req.user.username, req.user.role, 'ENROLL_STAFF_RFID', person_name, `Issued Staff Pass ${passCode} with RFID: ${cleanRfid}`, req.ip);
       }
 
       res.status(201).json({
@@ -427,6 +444,7 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
           valid_from: validFrom.toISOString(),
           valid_to: validTo.toISOString(),
           status: 'ACTIVE',
+          rfid_card_uid: cleanRfid,
           qr_code: qrDataUrl
         }
       });
@@ -434,6 +452,43 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
   } catch (qrErr) {
     res.status(500).json({ error: 'QR Code Generation failed' });
   }
+});
+
+// 7.1 Link / Update RFID Card for Existing Staff Pass (Authenticated HR Admin or Super Admin)
+app.post('/api/branch/passes/:id/link-rfid', authenticateToken, async (req, res) => {
+  const userRole = req.user.role;
+  if (!['HR_ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
+    return res.status(403).json({ error: 'Permission denied: HR Admin or Super Admin access required' });
+  }
+
+  const passId = parseInt(req.params.id, 10);
+  const { rfid_card_uid } = req.body;
+  const cleanRfid = (rfid_card_uid && rfid_card_uid.trim()) ? rfid_card_uid.trim() : null;
+
+  db.get('SELECT * FROM passes WHERE id = ?', [passId], async (err, pass) => {
+    if (err || !pass) return res.status(404).json({ error: 'Pass record not found' });
+    if (pass.category !== 'STAFF') {
+      return res.status(400).json({ error: 'RFID card assignment is exclusively permitted for Internal Staff passes' });
+    }
+
+    if (cleanRfid) {
+      const existing = await new Promise(resolve => {
+        db.get('SELECT id, person_name, pass_code FROM passes WHERE UPPER(rfid_card_uid) = ? AND id != ?', [cleanRfid.toUpperCase(), passId], (e, row) => resolve(row));
+      });
+      if (existing) {
+        return res.status(400).json({ error: `RFID Card "${cleanRfid}" is already assigned to ${existing.person_name} (${existing.pass_code})` });
+      }
+    }
+
+    db.run('UPDATE passes SET rfid_card_uid = ? WHERE id = ?', [cleanRfid, passId], function(uErr) {
+      if (uErr) return res.status(500).json({ error: 'Failed to update RFID card assignment' });
+      logAdminAuditAction(req.user.username, req.user.role, 'LINK_STAFF_RFID', pass.person_name, `Linked RFID: ${cleanRfid || 'UNASSIGNED'} to ${pass.pass_code}`, req.ip);
+      res.json({
+        message: cleanRfid ? `RFID Card "${cleanRfid}" successfully assigned to ${pass.person_name}` : `RFID Card unassigned from ${pass.person_name}`,
+        rfid_card_uid: cleanRfid
+      });
+    });
+  });
 });
 
 // 8. Get Branch Issued Passes (Authenticated)

@@ -149,10 +149,15 @@ function initDatabase() {
         valid_from DATETIME DEFAULT CURRENT_TIMESTAMP,
         valid_to DATETIME,
         status TEXT DEFAULT 'PENDING_VERIFICATION',
+        rfid_card_uid TEXT,
         created_by TEXT DEFAULT 'SELF_REGISTRATION',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Migration: Add rfid_card_uid to passes table if missing, and create index
+    db.run("ALTER TABLE passes ADD COLUMN rfid_card_uid TEXT", () => {});
+    db.run("CREATE INDEX IF NOT EXISTS idx_passes_rfid ON passes (rfid_card_uid)");
 
     // 3. Gate Logs Table
     db.run(`
