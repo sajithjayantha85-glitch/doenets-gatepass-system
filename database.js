@@ -25,19 +25,25 @@ const rawTursoToken = cleanEnv(process.env.TURSO_AUTH_TOKEN) ||
                       cleanEnv(process.env.TURSO_TOKEN) || 
                       cleanEnv(process.env.LIBSQL_AUTH_TOKEN);
 
+// Default Production Turso Cloud SQLite Database (Permanent & Free Forever)
+const defaultTursoUrl = 'libsql://doenets-gatepass-db-sajithlakmal85.aws-ap-south-1.turso.io';
+const defaultTursoToken = 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODkwNTY4MzgsImlkIjoiMDFhMDZjYTctOTkwMS03MmM0LWJkZmEtYmNjYmQyYmEzZjJlIiwia2lkIjoiYUhaUjVjRWZoQVZ6VkU5Y0liUFNHV242VVNEZk1jZE9zQWdYSWoxTDNTNCIsInJpZCI6IjUxNjFhYWUzLTY0YWYtNDUzYS1hNWM2LTRmNzVjMmFkZmVhYSJ9.vep8Tn41hseg5DXKKRkUWRWe26GZ8wRPQF99zYqzLsCIge2OhoRumLU3lSfX_Wbh4sShe_yZAV8L1Mq78tVeAA';
+
 let tursoUrl = '';
 let tursoToken = rawTursoToken;
 let pgUrl = '';
 
-// Check if Turso is configured directly or via DATABASE_URL
+// Check if Turso is configured directly or via DATABASE_URL or on Render
 if (rawTursoUrl) {
   tursoUrl = rawTursoUrl;
 } else if (rawDatabaseUrl && (rawDatabaseUrl.startsWith('libsql://') || rawDatabaseUrl.includes('turso.io'))) {
   tursoUrl = rawDatabaseUrl;
+  if (!tursoToken) tursoToken = defaultTursoToken;
+} else if (process.env.RENDER) {
+  // Automatically connect to Turso Cloud SQLite when running on Render!
+  tursoUrl = defaultTursoUrl;
+  tursoToken = defaultTursoToken;
 }
-
-// Render PostgreSQL Internal URL for gatepass-db
-const renderPgInternalUrl = 'postgresql://gatepass_user:67vka3eqT6dS3wONrnkawswRT95fPOJv@dpg-dadcip0jo6nc73e0afr0-a/gatepass_db_s3bc';
 
 // Check if PostgreSQL is configured (only if not Turso)
 if (!tursoUrl) {
@@ -45,9 +51,6 @@ if (!tursoUrl) {
     pgUrl = rawPostgresUrl;
   } else if (rawDatabaseUrl && (rawDatabaseUrl.startsWith('postgres://') || rawDatabaseUrl.startsWith('postgresql://'))) {
     pgUrl = rawDatabaseUrl;
-  } else if (process.env.RENDER) {
-    // Automatically connect to gatepass-db when hosted on Render
-    pgUrl = renderPgInternalUrl;
   }
 }
 
