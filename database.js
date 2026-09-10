@@ -36,12 +36,18 @@ if (rawTursoUrl) {
   tursoUrl = rawDatabaseUrl;
 }
 
+// Render PostgreSQL Internal URL for gatepass-db
+const renderPgInternalUrl = 'postgresql://gatepass_user:67vka3eqT6dS3wONrnkawswRT95fPOJv@dpg-dadcip0jo6nc73e0afr0-a/gatepass_db_s3bc';
+
 // Check if PostgreSQL is configured (only if not Turso)
 if (!tursoUrl) {
   if (rawPostgresUrl && (rawPostgresUrl.startsWith('postgres://') || rawPostgresUrl.startsWith('postgresql://'))) {
     pgUrl = rawPostgresUrl;
   } else if (rawDatabaseUrl && (rawDatabaseUrl.startsWith('postgres://') || rawDatabaseUrl.startsWith('postgresql://'))) {
     pgUrl = rawDatabaseUrl;
+  } else if (process.env.RENDER) {
+    // Automatically connect to gatepass-db when hosted on Render
+    pgUrl = renderPgInternalUrl;
   }
 }
 
