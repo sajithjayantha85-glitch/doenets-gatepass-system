@@ -32,6 +32,7 @@ function convertSqlForPostgres(sql) {
   converted = converted.replace(/\bDATETIME\b/gi, 'TIMESTAMP');
   converted = converted.replace(/DATE\('now',\s*'localtime'\)/gi, 'CURRENT_DATE');
   converted = converted.replace(/DATE\('now'\)/gi, 'CURRENT_DATE');
+  converted = converted.replace(/DATE\(([^,)]+),\s*'localtime'\)/gi, 'DATE($1)');
   converted = converted.replace(/datetime\('now',\s*'-30 days'\)/gi, "NOW() - INTERVAL '30 days'");
 
   return converted;

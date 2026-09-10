@@ -687,7 +687,8 @@ app.get('/api/admin/dashboard', authenticateToken, (req, res) => {
     visitors_inside: 0,
     staff_inside: 0,
     confidential_inside: 0,
-    evaluation_inside: 0
+    evaluation_inside: 0,
+    today_total_visitors: 0
   };
 
   db.all("SELECT category, COUNT(*) as count FROM passes WHERE status = 'CHECKED_IN' GROUP BY category", [], (err, rows) => {
@@ -701,13 +702,96 @@ app.get('/api/admin/dashboard', authenticateToken, (req, res) => {
       });
     }
 
-    db.all("SELECT * FROM gate_logs ORDER BY timestamp DESC LIMIT 30", [], (logErr, logs) => {
-      db.all("SELECT * FROM passes WHERE status = 'CHECKED_IN' ORDER BY created_at DESC", [], (passErr, checkedInPasses) => {
-        res.json({
-          stats,
-          recent_logs: logs || [],
-          currently_inside: checkedInPasses || []
+    db.get("SELECT COUNT(*) as count FROM passes WHERE category = 'VISITOR' AND DATE(created_at, 'localtime') = DATE('now', 'localtime')", [], (tErr, tRow) => {
+      if (!tErr && tRow) {
+        stats.today_total_visitors = tRow.count || 0;
+      }
+
+      db.all("SELECT * FROM gate_logs ORDER BY timestamp DESC LIMIT 30", [], (logErr, logs) => {
+        db.all("SELECT * FROM passes WHERE status = 'CHECKED_IN' ORDER BY created_at DESC", [], (passErr, checkedInPasses) => {
+          res.json({
+            stats,
+            recent_logs: logs || [],
+            currently_inside: checkedInPasses || []
+          });
         });
+      });
+    });
+  });
+});
+
+// 10.1 Get Daily Visitors Directory & Historical Log (Authenticated)
+app.get('/api/admin/visitors', authenticateToken, (req, res) => {
+  const targetDate = req.query.date ? req.query.date.trim() : null;
+  const search = req.query.search ? `%${req.query.search.trim().toUpperCase()}%` : null;
+  const status = req.query.status && req.query.status !== 'ALL' ? req.query.status.trim() : null;
+  const branch = req.query.branch && req.query.branch !== 'ALL' ? req.query.branch.trim() : null;
+
+  let whereClauses = ["category = 'VISITOR'"];
+  let params = [];
+
+  if (targetDate) {
+    whereClauses.push("DATE(created_at, 'localtime') = ?");
+    params.push(targetDate);
+  } else {
+    whereClauses.push("DATE(created_at, 'localtime') = DATE('now', 'localtime')");
+  }
+
+  if (status) {
+    whereClauses.push("status = ?");
+    params.push(status);
+  }
+
+  if (branch) {
+    whereClauses.push("branch_name = ?");
+    params.push(branch);
+  }
+
+  if (search) {
+    whereClauses.push("(UPPER(person_name) LIKE ? OR UPPER(nic_number) LIKE ? OR UPPER(pass_code) LIKE ? OR UPPER(mobile_number) LIKE ? OR UPPER(vehicle_number) LIKE ?)");
+    params.push(search, search, search, search, search);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const sql = `SELECT * FROM passes ${whereSql} ORDER BY id DESC LIMIT 500`;
+
+  db.all(sql, params, (err, rows) => {
+    if (err) {
+      console.error('Error fetching visitors:', err);
+      return res.status(500).json({ error: 'Failed to fetch visitor records' });
+    }
+
+    // Daily summary statistics for the selected date
+    let statParams = [];
+    let statWhere = "WHERE category = 'VISITOR' AND ";
+    if (targetDate) {
+      statWhere += "DATE(created_at, 'localtime') = ?";
+      statParams.push(targetDate);
+    } else {
+      statWhere += "DATE(created_at, 'localtime') = DATE('now', 'localtime')";
+    }
+
+    db.all(`SELECT status, COUNT(*) as count FROM passes ${statWhere} GROUP BY status`, statParams, (sErr, statRows) => {
+      let stats = {
+        total: 0,
+        pending: 0,
+        checked_in: 0,
+        checked_out: 0
+      };
+
+      if (!sErr && statRows) {
+        statRows.forEach(r => {
+          stats.total += r.count;
+          if (r.status === 'PENDING_VERIFICATION') stats.pending = r.count;
+          if (r.status === 'CHECKED_IN') stats.checked_in = r.count;
+          if (r.status === 'CHECKED_OUT') stats.checked_out = r.count;
+        });
+      }
+
+      res.json({
+        date: targetDate || 'today',
+        stats,
+        visitors: rows || []
       });
     });
   });
