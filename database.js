@@ -7,20 +7,128 @@ const { Pool } = require('pg');
 let pgPool = null;
 let tursoClient = null;
 
-const postgresUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+function cleanEnv(val) {
+  if (!val || typeof val !== 'string') return '';
+  let str = val.trim();
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    str = str.slice(1, -1).trim();
+  }
+  return str;
+}
 
-if (postgresUrl && (postgresUrl.startsWith('postgres://') || postgresUrl.startsWith('postgresql://'))) {
+const rawDatabaseUrl = cleanEnv(process.env.DATABASE_URL);
+const rawPostgresUrl = cleanEnv(process.env.POSTGRES_URL);
+const rawTursoUrl = cleanEnv(process.env.TURSO_DATABASE_URL) || 
+                     cleanEnv(process.env.TURSO_URL) || 
+                     cleanEnv(process.env.LIBSQL_URL);
+const rawTursoToken = cleanEnv(process.env.TURSO_AUTH_TOKEN) || 
+                      cleanEnv(process.env.TURSO_TOKEN) || 
+                      cleanEnv(process.env.LIBSQL_AUTH_TOKEN);
+
+let tursoUrl = '';
+let tursoToken = rawTursoToken;
+let pgUrl = '';
+
+// Check if Turso is configured directly or via DATABASE_URL
+if (rawTursoUrl) {
+  tursoUrl = rawTursoUrl;
+} else if (rawDatabaseUrl && (rawDatabaseUrl.startsWith('libsql://') || rawDatabaseUrl.includes('turso.io'))) {
+  tursoUrl = rawDatabaseUrl;
+}
+
+// Check if PostgreSQL is configured (only if not Turso)
+if (!tursoUrl) {
+  if (rawPostgresUrl && (rawPostgresUrl.startsWith('postgres://') || rawPostgresUrl.startsWith('postgresql://'))) {
+    pgUrl = rawPostgresUrl;
+  } else if (rawDatabaseUrl && (rawDatabaseUrl.startsWith('postgres://') || rawDatabaseUrl.startsWith('postgresql://'))) {
+    pgUrl = rawDatabaseUrl;
+  }
+}
+
+const dbStatus = {
+  driver: 'SQLITE_LOCAL',
+  provider: 'Local SQLite (gatepass.db)',
+  isCloud: false,
+  isPersistent: true,
+  connected: false,
+  url: null,
+  error: null,
+  lastChecked: new Date().toISOString()
+};
+
+if (pgUrl) {
   console.log('Connecting to Render PostgreSQL Database...');
   pgPool = new Pool({
-    connectionString: postgresUrl,
+    connectionString: pgUrl,
     ssl: { rejectUnauthorized: false }
   });
-} else if (process.env.TURSO_DATABASE_URL) {
-  console.log('Connecting to Turso Cloud SQLite Database:', process.env.TURSO_DATABASE_URL);
+  dbStatus.driver = 'POSTGRESQL';
+  dbStatus.provider = 'Render PostgreSQL Cloud Database';
+  dbStatus.isCloud = true;
+  dbStatus.isPersistent = true;
+  dbStatus.url = pgUrl.replace(/:[^:@]+@/, ':***@');
+} else if (tursoUrl) {
+  console.log('Connecting to Turso Cloud SQLite Database:', tursoUrl);
   tursoClient = createClient({
-    url: process.env.TURSO_DATABASE_URL,
-    authToken: process.env.TURSO_AUTH_TOKEN || ''
+    url: tursoUrl,
+    authToken: tursoToken || undefined
   });
+  dbStatus.driver = 'TURSO_LIBSQL';
+  dbStatus.provider = 'Turso Cloud SQLite Database';
+  dbStatus.isCloud = true;
+  dbStatus.isPersistent = true;
+  dbStatus.url = tursoUrl;
+  if (!tursoToken && !tursoUrl.includes('authToken=')) {
+    dbStatus.error = 'Warning: TURSO_AUTH_TOKEN is missing. Please set TURSO_AUTH_TOKEN in Render Environment.';
+    console.warn('⚠️ Warning: TURSO_AUTH_TOKEN is not set in environment variables.');
+  }
+} else {
+  console.log('Using Local SQLite Database file (gatepass.db).');
+  dbStatus.driver = 'SQLITE_LOCAL';
+  dbStatus.provider = 'Local SQLite (gatepass.db)';
+  dbStatus.isCloud = false;
+  dbStatus.isPersistent = true;
+  dbStatus.connected = true;
+}
+
+async function testConnection() {
+  dbStatus.lastChecked = new Date().toISOString();
+  if (pgPool) {
+    try {
+      await pgPool.query('SELECT 1');
+      dbStatus.connected = true;
+      dbStatus.error = null;
+      console.log('✓ Render PostgreSQL Database connected successfully.');
+    } catch (err) {
+      dbStatus.connected = false;
+      dbStatus.error = 'PostgreSQL Connection Error: ' + err.message;
+      console.error('✗ Render PostgreSQL connection error:', err.message);
+    }
+  } else if (tursoClient) {
+    try {
+      await tursoClient.execute('SELECT 1');
+      dbStatus.connected = true;
+      dbStatus.error = null;
+      console.log('✓ Turso Cloud SQLite Database connected successfully.');
+    } catch (err) {
+      dbStatus.connected = false;
+      dbStatus.error = 'Turso Connection Error: ' + err.message;
+      console.error('✗ Turso Cloud SQLite connection error:', err.message);
+    }
+  } else {
+    dbStatus.connected = true;
+    dbStatus.error = null;
+  }
+}
+
+async function getDbStatus(forceCheck = false) {
+  if (forceCheck) {
+    await testConnection();
+  }
+  return {
+    ...dbStatus,
+    timestamp: new Date().toISOString()
+  };
 }
 
 function convertSqlForPostgres(sql) {
@@ -118,10 +226,27 @@ const db = {
   }
 };
 
-function initDatabase() {
-  db.serialize(() => {
+async function initDatabase() {
+  try {
+    await testConnection();
+
+    // Promisified execution helpers for sequential execution
+    const runAsync = (sql, params = []) => new Promise((resolve) => {
+      db.run(sql, params, function(err) {
+        if (err) resolve({ error: err });
+        else resolve({ result: this });
+      });
+    });
+
+    const getAsync = (sql, params = []) => new Promise((resolve) => {
+      db.get(sql, params, (err, row) => {
+        if (err) resolve(null);
+        else resolve(row);
+      });
+    });
+
     // 1. Users Table
-    db.run(`
+    await runAsync(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -134,7 +259,7 @@ function initDatabase() {
     `);
 
     // 2. Passes Table
-    db.run(`
+    await runAsync(`
       CREATE TABLE IF NOT EXISTS passes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         daily_no INTEGER DEFAULT 1,
@@ -157,11 +282,11 @@ function initDatabase() {
     `);
 
     // Migration: Add rfid_card_uid to passes table if missing, and create index
-    db.run("ALTER TABLE passes ADD COLUMN rfid_card_uid TEXT", () => {});
-    db.run("CREATE INDEX IF NOT EXISTS idx_passes_rfid ON passes (rfid_card_uid)");
+    await runAsync("ALTER TABLE passes ADD COLUMN rfid_card_uid TEXT");
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_rfid ON passes (rfid_card_uid)");
 
     // 3. Gate Logs Table
-    db.run(`
+    await runAsync(`
       CREATE TABLE IF NOT EXISTS gate_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         pass_code TEXT NOT NULL,
@@ -176,7 +301,7 @@ function initDatabase() {
     `);
 
     // 4. Dynamic Branches Table
-    db.run(`
+    await runAsync(`
       CREATE TABLE IF NOT EXISTS branches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name_en TEXT NOT NULL,
@@ -188,7 +313,7 @@ function initDatabase() {
     `);
 
     // 5. Dynamic Branch-Linked Visit Purposes Table
-    db.run(`
+    await runAsync(`
       CREATE TABLE IF NOT EXISTS visit_purposes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         branch_id INTEGER DEFAULT 0,
@@ -201,7 +326,7 @@ function initDatabase() {
     `);
 
     // 6. Administrative Security Audit Logs Table
-    db.run(`
+    await runAsync(`
       CREATE TABLE IF NOT EXISTS admin_audit_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         admin_username TEXT NOT NULL,
@@ -215,84 +340,76 @@ function initDatabase() {
     `);
 
     // 30-Day Public Visitor Pass Auto-Purge Cleanup (Keeps Database Light)
-    db.run("DELETE FROM passes WHERE category = 'VISITOR' AND created_at < datetime('now', '-30 days')", [], function(err) {
-      if (!err && this && this.changes > 0) {
-        console.log(`[Auto-Cleanup] Purged ${this.changes} public visitor passes older than 30 days.`);
-      }
-    });
+    await runAsync("DELETE FROM passes WHERE category = 'VISITOR' AND created_at < datetime('now', '-30 days')");
 
     // Seed default users if empty
-    db.get('SELECT COUNT(*) as count FROM users', [], async (err, row) => {
-      if (err) return;
-      const count = row ? Number(row.count) : 0;
-      if (count === 0) {
-        console.log('Seeding initial system users...');
-        const salt = await bcrypt.genSalt(10);
-        
-        const accounts = [
-          { username: 'admin', password: 'admin123', role: 'SUPER_ADMIN', branch_name: 'Main Administration', display_name: 'Super Admin' },
-          { username: 'confidential', password: 'secret123', role: 'CONFIDENTIAL_ADMIN', branch_name: 'Confidential Branch', display_name: 'Confidential Branch Officer' },
-          { username: 'evaluation', password: 'eval123', role: 'EVALUATION_ADMIN', branch_name: 'Evaluation Branch', display_name: 'Evaluation Branch Officer' },
-          { username: 'hr_admin', password: 'staff123', role: 'HR_ADMIN', branch_name: 'Establishment HR', display_name: 'Establishment HR Officer' },
-          { username: 'security', password: 'gate123', role: 'SECURITY_OFFICER', branch_name: 'Main Gate Security', display_name: 'Main Gate Security Officer' }
-        ];
+    const userRow = await getAsync('SELECT COUNT(*) as count FROM users');
+    const userCount = userRow ? Number(userRow.count) : 0;
+    if (userCount === 0) {
+      console.log('Seeding initial system users...');
+      const salt = await bcrypt.genSalt(10);
+      
+      const accounts = [
+        { username: 'admin', password: 'admin123', role: 'SUPER_ADMIN', branch_name: 'Main Administration', display_name: 'Super Admin' },
+        { username: 'confidential', password: 'secret123', role: 'CONFIDENTIAL_ADMIN', branch_name: 'Confidential Branch', display_name: 'Confidential Branch Officer' },
+        { username: 'evaluation', password: 'eval123', role: 'EVALUATION_ADMIN', branch_name: 'Evaluation Branch', display_name: 'Evaluation Branch Officer' },
+        { username: 'hr_admin', password: 'staff123', role: 'HR_ADMIN', branch_name: 'Establishment HR', display_name: 'Establishment HR Officer' },
+        { username: 'security', password: 'gate123', role: 'SECURITY_OFFICER', branch_name: 'Main Gate Security', display_name: 'Main Gate Security Officer' }
+      ];
 
-        for (const acc of accounts) {
-          const hash = await bcrypt.hash(acc.password, salt);
-          db.run(`INSERT INTO users (username, password_hash, role, branch_name, display_name) VALUES (?, ?, ?, ?, ?)`, [acc.username, hash, acc.role, acc.branch_name, acc.display_name]);
-        }
+      for (const acc of accounts) {
+        const hash = await bcrypt.hash(acc.password, salt);
+        await runAsync(`INSERT INTO users (username, password_hash, role, branch_name, display_name) VALUES (?, ?, ?, ?, ?)`, [acc.username, hash, acc.role, acc.branch_name, acc.display_name]);
       }
-    });
+    }
 
     // Seed default Branches if empty
-    db.get('SELECT COUNT(*) as count FROM branches', [], (err, row) => {
-      if (err) return;
-      const count = row ? Number(row.count) : 0;
-      if (count === 0) {
-        console.log('Seeding default department branches...');
-        const defaultBranches = [
-          { en: 'Certificate Branch', si: 'සහතික පත්‍ර අංශය', ta: 'சான்றிதழ் பிரிவு', icon: 'fa-certificate' },
-          { en: 'Inquiry & Public Relations', si: 'විමසීම් සහ මහජන සම්බන්ධතා අංශය', ta: 'விசாரணைப் பிரிவு', icon: 'fa-headset' },
-          { en: 'Confidential Branch', si: 'රහස්‍ය අංශය', ta: 'ரகசியப் பிரிவு', icon: 'fa-user-ninja' },
-          { en: 'Evaluation Branch', si: 'ඇගයීම් ශාඛාව', ta: 'மதிப்பீட்டுப் பிரிவு', icon: 'fa-file-pen' },
-          { en: 'Establishment HR', si: 'ආයතන ශාඛාව', ta: 'நிறுவனப் பிரிவு', icon: 'fa-id-card' },
-          { en: 'Accounts Branch', si: 'ගිණුම් ශාඛාව', ta: 'கණக்குப் பிரிவு', icon: 'fa-calculator' },
-          { en: 'Main Administration', si: 'පරිපාලන අංශය', ta: 'முதன்மை நிர்வாகப் பிரிவு', icon: 'fa-building-columns' }
-        ];
+    const branchRow = await getAsync('SELECT COUNT(*) as count FROM branches');
+    const branchCount = branchRow ? Number(branchRow.count) : 0;
+    if (branchCount === 0) {
+      console.log('Seeding default department branches...');
+      const defaultBranches = [
+        { en: 'Certificate Branch', si: 'සහතික පත්‍ර අංශය', ta: 'சான்றிதழ் பிரிவு', icon: 'fa-certificate' },
+        { en: 'Inquiry & Public Relations', si: 'විමසීම් සහ මහජන සම්බන්ධතා අංශය', ta: 'විசாரணைப் பிரிவு', icon: 'fa-headset' },
+        { en: 'Confidential Branch', si: 'රහස්‍ය අංශය', ta: 'ரகசியப் பிரிவு', icon: 'fa-user-ninja' },
+        { en: 'Evaluation Branch', si: 'ඇගයීම් ශාඛාව', ta: 'மதிப்பீட்டுப் பிரிவு', icon: 'fa-file-pen' },
+        { en: 'Establishment HR', si: 'ආයතන ශාඛාව', ta: 'நிறுவனப் பிரிவு', icon: 'fa-id-card' },
+        { en: 'Accounts Branch', si: 'ගිණුම් ශාඛාව', ta: 'கණக்குப் பிரிவு', icon: 'fa-calculator' },
+        { en: 'Main Administration', si: 'පරිපාලන අංශය', ta: 'முதன்மை நிர்வாகப் பிரிவு', icon: 'fa-building-columns' }
+      ];
 
-        for (const b of defaultBranches) {
-          db.run(`INSERT INTO branches (name_en, name_si, name_ta, icon) VALUES (?, ?, ?, ?)`, [b.en, b.si, b.ta, b.icon]);
-        }
+      for (const b of defaultBranches) {
+        await runAsync(`INSERT INTO branches (name_en, name_si, name_ta, icon) VALUES (?, ?, ?, ?)`, [b.en, b.si, b.ta, b.icon]);
       }
-    });
+    }
 
     // Seed default Visit Purposes if empty
-    db.get('SELECT COUNT(*) as count FROM visit_purposes', [], (err, row) => {
-      if (err) return;
-      const count = row ? Number(row.count) : 0;
-      if (count === 0) {
-        console.log('Seeding default visit purposes...');
-        const defaultPurposes = [
-          { branch_id: 1, en: 'Certificate Verification', si: 'සහතික පත්‍ර සත්‍යාපනය', ta: 'சான்றிதழ் சரிபார்ப்பு', icon: 'fa-certificate' },
-          { branch_id: 1, en: 'Issue Duplicate Certificate', si: 'පිටපත් සහතික පත්‍ර ලබාගැනීම', ta: 'இரண்டாம் பிரதி சான்றிதழ் பெற', icon: 'fa-copy' },
-          { branch_id: 2, en: 'General Inquiry', si: 'සාමාන්‍ය විමසීම්', ta: 'பொது விசாரணை', icon: 'fa-circle-question' },
-          { branch_id: 2, en: 'Exam Results Inquiry', si: 'විභාග ප්‍රතිඵල විමසීම්', ta: 'தேர்வு முடிவுகள் விசாரணை', icon: 'fa-square-poll-vertical' },
-          { branch_id: 3, en: 'Confidential Official Duty', si: 'නිල රහස්‍ය කාර්යයන්', ta: 'அதிகாரப்பூர்வ ரகசிய பணி', icon: 'fa-user-secret' },
-          { branch_id: 4, en: 'Answer Script Evaluation Duty', si: 'උත්තර පත්‍ර පරීක්ෂක කාර්යයන්', ta: 'விடைத்தாள் மதிப்பீட்டு பணி', icon: 'fa-pen-to-square' },
-          { branch_id: 5, en: 'HR & Service Matters', si: 'පිරිස් හා සේවා කටයුතු', ta: 'மனிதவள மற்றும் சேவை விவகாரங்கள்', icon: 'fa-id-badge' },
-          { branch_id: 6, en: 'Payments & Bill Settlement', si: 'ගෙවීම් හා බිල්පත් කටයුතු', ta: 'கட்டணம் மற்றும் பில் கொடுப்பனவு', icon: 'fa-money-bill-wave' },
-          { branch_id: 7, en: 'Administrative Duty', si: 'පරිපාලන සහ නිල හමුවීම්', ta: 'நிர்வாக மற்றும் உத்தியோகபூர்வ சந்திப்புகள்', icon: 'fa-building' },
-          { branch_id: 0, en: 'Official Meeting', si: 'නිල හමුවීම', ta: 'அதிகாரப்பூர்வ சந்திப்பு', icon: 'fa-handshake' },
-          { branch_id: 0, en: 'Document Submission', si: 'ලේඛන භාරදීම', ta: 'ஆவணங்கள் சமர்ப்பித்தல்', icon: 'fa-folder-open' }
-        ];
+    const purposeRow = await getAsync('SELECT COUNT(*) as count FROM visit_purposes');
+    const purposeCount = purposeRow ? Number(purposeRow.count) : 0;
+    if (purposeCount === 0) {
+      console.log('Seeding default visit purposes...');
+      const defaultPurposes = [
+        { branch_id: 1, en: 'Certificate Verification', si: 'සහතික පත්‍ර සත්‍යාපනය', ta: 'சான்றிதழ் சரிபார்ப்பு', icon: 'fa-certificate' },
+        { branch_id: 1, en: 'Issue Duplicate Certificate', si: 'පිටපත් සහතික පත්‍ර ලබාගැනීම', ta: 'இரண்டாம் பிரதி சான்றிதழ் பெற', icon: 'fa-copy' },
+        { branch_id: 2, en: 'General Inquiry', si: 'සාමාන්‍ය විමසීම්', ta: 'பொது விசாரணை', icon: 'fa-circle-question' },
+        { branch_id: 2, en: 'Exam Results Inquiry', si: 'විභාග ප්‍රතිඵල විමසීම්', ta: 'தேர்வு முடிவுகள் விசாரணை', icon: 'fa-square-poll-vertical' },
+        { branch_id: 3, en: 'Confidential Official Duty', si: 'නිල රහස්‍ය කාර්යයන්', ta: 'அதிகாரப்பூர்வ ரகசிய பணி', icon: 'fa-user-secret' },
+        { branch_id: 4, en: 'Answer Script Evaluation Duty', si: 'උත්තර පත්‍ර පරීක්ෂක කාර්යයන්', ta: 'விடைத்தாள் மதிப்பீட்டு பணி', icon: 'fa-pen-to-square' },
+        { branch_id: 5, en: 'HR & Service Matters', si: 'පිරිස් හා සේවා කටයුතු', ta: 'மனிதவள மற்றும் சேவை விவகாரங்கள்', icon: 'fa-id-badge' },
+        { branch_id: 6, en: 'Payments & Bill Settlement', si: 'ගෙවීම් හා බිල්පත් කටයුතු', ta: 'கட்டணம் மற்றும் பில் கொடுப்பනவு', icon: 'fa-money-bill-wave' },
+        { branch_id: 7, en: 'Administrative Duty', si: 'පරිපාලන සහ නිල හමුවීම්', ta: 'நிர்வாக மற்றும் உத்தியோகபூர்வ சந்திப்புகள்', icon: 'fa-building' },
+        { branch_id: 0, en: 'Official Meeting', si: 'නිල හමුවීම', ta: 'அதிகாரப்பூர்வ சந்திப்பு', icon: 'fa-handshake' },
+        { branch_id: 0, en: 'Document Submission', si: 'ලේඛන භාරදීම', ta: 'ஆவணங்கள் சமர்ப்பித்தல்', icon: 'fa-folder-open' }
+      ];
 
-        for (const p of defaultPurposes) {
-          db.run(`INSERT INTO visit_purposes (branch_id, purpose_en, purpose_si, purpose_ta, icon) VALUES (?, ?, ?, ?, ?)`, [p.branch_id, p.en, p.si, p.ta, p.icon]);
-        }
+      for (const p of defaultPurposes) {
+        await runAsync(`INSERT INTO visit_purposes (branch_id, purpose_en, purpose_si, purpose_ta, icon) VALUES (?, ?, ?, ?, ?)`, [p.branch_id, p.en, p.si, p.ta, p.icon]);
       }
-    });
-
-  });
+    }
+    console.log('Database initialization completed successfully.');
+  } catch (err) {
+    console.error('Database initialization error:', err);
+  }
 }
 
-module.exports = { db, initDatabase };
+module.exports = { db, initDatabase, getDbStatus };

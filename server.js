@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const QRCode = require('qrcode');
 const path = require('path');
-const { db, initDatabase } = require('./database');
+const { db, initDatabase, getDbStatus } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -827,6 +827,93 @@ app.get('/api/admin/backup/export', authenticateToken, (req, res) => {
       });
     });
   });
+});
+
+// 12. Full System Database Backup Import / Restore API (Authenticated Super Admin)
+app.post('/api/admin/backup/import', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin access required for database restore' });
+  }
+
+  const { passes, gate_logs } = req.body;
+  if (!Array.isArray(passes) && !Array.isArray(gate_logs)) {
+    return res.status(400).json({ error: 'Invalid backup file format. Expected passes or gate_logs.' });
+  }
+
+  let importedPasses = 0;
+  let skippedPasses = 0;
+
+  if (Array.isArray(passes)) {
+    for (const p of passes) {
+      if (!p.pass_code) continue;
+      await new Promise((resolve) => {
+        db.get('SELECT id FROM passes WHERE pass_code = ?', [p.pass_code], (err, row) => {
+          if (!err && !row) {
+            db.run(`
+              INSERT INTO passes (
+                daily_no, pass_code, category, person_name, nic_number, 
+                mobile_number, vehicle_number, branch_name, purpose, 
+                access_zones, valid_from, valid_to, status, rfid_card_uid, 
+                created_by, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+              p.daily_no || 1, p.pass_code, p.category, p.person_name, p.nic_number,
+              p.mobile_number || '', p.vehicle_number || '', p.branch_name || '', p.purpose || '',
+              p.access_zones || 'GENERAL', p.valid_from || new Date().toISOString(), p.valid_to || null,
+              p.status || 'APPROVED', p.rfid_card_uid || null, p.created_by || 'BACKUP_RESTORE', p.created_at || new Date().toISOString()
+            ], (insErr) => {
+              if (!insErr) importedPasses++;
+              resolve();
+            });
+          } else {
+            skippedPasses++;
+            resolve();
+          }
+        });
+      });
+    }
+  }
+
+  let importedLogs = 0;
+  if (Array.isArray(gate_logs)) {
+    for (const l of gate_logs) {
+      if (!l.pass_code) continue;
+      await new Promise((resolve) => {
+        db.run(`
+          INSERT INTO gate_logs (
+            pass_code, person_name, nic_number, category, branch_name, 
+            action_type, timestamp, security_officer_name
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          l.pass_code, l.person_name, l.nic_number, l.category, l.branch_name,
+          l.action_type, l.timestamp || new Date().toISOString(), l.security_officer_name || 'Security Gate'
+        ], (logErr) => {
+          if (!logErr) importedLogs++;
+          resolve();
+        });
+      });
+    }
+  }
+
+  logAdminAuditAction(req.user.username, req.user.role, 'IMPORT_DB_RESTORE', '-', `Restored ${importedPasses} passes, ${importedLogs} logs from backup`, req.ip);
+
+  res.json({
+    success: true,
+    message: `දත්ත සාර්ථකව ප්‍රතිස්ථාපනය කරන ලදී. (ඇතුළත් කළ පාස්: ${importedPasses}, කලින් තිබූ පාස්: ${skippedPasses}, ආරක්ෂක ලොග්: ${importedLogs})`,
+    importedPasses,
+    skippedPasses,
+    importedLogs
+  });
+});
+
+// 13. System Database Status Diagnostic Endpoint
+app.get('/api/system/db-status', async (req, res) => {
+  try {
+    const status = await getDbStatus(true);
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Fallback SPA Route

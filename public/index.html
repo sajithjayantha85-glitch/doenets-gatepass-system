@@ -1812,6 +1812,21 @@
 
       <!-- SUB-TAB 1: Live Overview & Gate Activity Stream -->
       <div id="subtab-overview" class="admin-subtab-pane active">
+        
+        <!-- Cloud Database Status & Diagnostic Banner -->
+        <div id="dbStatusBanner" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.85rem 1.25rem; border-radius: 12px; margin-bottom: 1.25rem; font-size: 0.95rem; font-weight: 600; border: 1px solid #cbd5e1; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span id="dbStatusIndicator" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #94a3b8;"></span>
+            <span id="dbStatusText">දත්ත ගබඩාවේ තත්ත්වය පරීක්ෂා කරමින් පවතී... (Checking DB connection...)</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span id="dbStatusBadge" class="badge" style="background: #e2e8f0; color: #475569; font-size: 0.85rem; padding: 0.35rem 0.75rem;">Local DB</span>
+            <button type="button" class="btn" onclick="checkSystemDbStatus(true)" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; background: #e2e8f0; color: #1e293b; border-radius: 6px; cursor: pointer;">
+              <i class="fa-solid fa-arrows-rotate"></i> Ping Status
+            </button>
+          </div>
+        </div>
+
         <div class="metrics-grid">
           <div class="metric-card" style="border-left: 6px solid #2563eb;">
             <div>
@@ -1867,8 +1882,12 @@
             <span><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Real-Time Gate Activity Stream</span>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
               <button class="btn btn-success" onclick="downloadDatabaseBackup()" style="padding: 0.65rem 1.2rem; font-size: 1.02rem;">
-                <i class="fa-solid fa-file-export"></i> 📥 Backup DB (දත්ත ඩවුන්ලෝඩ් කරන්න)
+                <i class="fa-solid fa-file-export"></i> 📥 Backup DB (බාගත කරන්න)
               </button>
+              <button class="btn" onclick="openRestoreBackupModal()" style="padding: 0.65rem 1.2rem; font-size: 1.02rem; background: #d97706; color: white; font-weight: 700; border-radius: 8px;">
+                <i class="fa-solid fa-file-import"></i> 📤 Restore DB (දත්ත එක්කරන්න)
+              </button>
+              <input type="file" id="backupFileInput" accept=".json" style="display: none;" onchange="handleBackupFileUpload(event)">
               <button class="btn btn-primary" onclick="loadAdminDashboard()" style="padding: 0.65rem 1.2rem; font-size: 1.02rem;">
                 <i class="fa-solid fa-rotate"></i> Refresh Feed
               </button>
@@ -3655,9 +3674,110 @@
       }
     }
 
+    // Admin Restore / Import Database Backup
+    function openRestoreBackupModal() {
+      if (confirm('දත්ත ගබඩා Backup ගොනුවක් (.json) මඟින් passes සහ logs ප්‍රතිස්ථාපනය (Restore) කිරීමට අවශ්‍යද?')) {
+        document.getElementById('backupFileInput').click();
+      }
+    }
+
+    async function handleBackupFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const backupData = JSON.parse(text);
+
+        if (!backupData.passes && !backupData.gate_logs) {
+          alert('අවලංගු Backup ගොනුවකි. කරුණාකර නිවැරදි DoENets Backup JSON ගොනුවක් තෝරන්න.');
+          return;
+        }
+
+        const count = (backupData.passes ? backupData.passes.length : 0);
+        if (!confirm(`මෙම Backup ගොනුවේ Passes ${count} ක් අඩංගුයි. ඒවා පද්ධතියට ප්‍රතිස්ථාපනය කිරීමට තහවුරු කරන්න.`)) {
+          event.target.value = '';
+          return;
+        }
+
+        const res = await fetch('/api/admin/backup/import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify(backupData)
+        });
+
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Restore failed');
+
+        alert('✓ ' + result.message);
+        loadAdminDashboard();
+        if (typeof loadAdminVisitors === 'function') loadAdminVisitors();
+      } catch (err) {
+        alert('Backup Restore දෝෂයකි: ' + err.message);
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    // Check System Database Cloud / Local Status
+    async function checkSystemDbStatus(showAlert = false) {
+      try {
+        const res = await fetch('/api/system/db-status');
+        const data = await res.json();
+        const banner = document.getElementById('dbStatusBanner');
+        const dot = document.getElementById('dbStatusIndicator');
+        const text = document.getElementById('dbStatusText');
+        const badge = document.getElementById('dbStatusBadge');
+
+        if (!banner) return;
+
+        if (data.isCloud && data.connected) {
+          banner.style.background = '#f0fdf4';
+          banner.style.border = '1px solid #86efac';
+          banner.style.color = '#15803d';
+          dot.style.background = '#16a34a';
+          dot.style.boxShadow = '0 0 8px #16a34a';
+          text.innerHTML = `<strong>Cloud Database Connected:</strong> ${data.provider} (ක්ලවුඩ් දත්ත ගබඩාව සාර්ථකව සම්බන්ධයි - Updates වලදී දත්ත සුරක්ෂිතයි)`;
+          badge.style.background = '#bbf7d0';
+          badge.style.color = '#166534';
+          badge.innerText = data.driver === 'TURSO_LIBSQL' ? 'Turso Cloud DB' : 'PostgreSQL Cloud';
+        } else if (data.error) {
+          banner.style.background = '#fef2f2';
+          banner.style.border = '1px solid #fca5a5';
+          banner.style.color = '#b91c1c';
+          dot.style.background = '#dc2626';
+          dot.style.boxShadow = '0 0 8px #dc2626';
+          text.innerHTML = `<strong>Cloud DB Connection Error:</strong> ${data.error} (Render Environment Variables පරීක්ෂා කරන්න)`;
+          badge.style.background = '#fecaca';
+          badge.style.color = '#991b1b';
+          badge.innerText = 'Connection Error';
+        } else {
+          banner.style.background = '#fffbeb';
+          banner.style.border = '1px solid #fde68a';
+          banner.style.color = '#b45309';
+          dot.style.background = '#f59e0b';
+          dot.style.boxShadow = 'none';
+          text.innerHTML = `<strong>Local SQLite Active:</strong> දත්ත දේශීය පරිගණකයේ ගබඩා වේ. (Render හි නම්, Updates වලදී දත්ත මැකී නොයෑමට Turso සම්බන්ධ කරන්න)`;
+          badge.style.background = '#fef3c7';
+          badge.style.color = '#92400e';
+          badge.innerText = 'Local SQLite';
+        }
+
+        if (showAlert) {
+          alert(`Database Status: ${data.provider}\nConnected: ${data.connected}\nDriver: ${data.driver}\n${data.error ? 'Error: ' + data.error : 'Healthy'}`);
+        }
+      } catch (err) {
+        console.error('Failed to fetch DB status:', err);
+      }
+    }
+
     // Admin Live Dashboard
     async function loadAdminDashboard() {
       if (!token) return;
+      checkSystemDbStatus();
       try {
         const res = await fetch('/api/admin/dashboard', {
           headers: { 'Authorization': 'Bearer ' + token }
