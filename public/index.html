@@ -1592,10 +1592,10 @@
         <!-- Compact Control Topbar -->
         <div class="security-topbar" style="flex-wrap: wrap; gap: 0.85rem;">
           <div class="sec-btn-group" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <button class="btn btn-primary" onclick="startCameraScanner()" style="font-size: 1.05rem; padding: 0.85rem 1.25rem;">
+            <button class="btn btn-primary" id="btnToggleCamera" onclick="toggleCameraScanner()" style="font-size: 1.05rem; padding: 0.85rem 1.25rem;">
               <i class="fa-solid fa-camera"></i> Camera Scan
             </button>
-            <button class="btn btn-primary" style="background: var(--primary-dark); font-size: 1.05rem; padding: 0.85rem 1.25rem;" onclick="focusUsbScanner()">
+            <button class="btn btn-primary" id="btnUsbMode" style="background: var(--primary-dark); font-size: 1.05rem; padding: 0.85rem 1.25rem;" onclick="focusUsbScanner()">
               <i class="fa-solid fa-barcode"></i> USB Mode
             </button>
             <label style="display: inline-flex; align-items: center; gap: 0.55rem; background: #ecfdf5; border: 1.5px solid #a7f3d0; padding: 0.65rem 0.95rem; border-radius: 12px; cursor: pointer; user-select: none;" title="අභ්‍යන්තර සේවකයින් සඳහා මුරකරුගේ අතින් සත්‍යාපනය කිරීමකින් තොරව ස්වයංක්‍රීයව දත්ත සටහන් කිරීම">
@@ -1623,16 +1623,22 @@
           </div>
         </div>
 
-        <div class="scanner-box" id="cameraBox" style="display: none; margin-bottom: 0.85rem; border-radius: 12px; overflow: hidden; background: #0f172a;">
-          <div style="display: flex; gap: 0.5rem; padding: 0.6rem; background: #1e293b; align-items: center;">
-            <select id="cameraSelect" onchange="changeCamera(this.value)" style="flex: 1; padding: 0.45rem 0.65rem; font-size: 0.9rem; background: #0f172a; color: #f8fafc; border: 1px solid #475569; border-radius: 8px; font-weight: 600; display: none;"></select>
-            <button type="button" class="btn btn-warning" id="btnSwitchCamera" onclick="switchCamera()" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px; white-space: nowrap; display: none; background: #f59e0b; color: #000; border: none;">
-              <i class="fa-solid fa-camera-rotate"></i> Switch Camera
-            </button>
+        <div class="scanner-box" id="cameraBox" style="display: none; margin-bottom: 0.85rem; border-radius: 14px; overflow: hidden; background: #0f172a; border: 2.5px solid #2563eb; box-shadow: 0 4px 16px rgba(0,0,0,0.18);">
+          <div style="display: flex; gap: 0.5rem; padding: 0.65rem 0.85rem; background: #1e293b; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+            <div style="color: #38bdf8; font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e;"></span>
+              <span>Live Camera Scanner (අඛණ්ඩ කැමරා ස්කෑන්)</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <select id="cameraSelect" onchange="changeCamera(this.value)" style="padding: 0.4rem 0.65rem; font-size: 0.85rem; background: #0f172a; color: #f8fafc; border: 1px solid #475569; border-radius: 8px; font-weight: 600; display: none;"></select>
+              <button type="button" class="btn btn-warning" id="btnSwitchCamera" onclick="switchCamera()" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px; white-space: nowrap; display: none; background: #f59e0b; color: #000; border: none;">
+                <i class="fa-solid fa-camera-rotate"></i> Switch Camera
+              </button>
+            </div>
           </div>
-          <div id="reader"></div>
-          <button type="button" class="btn btn-danger btn-block" onclick="stopCameraScanner()" style="border-radius: 0; padding: 0.85rem; font-weight: 700;">
-            <i class="fa-solid fa-stop"></i> Stop Camera Scanner
+          <div id="reader" style="width: 100%; min-height: 260px;"></div>
+          <button type="button" class="btn btn-danger btn-block" onclick="stopCameraScanner(true)" style="border-radius: 0; padding: 0.85rem; font-weight: 800; font-size: 1rem;">
+            <i class="fa-solid fa-stop"></i> Stop Camera Scanner (කැමරාව නවත්වන්න)
           </button>
         </div>
 
@@ -2474,6 +2480,8 @@
   <script>
     let html5QrcodeInstance = null;
     let isCameraScanning = false;
+    let isCameraModeActive = false;
+    let isProcessingCameraScan = false;
     let availableCameras = [];
     let currentCameraIndex = 0;
     let activePassCode = null;
@@ -2566,6 +2574,9 @@
         }, 150);
       } else {
         document.body.classList.remove('security-mode-active');
+        if (typeof isCameraModeActive !== 'undefined' && isCameraModeActive) {
+          stopCameraScanner(true);
+        }
       }
     }
 
@@ -3165,9 +3176,30 @@
       document.getElementById('qrResultCard').style.display = 'none';
     }
 
-    // Security Scanning
+    // Security Scanning - Persistent Continuous Camera Mode
     async function startCameraScanner() {
-      document.getElementById('cameraBox').style.display = 'block';
+      isCameraModeActive = true;
+      isProcessingCameraScan = false;
+
+      const placeholder = document.getElementById('secScanPlaceholder');
+      if (placeholder) placeholder.style.display = 'none';
+
+      const cameraBox = document.getElementById('cameraBox');
+      if (cameraBox) cameraBox.style.display = 'block';
+
+      const btnToggleCamera = document.getElementById('btnToggleCamera');
+      if (btnToggleCamera) {
+        btnToggleCamera.innerHTML = '<i class="fa-solid fa-video"></i> Camera Active (ක්‍රියාත්මකයි)';
+        btnToggleCamera.style.background = '#059669';
+        btnToggleCamera.style.borderColor = '#10b981';
+      }
+
+      const secStatusBadge = document.querySelector('.sec-status-badge');
+      if (secStatusBadge) {
+        secStatusBadge.innerHTML = `<i class="fa-solid fa-video" style="font-size: 0.75rem; color: #059669;"></i> Camera Live`;
+        secStatusBadge.style.background = '#dcfce7';
+        secStatusBadge.style.color = '#15803d';
+      }
 
       try {
         if (!html5QrcodeInstance) {
@@ -3215,12 +3247,23 @@
           await startScanningWithConfig({ facingMode: "environment" });
         }
       } catch (err) {
+        isCameraModeActive = false;
         alert('Camera initialization failed: ' + err.message);
+        if (placeholder) placeholder.style.display = 'block';
+        if (cameraBox) cameraBox.style.display = 'none';
+        const btnToggleCamera = document.getElementById('btnToggleCamera');
+        if (btnToggleCamera) {
+          btnToggleCamera.innerHTML = '<i class="fa-solid fa-camera"></i> Camera Scan';
+          btnToggleCamera.style.background = '';
+          btnToggleCamera.style.borderColor = '';
+        }
       }
     }
 
     async function startScanningWithConfig(cameraConfig) {
-      if (!html5QrcodeInstance) return;
+      if (!html5QrcodeInstance) {
+        html5QrcodeInstance = new Html5Qrcode("reader");
+      }
 
       if (isCameraScanning) {
         try {
@@ -3233,8 +3276,21 @@
         await html5QrcodeInstance.start(
           cameraConfig,
           { fps: 10, qrbox: { width: 280, height: 280 } },
-          (decodedText) => {
-            stopCameraScanner();
+          async (decodedText) => {
+            if (isProcessingCameraScan) return;
+            isProcessingCameraScan = true;
+
+            // Pause/Stop camera decoding temporarily while displaying the result card
+            if (html5QrcodeInstance && isCameraScanning) {
+              try {
+                await html5QrcodeInstance.stop();
+              } catch (e) {
+                console.log(e);
+              }
+              isCameraScanning = false;
+            }
+            document.getElementById('cameraBox').style.display = 'none';
+
             lookupPassCode(decodedText);
           },
           (errorMessage) => {}
@@ -3260,7 +3316,18 @@
       await startScanningWithConfig(cameraId);
     }
 
-    async function stopCameraScanner() {
+    async function stopCameraScanner(explicit = false) {
+      if (explicit) {
+        isCameraModeActive = false;
+        const btnToggleCamera = document.getElementById('btnToggleCamera');
+        if (btnToggleCamera) {
+          btnToggleCamera.innerHTML = '<i class="fa-solid fa-camera"></i> Camera Scan';
+          btnToggleCamera.style.background = '';
+          btnToggleCamera.style.borderColor = '';
+        }
+      }
+      isProcessingCameraScan = false;
+
       if (html5QrcodeInstance && isCameraScanning) {
         try {
           await html5QrcodeInstance.stop();
@@ -3270,12 +3337,39 @@
         isCameraScanning = false;
       }
       document.getElementById('cameraBox').style.display = 'none';
+
+      if (explicit) {
+        const card = document.getElementById('scanResultCard');
+        if (!card || card.style.display === 'none') {
+          const placeholder = document.getElementById('secScanPlaceholder');
+          if (placeholder) placeholder.style.display = 'block';
+        }
+        const secStatusBadge = document.querySelector('.sec-status-badge');
+        if (secStatusBadge) {
+          secStatusBadge.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #a7f3d0;"></i> Ready`;
+          secStatusBadge.style.background = '';
+          secStatusBadge.style.color = '';
+        }
+      }
+    }
+
+    function toggleCameraScanner() {
+      if (isCameraModeActive) {
+        stopCameraScanner(true);
+        showSecToast('Camera Scanner Stopped / කැමරාව නවත්වන ලදී', 'info');
+      } else {
+        startCameraScanner();
+      }
     }
 
     function focusUsbScanner() {
+      stopCameraScanner(true);
       const input = document.getElementById('usbInput');
-      input.focus();
-      input.select();
+      if (input) {
+        input.focus();
+        input.select();
+      }
+      showSecToast('Switched to USB Scanner / Manual Mode', 'info');
     }
 
     let scanDebounceTimer = null;
@@ -3385,7 +3479,7 @@
       }, 2800);
     }
 
-    function restoreSecPlaceholder() {
+    async function restoreSecPlaceholder() {
       if (window.staffAutoResetTimeout) clearTimeout(window.staffAutoResetTimeout);
       if (window.manualVerifyResetTimeout) clearTimeout(window.manualVerifyResetTimeout);
 
@@ -3394,7 +3488,7 @@
 
       const placeholder = document.getElementById('secScanPlaceholder');
       if (placeholder) {
-        placeholder.style.display = 'block';
+        placeholder.style.display = isCameraModeActive ? 'none' : 'block';
         placeholder.style.borderColor = '';
         placeholder.style.background = '';
         placeholder.innerHTML = `
@@ -3409,14 +3503,16 @@
         usbInput.style.borderColor = '';
         usbInput.style.boxShadow = '';
         usbInput.value = '';
-        usbInput.focus();
+        if (!isCameraModeActive) usbInput.focus();
       }
 
       const secStatusBadge = document.querySelector('.sec-status-badge');
       if (secStatusBadge) {
-        secStatusBadge.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #a7f3d0;"></i> Ready`;
-        secStatusBadge.style.background = '';
-        secStatusBadge.style.color = '';
+        secStatusBadge.innerHTML = isCameraModeActive 
+          ? `<i class="fa-solid fa-video" style="font-size: 0.75rem; color: #059669;"></i> Camera Live`
+          : `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #a7f3d0;"></i> Ready`;
+        secStatusBadge.style.background = isCameraModeActive ? '#dcfce7' : '';
+        secStatusBadge.style.color = isCameraModeActive ? '#15803d' : '';
       }
 
       const historyBox = document.getElementById('secTodayHistoryBox');
@@ -3452,6 +3548,21 @@
       if (actionBtnContainer) actionBtnContainer.style.display = 'flex';
 
       activePassCode = null;
+
+      // AUTOMATICALLY RE-OPEN AND RESUME CAMERA SCANNER FOR NEXT SCAN!
+      if (isCameraModeActive) {
+        isProcessingCameraScan = false;
+        const cameraBox = document.getElementById('cameraBox');
+        if (cameraBox) cameraBox.style.display = 'block';
+        if (availableCameras && availableCameras.length > 0 && availableCameras[currentCameraIndex]) {
+          await startScanningWithConfig(availableCameras[currentCameraIndex].id);
+        } else {
+          await startScanningWithConfig({ facingMode: "environment" });
+        }
+      } else {
+        const cameraBox = document.getElementById('cameraBox');
+        if (cameraBox) cameraBox.style.display = 'none';
+      }
     }
 
     function formatSecTime(ts) {
