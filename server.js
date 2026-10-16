@@ -39,6 +39,7 @@ function cachePass(pass) {
   if (pass.pass_code) passCache.set(String(pass.pass_code).toUpperCase(), pass);
   if (pass.nic_number) passCache.set(String(pass.nic_number).toUpperCase(), pass);
   if (pass.rfid_card_uid) passCache.set(String(pass.rfid_card_uid).toUpperCase(), pass);
+  if (pass.employee_number) passCache.set(String(pass.employee_number).toUpperCase(), pass);
 }
 
 function updateCachedPassStatus(passCode, newStatus) {
@@ -446,9 +447,9 @@ app.post('/api/security/scan', authenticateToken, (req, res) => {
   // 2. Database Fallback (Indexed DB Query)
   db.get(`
     SELECT * FROM passes 
-    WHERE UPPER(pass_code) = ? OR UPPER(pass_code) LIKE ? OR UPPER(nic_number) = ? OR UPPER(rfid_card_uid) = ?
+    WHERE UPPER(pass_code) = ? OR UPPER(pass_code) LIKE ? OR UPPER(nic_number) = ? OR UPPER(rfid_card_uid) = ? OR UPPER(employee_number) = ?
     ORDER BY id DESC LIMIT 1
-  `, [searchCode, partialCode, searchCode, searchCode], (err, pass) => {
+  `, [searchCode, partialCode, searchCode, searchCode, searchCode], (err, pass) => {
     if (err || !pass) {
       return res.status(404).json({ error: `No pass record found for "${rawCode}". Please verify pass code/NIC/RFID or issue a new pass.` });
     }
@@ -510,7 +511,7 @@ app.post('/api/security/verify-entry', authenticateToken, (req, res) => {
 
 // 7. Branch Administrative Pass Creation (Role Scoped)
 app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
-  const { category, person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, valid_days, valid_from, valid_to, rfid_card_uid } = req.body;
+  const { category, person_name, nic_number, employee_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, valid_days, valid_from, valid_to, rfid_card_uid } = req.body;
   const userRole = req.user.role;
 
   if (category === 'CONFIDENTIAL' && !['CONFIDENTIAL_ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
@@ -527,6 +528,22 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
 
   if (!person_name || !nic_number) {
     return res.status(400).json({ error: 'Name and NIC number are required' });
+  }
+
+  const cleanEmpNo = (category === 'STAFF' && employee_number && employee_number.trim()) ? employee_number.trim().toUpperCase() : null;
+
+  if (category === 'STAFF' && !cleanEmpNo) {
+    return res.status(400).json({ error: 'Employee Number is required for Internal Staff passes / අභ්‍යන්තර සේවක පාස් සඳහා සේවක අංකය ඇතුළත් කිරීම අනිවාර්ය වේ.' });
+  }
+
+  // Validate Employee Number uniqueness for staff
+  if (cleanEmpNo) {
+    const existingEmp = await new Promise(resolve => {
+      db.get('SELECT id, person_name, pass_code FROM passes WHERE category = "STAFF" AND UPPER(employee_number) = ?', [cleanEmpNo], (err, row) => resolve(row));
+    });
+    if (existingEmp) {
+      return res.status(400).json({ error: `Employee Number "${cleanEmpNo}" is already assigned to ${existingEmp.person_name} (${existingEmp.pass_code}) / මෙම සේවක අංකය දැනටමත් ${existingEmp.person_name} වෙත නිකුත් කර ඇත.` });
+    }
   }
 
   const cleanRfid = (category === 'STAFF' && rfid_card_uid && rfid_card_uid.trim()) ? rfid_card_uid.trim() : null;
@@ -554,8 +571,8 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
     const qrDataUrl = await QRCode.toDataURL(passCode, { margin: 2, width: 320 });
 
     const sql = `
-      INSERT INTO passes (pass_code, category, person_name, nic_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, valid_from, valid_to, status, created_by, rfid_card_uid)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
+      INSERT INTO passes (pass_code, category, person_name, nic_number, employee_number, mobile_number, vehicle_number, branch_name, purpose, access_zones, valid_from, valid_to, status, created_by, rfid_card_uid)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
     `;
 
     const branch = branch_name || req.user.branch_name;
@@ -567,6 +584,7 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
       category, 
       person_name, 
       nic_number.trim().toUpperCase(), 
+      cleanEmpNo,
       mobile_number, 
       formattedVeh, 
       branch, 
@@ -588,6 +606,7 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
         category,
         person_name,
         nic_number: nic_number.trim().toUpperCase(),
+        employee_number: cleanEmpNo,
         mobile_number,
         vehicle_number: formattedVeh,
         branch_name: branch,
@@ -613,6 +632,7 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
           category,
           person_name,
           nic_number: nic_number.trim().toUpperCase(),
+          employee_number: cleanEmpNo,
           mobile_number,
           vehicle_number: formattedVeh,
           branch_name: branch,

@@ -1529,6 +1529,7 @@
           <div class="qr-details-box" style="background: #ffffff; padding: 1.15rem; border-radius: 16px; font-size: 1.1rem; text-align: left; border: 2px solid var(--border);">
             <p id="passDailyNoRow" style="margin-bottom: 0.4rem;"><strong>Daily Visitor No:</strong> <span id="passDailyNoDisplay" style="color: #059669; font-weight: 900; font-size: 1.25rem;">#001</span></p>
             <p id="passDateRow" style="margin-bottom: 0.4rem;"><strong>Date:</strong> <span id="passDateDisplay" style="font-weight: 800; color: #1e40af;">-</span></p>
+            <p id="passEmpNoRow" style="margin-bottom: 0.4rem; display: none;"><strong>Employee No / සේවක අංකය:</strong> <span id="passEmpNoDisplay" style="font-weight: 800; color: #047857;">-</span></p>
             <p style="margin-bottom: 0.4rem;"><strong>Pass Code:</strong> <span id="passCodeDisplay" style="color: var(--primary); font-weight: 800;">DOENETS-VIS-0000</span> <button onclick="copyPassCode()" class="btn print-hide" style="padding: 0.2rem 0.6rem; font-size: 0.85rem; margin-left: 0.5rem; background: #e2e8f0; color: #1e293b;"><i class="fa-solid fa-copy"></i> Copy</button></p>
             <p id="passBranchRow" style="margin-bottom: 0.4rem;"><strong>Visiting Branch:</strong> <span id="passBranchDisplay" style="font-weight: 700;">-</span></p>
             <p style="margin-bottom: 0.4rem;"><strong>Purpose:</strong> <span id="passPurposeDisplay" style="font-weight: 700;">-</span></p>
@@ -1662,6 +1663,9 @@
               <span class="badge badge-pending" id="secBadge" style="font-size: 1.05rem;">STATUS</span>
               <h2 style="font-size: 1.75rem; color: var(--primary-dark); margin-top: 0.4rem; margin-bottom: 0.2rem;" id="secName">Person Name</h2>
               <p style="font-size: 1.1rem; color: var(--text-muted); font-weight: 800; margin: 0;" id="secCategory">Category: VISITOR</p>
+              <p id="secEmpNoRow" style="font-size: 1.15rem; color: #047857; font-weight: 900; margin-top: 0.25rem; display: none;">
+                <i class="fa-solid fa-id-badge"></i> Employee No: <span id="secEmpNo" style="font-family: monospace;">-</span>
+              </p>
             </div>
             <div style="text-align: right;">
               <p style="font-size: 1.45rem; font-weight: 900; color: var(--accent); margin: 0;" id="secNic">NIC: 000000000V</p>
@@ -1840,26 +1844,30 @@
         <form onsubmit="handleBranchPassSubmit(event, 'STAFF')">
           <div class="form-grid">
             <div class="form-group">
-              <label>Employee Name *</label>
+              <label>Employee Name (සේවකයාගේ නම) *</label>
               <input type="text" id="stfName" class="form-control" placeholder="e.g. Mr. A.B. Karunaratne" required>
             </div>
             <div class="form-group">
-              <label>National ID / NIC No *</label>
+              <label>Employee Number (සේවක අංකය) *</label>
+              <input type="text" id="stfEmpNo" class="form-control" placeholder="e.g. EMP-10452 / 10452" required>
+            </div>
+            <div class="form-group">
+              <label>National ID / NIC No (ජාතික හැඳුනුම්පත් අංකය) *</label>
               <input type="text" id="stfNic" class="form-control" placeholder="NIC Number" required>
             </div>
             <div class="form-group">
-              <label>Designation & Department Branch</label>
-              <input type="text" id="stfBranch" class="form-control" placeholder="e.g. Assistant Commissioner - Certificate Branch">
+              <label>Designation & Department Branch (තනතුර සහ අංශය) *</label>
+              <input type="text" id="stfBranch" class="form-control" placeholder="e.g. Assistant Commissioner - Certificate Branch" required>
             </div>
             <div class="form-group">
-              <label>Mobile Phone Number</label>
+              <label>Mobile Phone Number (දුරකථන අංකය)</label>
               <input type="tel" id="stfMobile" class="form-control" placeholder="0771234567">
             </div>
             <div class="form-group">
               <label>Vehicle Number (වාහන අංකය)</label>
               <input type="text" id="stfVehicle" class="form-control" placeholder="e.g. WP CAR-9999">
             </div>
-            <div class="form-group">
+            <div class="form-group" style="grid-column: span 2;">
               <label><i class="fa-solid fa-wifi" style="color: #4f46e5;"></i> RFID Smart Card UID (Optional / කාඩ්පත Tap කරන්න)</label>
               <input type="text" id="stfRfid" class="form-control" placeholder="Tap RFID Card on reader (e.g. 0008432190)">
               <small style="color: var(--text-muted); font-size: 0.85rem;">Reader එකට කාඩ්පත තැබූ විට Card UID අංකය මෙහි සටහන් වේ.</small>
@@ -1876,6 +1884,7 @@
             <thead>
               <tr>
                 <th>Staff Pass Code</th>
+                <th>Employee No</th>
                 <th>Employee Name</th>
                 <th>NIC No</th>
                 <th>RFID Card</th>
@@ -3086,6 +3095,17 @@
         if (passRfidRow) passRfidRow.style.display = 'none';
       }
 
+      // Employee Number Display (For Staff Passes)
+      const passEmpNoRow = document.getElementById('passEmpNoRow');
+      if (pass.employee_number) {
+        if (passEmpNoRow) {
+          document.getElementById('passEmpNoDisplay').innerText = pass.employee_number;
+          passEmpNoRow.style.display = 'block';
+        }
+      } else {
+        if (passEmpNoRow) passEmpNoRow.style.display = 'none';
+      }
+
       // 3. Daily Visitor No & Issued Date Rows (Only for Visitor Self-Registration)
       const dailyNoRow = document.getElementById('passDailyNoRow');
       const dateRow = document.getElementById('passDateRow');
@@ -3565,6 +3585,13 @@
         historyBox.innerHTML = '';
       }
 
+      const secEmpNoRow = document.getElementById('secEmpNoRow');
+      if (secEmpNoRow) {
+        secEmpNoRow.style.display = 'none';
+        const secEmpNo = document.getElementById('secEmpNo');
+        if (secEmpNo) secEmpNo.innerText = '-';
+      }
+
       const btnCheckIn = document.getElementById('btnCheckIn');
       const btnCheckOut = document.getElementById('btnCheckOut');
       if (btnCheckIn) {
@@ -3728,6 +3755,16 @@
           document.getElementById('secPassCode').innerText = 'Code: ' + data.pass.pass_code;
           document.getElementById('secPurpose').innerText = data.pass.purpose || 'Official Duty';
           document.getElementById('secZone').innerText = data.pass.access_zones || 'ALL DEPARTMENTS';
+
+          const empRow = document.getElementById('secEmpNoRow');
+          if (empRow) {
+            if (data.pass.employee_number) {
+              document.getElementById('secEmpNo').innerText = data.pass.employee_number;
+              empRow.style.display = 'block';
+            } else {
+              empRow.style.display = 'none';
+            }
+          }
 
           const secRfidRow = document.getElementById('secRfidRow');
           if (data.pass.rfid_card_uid) {
@@ -3901,6 +3938,16 @@
         document.getElementById('secPurpose').innerText = data.pass.purpose;
         document.getElementById('secZone').innerText = data.pass.access_zones || 'GENERAL';
 
+        const empRow = document.getElementById('secEmpNoRow');
+        if (empRow) {
+          if (data.pass.employee_number) {
+            document.getElementById('secEmpNo').innerText = data.pass.employee_number;
+            empRow.style.display = 'block';
+          } else {
+            empRow.style.display = 'none';
+          }
+        }
+
         // Display RFID row if present
         const secRfidRow = document.getElementById('secRfidRow');
         if (data.pass.rfid_card_uid) {
@@ -4069,6 +4116,7 @@
         payload.purpose = document.getElementById('evalPurpose').value;
       } else if (category === 'STAFF') {
         payload.person_name = document.getElementById('stfName').value;
+        payload.employee_number = document.getElementById('stfEmpNo') ? document.getElementById('stfEmpNo').value.trim() : null;
         payload.nic_number = document.getElementById('stfNic').value;
         payload.branch_name = document.getElementById('stfBranch').value;
         payload.mobile_number = document.getElementById('stfMobile').value;
@@ -4167,6 +4215,7 @@
           stfBody.innerHTML = data.passes.filter(p => p.category === 'STAFF').map(p => `
             <tr>
               <td><strong>${p.pass_code}</strong></td>
+              <td><span class="badge" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; font-weight:800; font-family:monospace; font-size:0.95rem;">${p.employee_number || '-'}</span></td>
               <td>${p.person_name}</td>
               <td>${p.nic_number}</td>
               <td>

@@ -276,6 +276,7 @@ async function initDatabase() {
         category TEXT NOT NULL,
         person_name TEXT NOT NULL,
         nic_number TEXT NOT NULL,
+        employee_number TEXT,
         mobile_number TEXT,
         vehicle_number TEXT,
         branch_name TEXT NOT NULL,
@@ -290,9 +291,11 @@ async function initDatabase() {
       )
     `);
 
-    // Migration: Add rfid_card_uid to passes table if missing, and create high-speed indexes
+    // Migration: Add rfid_card_uid and employee_number to passes table if missing, and create high-speed indexes
     await runAsync("ALTER TABLE passes ADD COLUMN rfid_card_uid TEXT");
+    await runAsync("ALTER TABLE passes ADD COLUMN employee_number TEXT");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_rfid ON passes (rfid_card_uid)");
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_emp_no ON passes (employee_number)");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_nic ON passes (nic_number)");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_code ON passes (pass_code)");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_status ON passes (status)");
