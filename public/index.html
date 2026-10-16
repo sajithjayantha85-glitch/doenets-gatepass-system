@@ -1528,7 +1528,13 @@
             <label style="display: inline-flex; align-items: center; gap: 0.55rem; background: #ecfdf5; border: 1.5px solid #a7f3d0; padding: 0.65rem 0.95rem; border-radius: 12px; cursor: pointer; user-select: none;" title="අභ්‍යන්තර සේවකයින් සඳහා මුරකරුගේ අතින් සත්‍යාපනය කිරීමකින් තොරව ස්වයංක්‍රීයව දත්ත සටහන් කිරීම">
               <input type="checkbox" id="chkStaffAutoLog" checked style="width: 19px; height: 19px; cursor: pointer; accent-color: #059669;">
               <span style="font-size: 0.92rem; font-weight: 800; color: #065f46;">
-                <i class="fa-solid fa-bolt" style="color: #059669;"></i> සේවක Fast Auto-Log (කඩිනම් සටහන)
+                <i class="fa-solid fa-bolt" style="color: #059669;"></i> සේවක Auto-Log
+              </span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 0.55rem; background: #eff6ff; border: 1.5px solid #bfdbfe; padding: 0.65rem 0.95rem; border-radius: 12px; cursor: pointer; user-select: none;" title="ස්කෑන් කළ සැණින් අමුත්තන් ඇතුළුවීම ස්වයංක්‍රීයව සටහන් කර ඊළඟ ස්කෑන් කිරීමට සූදානම් කිරීම">
+              <input type="checkbox" id="chkVisitorAutoLog" checked style="width: 19px; height: 19px; cursor: pointer; accent-color: #2563eb;">
+              <span style="font-size: 0.92rem; font-weight: 800; color: #1e40af;">
+                <i class="fa-solid fa-person-walking-arrow-right" style="color: #2563eb;"></i> අමුත්තන් Express Verify
               </span>
             </label>
           </div>
@@ -3219,7 +3225,13 @@
     function handleUsbKey(e) {
       if (e.key === 'Enter') {
         if (scanDebounceTimer) clearTimeout(scanDebounceTimer);
-        lookupPassCode(e.target.value);
+        const card = document.getElementById('scanResultCard');
+        if (card && card.style.display === 'block' && activePassCode) {
+          // If a manual pass card is open waiting for guard verification, Enter key immediately verifies check-in!
+          verifyEntryAction('CHECK_IN');
+        } else {
+          lookupPassCode(e.target.value);
+        }
       }
     }
 
@@ -3289,8 +3301,15 @@
     }
 
     function restoreSecPlaceholder() {
+      if (window.staffAutoResetTimeout) clearTimeout(window.staffAutoResetTimeout);
+      if (window.manualVerifyResetTimeout) clearTimeout(window.manualVerifyResetTimeout);
+
+      const card = document.getElementById('scanResultCard');
+      if (card) card.style.display = 'none';
+
       const placeholder = document.getElementById('secScanPlaceholder');
       if (placeholder) {
+        placeholder.style.display = 'block';
         placeholder.style.borderColor = '';
         placeholder.style.background = '';
         placeholder.innerHTML = `
@@ -3299,11 +3318,31 @@
           <p style="color: #64748b; font-size: 0.95rem; margin: 0;">Scan QR code with scanner/camera, tap RFID Card on reader, or enter pass code above.</p>
         `;
       }
+
       const usbInput = document.getElementById('usbInput');
       if (usbInput) {
         usbInput.style.borderColor = '';
         usbInput.style.boxShadow = '';
+        usbInput.value = '';
+        usbInput.focus();
       }
+
+      const secStatusBadge = document.querySelector('.sec-status-badge');
+      if (secStatusBadge) {
+        secStatusBadge.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #a7f3d0;"></i> Ready`;
+        secStatusBadge.style.background = '';
+        secStatusBadge.style.color = '';
+      }
+
+      const btnCheckIn = document.getElementById('btnCheckIn');
+      const btnCheckOut = document.getElementById('btnCheckOut');
+      if (btnCheckIn) btnCheckIn.innerHTML = `<i class="fa-solid fa-id-card-clip"></i> Verify NIC & Check-In (ඇතුළු වීම)`;
+      if (btnCheckOut) btnCheckOut.innerHTML = `<i class="fa-solid fa-person-walking-arrow-right"></i> Register Check-Out (පිටවීම)`;
+
+      const actionBtnContainer = card ? card.querySelector('div[style*="display: flex; gap: 1.25rem"]') : null;
+      if (actionBtnContainer) actionBtnContainer.style.display = 'flex';
+
+      activePassCode = null;
     }
 
     async function lookupPassCode(code) {
@@ -3317,31 +3356,30 @@
       const placeholder = document.getElementById('secScanPlaceholder');
       const card = document.getElementById('scanResultCard');
       const usbInput = document.getElementById('usbInput');
+      const secStatusBadge = document.querySelector('.sec-status-badge');
 
-      // 0ms Instant Visual Pulse Feedback
+      // Instant 0ms visual pulse indicator on input and status badge (never pollute placeholder innerHTML!)
       if (usbInput) {
         usbInput.style.borderColor = '#2563eb';
         usbInput.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.25)';
       }
-      if (placeholder && (!card || card.style.display === 'none')) {
-        placeholder.style.borderColor = '#2563eb';
-        placeholder.style.background = '#eff6ff';
-        placeholder.innerHTML = `
-          <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2.75rem; color: #2563eb; margin-bottom: 0.5rem;"></i>
-          <h3 style="font-size: 1.3rem; color: #1e293b; margin-bottom: 0.25rem; font-weight: 800;">Verifying Pass Data...</h3>
-          <p style="color: #64748b; font-size: 0.95rem; margin: 0;">Code: <strong>${code.replace(/</g, '&lt;')}</strong></p>
-        `;
+      if (secStatusBadge) {
+        secStatusBadge.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin" style="font-size: 0.75rem; color: #2563eb;"></i> Verifying...`;
+        secStatusBadge.style.background = '#dbeafe';
+        secStatusBadge.style.color = '#1e40af';
       }
 
       try {
         const autoStaffEnabled = document.getElementById('chkStaffAutoLog') ? document.getElementById('chkStaffAutoLog').checked : true;
+        const autoVisitorEnabled = document.getElementById('chkVisitorAutoLog') ? document.getElementById('chkVisitorAutoLog').checked : true;
+
         const res = await fetch('/api/security/scan', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + token
           },
-          body: JSON.stringify({ code, auto_staff: autoStaffEnabled })
+          body: JSON.stringify({ code, auto_staff: autoStaffEnabled, auto_visitor: autoVisitorEnabled })
         });
 
         const data = await res.json();
@@ -3356,7 +3394,7 @@
           usbInput.style.boxShadow = '';
         }
 
-        // Express Auto-Log for Internal Staff (No verification buttons needed)
+        // Fast Auto-Log (Staff or Express Visitors)
         if (data.auto_logged) {
           playGateChime(data.double_tap ? 'warn' : 'success');
           showSecToast(data.message, data.double_tap ? 'warn' : 'success');
@@ -3365,7 +3403,7 @@
           if (placeholder) placeholder.style.display = 'none';
           if (card) card.style.display = 'block';
 
-          // Hide manual check-in/out buttons for auto-logged staff
+          // Hide manual check-in/out buttons for auto-logged passes
           const actionBtnContainer = card ? card.querySelector('div[style*="display: flex; gap: 1.25rem"]') : null;
           if (actionBtnContainer) actionBtnContainer.style.display = 'none';
 
@@ -3374,17 +3412,18 @@
             secSpecialBanner.className = 'special-badge staff-badge';
             const rfidTag = data.pass.rfid_card_uid ? ` <span style="font-size:0.92rem; margin-left:0.5rem; background:rgba(255,255,255,0.25); padding:2px 8px; border-radius:6px;"><i class="fa-solid fa-wifi"></i> RFID: ${data.pass.rfid_card_uid}</span>` : '';
             const actionText = data.action_type === 'CHECK_IN' 
-              ? '⚡ අභ්‍යන්තර සේවක ඇතුළුවීම (CHECK-IN) ස්වයංක්‍රීයව සටහන් විය' 
-              : '⚡ අභ්‍යන්තර සේවක පිටවීම (CHECK-OUT) ස්වයංක්‍රීයව සටහන් විය';
+              ? (data.pass.category === 'STAFF' ? '⚡ අභ්‍යන්තර සේවක ඇතුළුවීම (CHECK-IN) ස්වයංක්‍රීයව සටහන් විය' : '⚡ අමුත්තන්ගේ ඇතුළුවීම (CHECK-IN) සාර්ථකව සටහන් විය')
+              : (data.pass.category === 'STAFF' ? '⚡ අභ්‍යන්තර සේවක පිටවීම (CHECK-OUT) ස්වයංක්‍රීයව සටහන් විය' : '⚡ අමුත්තන්ගේ පිටවීම (CHECK-OUT) සාර්ථකව සටහන් විය');
             secSpecialBanner.innerHTML = `<i class="fa-solid fa-bolt"></i> ${actionText}${rfidTag}`;
             secSpecialBanner.style.display = 'flex';
           }
 
           document.getElementById('secName').innerText = data.pass.person_name;
-          document.getElementById('secCategory').innerText = 'Category: INTERNAL STAFF (අභ්‍යන්තර කාර්ය මණ්ඩලය)';
+          const roleLabel = data.pass.category === 'STAFF' ? 'INTERNAL STAFF (අභ්‍යන්තර කාර්ය මණ්ඩලය)' : `${data.pass.category} (අමුත්තා/සම්පත්දායක)`;
+          document.getElementById('secCategory').innerText = 'Category: ' + roleLabel;
           document.getElementById('secNic').innerText = 'NIC: ' + data.pass.nic_number;
           document.getElementById('secPassCode').innerText = 'Code: ' + data.pass.pass_code;
-          document.getElementById('secPurpose').innerText = data.pass.purpose || 'Official Department Duty';
+          document.getElementById('secPurpose').innerText = data.pass.purpose || 'Official Duty';
           document.getElementById('secZone').innerText = data.pass.access_zones || 'ALL DEPARTMENTS';
 
           const secRfidRow = document.getElementById('secRfidRow');
@@ -3407,28 +3446,17 @@
           if (vehDisplay) vehDisplay.innerText = data.pass.vehicle_number ? `🚗 ${data.pass.vehicle_number}` : 'None / පාගමනින්';
 
           const validDisplay = document.getElementById('secValid');
-          if (validDisplay) validDisplay.innerText = 'Official Department Staff (ස්ථීර සේවක)';
+          if (validDisplay) validDisplay.innerText = data.pass.category === 'STAFF' ? 'Official Department Staff (ස්ථීර සේවක)' : (data.pass.valid_to ? `Valid until ${new Date(data.pass.valid_to).toLocaleDateString()}` : 'Valid Today (අද දිනට)');
 
           const badge = document.getElementById('secBadge');
           badge.innerText = data.pass.status;
           badge.className = data.pass.status === 'CHECKED_IN' ? 'badge badge-checkedin' : 'badge badge-checkedout';
 
-          // Auto-clear & re-focus for rapid next scan
+          // Auto-clear & re-focus for rapid next scan in 2 seconds!
           if (window.staffAutoResetTimeout) clearTimeout(window.staffAutoResetTimeout);
           window.staffAutoResetTimeout = setTimeout(() => {
-            if (card) card.style.display = 'none';
-            if (placeholder) {
-              placeholder.style.display = 'block';
-              restoreSecPlaceholder();
-            }
-            if (actionBtnContainer) actionBtnContainer.style.display = 'flex';
-            const usbIn = document.getElementById('usbInput');
-            if (usbIn) {
-              usbIn.value = '';
-              usbIn.focus();
-            }
-            activePassCode = null;
-          }, 2200);
+            restoreSecPlaceholder();
+          }, 2000);
 
           return;
         }
@@ -3540,6 +3568,11 @@
     async function verifyEntryAction(actionType) {
       if (!activePassCode) return;
       try {
+        const btnCheckIn = document.getElementById('btnCheckIn');
+        const btnCheckOut = document.getElementById('btnCheckOut');
+        if (actionType === 'CHECK_IN' && btnCheckIn) btnCheckIn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Checking In...`;
+        if (actionType === 'CHECK_OUT' && btnCheckOut) btnCheckOut.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Checking Out...`;
+
         const res = await fetch('/api/security/verify-entry', {
           method: 'POST',
           headers: {
@@ -3552,19 +3585,40 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Action failed');
 
+        playGateChime('success');
         showSecToast(data.message, 'success');
-        document.getElementById('scanResultCard').style.display = 'none';
-        const secPlaceholder = document.getElementById('secScanPlaceholder');
-        if (secPlaceholder) secPlaceholder.style.display = 'block';
-        const usbIn = document.getElementById('usbInput');
-        if (usbIn) {
-          usbIn.value = '';
-          usbIn.focus();
+
+        // Update badge and alert banner on card
+        const badge = document.getElementById('secBadge');
+        if (badge) {
+          badge.innerText = data.new_status;
+          badge.className = data.new_status === 'CHECKED_IN' ? 'badge badge-checkedin' : 'badge badge-checkedout';
         }
-        activePassCode = null;
+
+        const secSpecialBanner = document.getElementById('secSpecialBanner');
+        if (secSpecialBanner) {
+          secSpecialBanner.className = 'special-badge staff-badge';
+          secSpecialBanner.innerHTML = `<i class="fa-solid fa-circle-check"></i> ✓ ${data.message} (${data.person_name})`;
+          secSpecialBanner.style.display = 'flex';
+        }
+
+        // Hide buttons after verification
+        const card = document.getElementById('scanResultCard');
+        const actionBtnContainer = card ? card.querySelector('div[style*="display: flex; gap: 1.25rem"]') : null;
+        if (actionBtnContainer) actionBtnContainer.style.display = 'none';
+
+        // Auto-Reset in 1.4 seconds and prepare system for next scan!
+        if (window.manualVerifyResetTimeout) clearTimeout(window.manualVerifyResetTimeout);
+        window.manualVerifyResetTimeout = setTimeout(() => {
+          restoreSecPlaceholder();
+        }, 1400);
 
       } catch (err) {
         showSecToast(err.message, 'error');
+        const btnCheckIn = document.getElementById('btnCheckIn');
+        const btnCheckOut = document.getElementById('btnCheckOut');
+        if (btnCheckIn) btnCheckIn.innerHTML = `<i class="fa-solid fa-id-card-clip"></i> Verify NIC & Check-In (ඇතුළු වීම)`;
+        if (btnCheckOut) btnCheckOut.innerHTML = `<i class="fa-solid fa-person-walking-arrow-right"></i> Register Check-Out (පිටවීම)`;
       }
     }
 

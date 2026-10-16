@@ -325,7 +325,7 @@ app.get('/api/passes/:code', async (req, res) => {
 
 // 5. Security Scan Lookup & Express Auto-Log (Authenticated)
 app.post('/api/security/scan', authenticateToken, (req, res) => {
-  const { code, auto_staff = true } = req.body;
+  const { code, auto_staff = true, auto_visitor = false } = req.body;
   if (!code) return res.status(400).json({ error: 'Pass code, NIC, or RFID card required' });
 
   const rawCode = code.trim();
@@ -333,13 +333,16 @@ app.post('/api/security/scan', authenticateToken, (req, res) => {
   const partialCode = `%${searchCode}%`;
 
   const processPassScan = (pass) => {
-    // Fast Auto-Log for Internal Staff (No security guard manual verification needed)
-    if (pass.category === 'STAFF' && auto_staff) {
+    const isStaffAuto = (pass.category === 'STAFF' && auto_staff);
+    const isVisitorAuto = (pass.category !== 'STAFF' && auto_visitor);
+
+    // Fast Auto-Log for Staff or Express-Enabled Visitors/Special Passes
+    if (isStaffAuto || isVisitorAuto) {
       const officerName = req.user ? req.user.display_name : 'Security Gate';
       const action_type = (pass.status === 'CHECKED_IN') ? 'CHECK_OUT' : 'CHECK_IN';
       const newStatus = (action_type === 'CHECK_IN') ? 'CHECKED_IN' : 'CHECKED_OUT';
 
-      // Accidental double-tap protection (within 8 seconds)
+      // Accidental double-tap protection (within 6 seconds)
       db.get(`
         SELECT timestamp, action_type FROM gate_logs 
         WHERE pass_code = ? 
@@ -351,7 +354,7 @@ app.post('/api/security/scan', authenticateToken, (req, res) => {
           if (!tsStr.endsWith('Z')) tsStr = tsStr.replace(' ', 'T') + 'Z';
           const logTime = new Date(tsStr).getTime();
           const diffMs = Math.abs(Date.now() - logTime);
-          if (diffMs < 8000) {
+          if (diffMs < 6000) {
             isDoubleTap = true;
           }
         }
@@ -376,14 +379,15 @@ app.post('/api/security/scan', authenticateToken, (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?)
           `;
           db.run(logSql, [pass.pass_code, pass.person_name, pass.nic_number, pass.category, pass.branch_name, action_type, officerName], (insLogErr) => {
+            const catLabel = pass.category === 'STAFF' ? 'අභ්‍යන්තර සේවක' : (pass.category === 'CONFIDENTIAL' ? 'රහස්‍ය අංශ සම්පත්දායක' : (pass.category === 'EVALUATION' ? 'ඇගයීම් සම්පත්දායක' : 'අමුත්තා'));
             res.json({
               pass: { ...pass, status: newStatus },
               auto_logged: true,
               double_tap: false,
               action_type: action_type,
               message: action_type === 'CHECK_IN'
-                ? `✓ අභ්‍යන්තර සේවක ඇතුළුවීම සටහන් විය: ${pass.person_name} (CHECK-IN)`
-                : `✓ අභ්‍යන්තර සේවක පිටවීම සටහන් විය: ${pass.person_name} (CHECK-OUT)`,
+                ? `✓ ${catLabel} ඇතුළුවීම සටහන් විය: ${pass.person_name} (CHECK-IN)`
+                : `✓ ${catLabel} පිටවීම සටහන් විය: ${pass.person_name} (CHECK-OUT)`,
               officer: officerName
             });
           });
