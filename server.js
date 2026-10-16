@@ -274,9 +274,9 @@ app.get('/api/passes/:code', async (req, res) => {
   });
 });
 
-// 5. Security Scan Lookup (Authenticated)
+// 5. Security Scan Lookup & Express Auto-Log (Authenticated)
 app.post('/api/security/scan', authenticateToken, (req, res) => {
-  const { code } = req.body;
+  const { code, auto_staff = true } = req.body;
   if (!code) return res.status(400).json({ error: 'Pass code, NIC, or RFID card required' });
 
   const rawCode = code.trim();
@@ -292,10 +292,70 @@ app.post('/api/security/scan', authenticateToken, (req, res) => {
       return res.status(404).json({ error: `No pass record found for "${rawCode}". Please verify pass code/NIC/RFID or issue a new pass.` });
     }
 
+    // Fast Auto-Log for Internal Staff (No security guard manual verification needed)
+    if (pass.category === 'STAFF' && auto_staff) {
+      const officerName = req.user ? req.user.display_name : 'Security Gate';
+      const action_type = (pass.status === 'CHECKED_IN') ? 'CHECK_OUT' : 'CHECK_IN';
+      const newStatus = (action_type === 'CHECK_IN') ? 'CHECKED_IN' : 'CHECKED_OUT';
+
+      // Accidental double-tap protection (within 8 seconds)
+      db.get(`
+        SELECT timestamp, action_type FROM gate_logs 
+        WHERE pass_code = ? 
+        ORDER BY id DESC LIMIT 1
+      `, [pass.pass_code], (logCheckErr, lastLog) => {
+        let isDoubleTap = false;
+        if (lastLog && lastLog.timestamp) {
+          let tsStr = String(lastLog.timestamp);
+          if (!tsStr.endsWith('Z')) tsStr = tsStr.replace(' ', 'T') + 'Z';
+          const logTime = new Date(tsStr).getTime();
+          const diffMs = Math.abs(Date.now() - logTime);
+          if (diffMs < 8000) {
+            isDoubleTap = true;
+          }
+        }
+
+        if (isDoubleTap) {
+          return res.json({
+            pass,
+            auto_logged: true,
+            double_tap: true,
+            action_type: lastLog.action_type,
+            message: `⚠️ දැනටමත් සටහන් කර ඇත: ${pass.person_name} (${lastLog.action_type === 'CHECK_IN' ? 'ඇතුළු වීම' : 'පිටවීම'})`,
+            officer: officerName
+          });
+        }
+
+        db.run('UPDATE passes SET status = ? WHERE id = ?', [newStatus, pass.id], (upErr) => {
+          if (upErr) return res.status(500).json({ error: 'Status update failed' });
+
+          const logSql = `
+            INSERT INTO gate_logs (pass_code, person_name, nic_number, category, branch_name, action_type, security_officer_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `;
+          db.run(logSql, [pass.pass_code, pass.person_name, pass.nic_number, pass.category, pass.branch_name, action_type, officerName], (insLogErr) => {
+            res.json({
+              pass: { ...pass, status: newStatus },
+              auto_logged: true,
+              double_tap: false,
+              action_type: action_type,
+              message: action_type === 'CHECK_IN'
+                ? `✓ අභ්‍යන්තර සේවක ඇතුළුවීම සටහන් විය: ${pass.person_name} (CHECK-IN)`
+                : `✓ අභ්‍යන්තර සේවක පිටවීම සටහන් විය: ${pass.person_name} (CHECK-OUT)`,
+              officer: officerName
+            });
+          });
+        });
+      });
+      return;
+    }
+
+    // Default manual verification flow for Public Visitors, Confidential & Evaluation Resource Persons
     db.all('SELECT * FROM gate_logs WHERE UPPER(pass_code) = ? ORDER BY timestamp DESC LIMIT 5', [pass.pass_code.toUpperCase()], (logErr, logs) => {
       res.json({
         pass,
-        logs: logs || []
+        logs: logs || [],
+        auto_logged: false
       });
     });
   });
