@@ -1220,6 +1220,79 @@
       margin-top: 0.5rem !important;
       border-radius: 18px !important;
     }
+
+    /* Tablet Touch Action Buttons & Verification Icons */
+    .btn-tablet-action {
+      flex: 1;
+      min-width: 250px;
+      padding: 1rem 1.35rem !important;
+      border-radius: 16px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 1rem !important;
+      text-align: left !important;
+      cursor: pointer !important;
+      border: 3px solid transparent !important;
+      transition: all 0.2s ease-in-out !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08) !important;
+      user-select: none !important;
+    }
+
+    .btn-tablet-action:active {
+      transform: scale(0.97) !important;
+    }
+
+    .btn-tablet-checkin {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+      color: #ffffff !important;
+      border-color: #10b981 !important;
+    }
+
+    .btn-tablet-checkout {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+      color: #ffffff !important;
+      border-color: #ef4444 !important;
+    }
+
+    .tablet-btn-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.55rem;
+      flex-shrink: 0;
+    }
+
+    .tablet-btn-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tablet-btn-title {
+      font-size: 1.25rem;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .tablet-btn-sub {
+      font-size: 0.88rem;
+      opacity: 0.92;
+      font-weight: 600;
+    }
+
+    .recommended-pulse {
+      border-color: #facc15 !important;
+      animation: tabletPulseGlow 1.6s infinite !important;
+    }
+
+    @keyframes tabletPulseGlow {
+      0% { box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.8), 0 8px 20px rgba(0,0,0,0.18); }
+      50% { box-shadow: 0 0 0 8px rgba(250, 204, 21, 0.2), 0 8px 20px rgba(0,0,0,0.18); }
+      100% { box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.8), 0 8px 20px rgba(0,0,0,0.18); }
+    }
   </style>
 </head>
 <body>
@@ -1532,9 +1605,9 @@
               </span>
             </label>
             <label style="display: inline-flex; align-items: center; gap: 0.55rem; background: #eff6ff; border: 1.5px solid #bfdbfe; padding: 0.65rem 0.95rem; border-radius: 12px; cursor: pointer; user-select: none;" title="ස්කෑන් කළ සැණින් අමුත්තන් ඇතුළුවීම ස්වයංක්‍රීයව සටහන් කර ඊළඟ ස්කෑන් කිරීමට සූදානම් කිරීම">
-              <input type="checkbox" id="chkVisitorAutoLog" checked style="width: 19px; height: 19px; cursor: pointer; accent-color: #2563eb;">
+              <input type="checkbox" id="chkVisitorAutoLog" style="width: 19px; height: 19px; cursor: pointer; accent-color: #2563eb;">
               <span style="font-size: 0.92rem; font-weight: 800; color: #1e40af;">
-                <i class="fa-solid fa-person-walking-arrow-right" style="color: #2563eb;"></i> අමුත්තන් Express Verify
+                <i class="fa-solid fa-bolt" style="color: #2563eb;"></i> අමුත්තන් Express Verify
               </span>
             </label>
           </div>
@@ -1575,6 +1648,9 @@
           <!-- HIGH VISIBILITY SPECIAL AUTHORIZED PASS ALERT BANNER -->
           <div id="secSpecialBanner" class="special-badge" style="display: none; font-size: 1.15rem; padding: 0.75rem; margin-bottom: 0.85rem;"></div>
 
+          <!-- TODAY'S GATE ENTRY/EXIT HISTORY BANNER (FOR NON-STAFF VISITORS) -->
+          <div id="secTodayHistoryBox" style="margin-bottom: 0.85rem; display: none;"></div>
+
           <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
             <div>
               <span class="badge badge-pending" id="secBadge" style="font-size: 1.05rem;">STATUS</span>
@@ -1602,12 +1678,21 @@
             </div>
           </div>
 
-          <div style="display: flex; gap: 1.25rem; margin-top: 1.25rem; flex-wrap: wrap;">
-            <button class="btn btn-success" id="btnCheckIn" onclick="verifyEntryAction('CHECK_IN')" style="flex: 1; padding: 1rem 1.25rem; font-size: 1.15rem; font-weight: 800; border-radius: 14px;">
-              <i class="fa-solid fa-id-card-clip"></i> Verify NIC & Check-In (ඇතුළු වීම)
+          <!-- LARGE TABLET TOUCH ACTION BUTTONS (CHECK-IN / CHECK-OUT) -->
+          <div id="secActionBtnContainer" style="display: flex; gap: 1rem; margin-top: 1.25rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-tablet-action btn-tablet-checkin" id="btnCheckIn" onclick="verifyEntryAction('CHECK_IN')">
+              <div class="tablet-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+              <div class="tablet-btn-text">
+                <span class="tablet-btn-title">ඇතුළු වීම (CHECK-IN)</span>
+                <span class="tablet-btn-sub">Verify NIC & Grant Entry</span>
+              </div>
             </button>
-            <button class="btn btn-danger" id="btnCheckOut" onclick="verifyEntryAction('CHECK_OUT')" style="flex: 1; padding: 1rem 1.25rem; font-size: 1.15rem; font-weight: 800; border-radius: 14px;">
-              <i class="fa-solid fa-person-walking-arrow-right"></i> Register Check-Out (පිටවීම)
+            <button type="button" class="btn btn-tablet-action btn-tablet-checkout" id="btnCheckOut" onclick="verifyEntryAction('CHECK_OUT')">
+              <div class="tablet-btn-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+              <div class="tablet-btn-text">
+                <span class="tablet-btn-title">පිටවීම (CHECK-OUT)</span>
+                <span class="tablet-btn-sub">Register Departure & Exit</span>
+              </div>
             </button>
           </div>
         </div>
@@ -3334,15 +3419,75 @@
         secStatusBadge.style.color = '';
       }
 
+      const historyBox = document.getElementById('secTodayHistoryBox');
+      if (historyBox) {
+        historyBox.style.display = 'none';
+        historyBox.innerHTML = '';
+      }
+
       const btnCheckIn = document.getElementById('btnCheckIn');
       const btnCheckOut = document.getElementById('btnCheckOut');
-      if (btnCheckIn) btnCheckIn.innerHTML = `<i class="fa-solid fa-id-card-clip"></i> Verify NIC & Check-In (ඇතුළු වීම)`;
-      if (btnCheckOut) btnCheckOut.innerHTML = `<i class="fa-solid fa-person-walking-arrow-right"></i> Register Check-Out (පිටවීම)`;
+      if (btnCheckIn) {
+        btnCheckIn.innerHTML = `
+          <div class="tablet-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+          <div class="tablet-btn-text">
+            <span class="tablet-btn-title">ඇතුළු වීම (CHECK-IN)</span>
+            <span class="tablet-btn-sub">Verify NIC & Grant Entry</span>
+          </div>`;
+        btnCheckIn.classList.remove('recommended-pulse');
+        btnCheckIn.disabled = false;
+      }
+      if (btnCheckOut) {
+        btnCheckOut.innerHTML = `
+          <div class="tablet-btn-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+          <div class="tablet-btn-text">
+            <span class="tablet-btn-title">පිටවීම (CHECK-OUT)</span>
+            <span class="tablet-btn-sub">Register Departure & Exit</span>
+          </div>`;
+        btnCheckOut.classList.remove('recommended-pulse');
+        btnCheckOut.disabled = false;
+      }
 
-      const actionBtnContainer = card ? card.querySelector('div[style*="display: flex; gap: 1.25rem"]') : null;
+      const actionBtnContainer = document.getElementById('secActionBtnContainer');
       if (actionBtnContainer) actionBtnContainer.style.display = 'flex';
 
       activePassCode = null;
+    }
+
+    function formatSecTime(ts) {
+      if (!ts) return '';
+      let str = String(ts);
+      if (!str.endsWith('Z') && !str.includes('+')) str = str.replace(' ', 'T') + 'Z';
+      const d = new Date(str);
+      return isNaN(d.getTime()) ? String(ts).slice(11, 16) : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    function renderLogsTimeline(logs) {
+      if (!logs || logs.length === 0) return '';
+      const badges = logs.map(l => {
+        const isCheckIn = l.action_type === 'CHECK_IN';
+        const bg = isCheckIn ? '#dcfce7' : '#fee2e2';
+        const textCol = isCheckIn ? '#166534' : '#991b1b';
+        const borderCol = isCheckIn ? '#86efac' : '#fca5a5';
+        const icon = isCheckIn ? 'fa-right-to-bracket' : 'fa-person-walking-arrow-right';
+        const label = isCheckIn ? 'ඇතුළු වීම' : 'පිටවීම';
+        return `
+          <span style="display: inline-flex; align-items: center; gap: 0.35rem; background: ${bg}; color: ${textCol}; border: 1px solid ${borderCol}; padding: 0.25rem 0.6rem; border-radius: 6px; font-weight: 700; font-size: 0.84rem;">
+            <i class="fa-solid ${icon}"></i> ${formatSecTime(l.timestamp)} (${label}) - ${l.security_officer_name || 'Gate'}
+          </span>
+        `;
+      }).join(' ');
+
+      return `
+        <div style="margin-top: 0.65rem; padding-top: 0.55rem; border-top: 1px dashed rgba(0,0,0,0.15);">
+          <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem; opacity: 0.9;">
+            <i class="fa-solid fa-list-timeline"></i> අද දින ගමන් ඉතිහාසය (Today's Movement Log):
+          </div>
+          <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+            ${badges}
+          </div>
+        </div>
+      `;
     }
 
     async function lookupPassCode(code) {
@@ -3371,7 +3516,7 @@
 
       try {
         const autoStaffEnabled = document.getElementById('chkStaffAutoLog') ? document.getElementById('chkStaffAutoLog').checked : true;
-        const autoVisitorEnabled = document.getElementById('chkVisitorAutoLog') ? document.getElementById('chkVisitorAutoLog').checked : true;
+        const autoVisitorEnabled = document.getElementById('chkVisitorAutoLog') ? document.getElementById('chkVisitorAutoLog').checked : false;
 
         const res = await fetch('/api/security/scan', {
           method: 'POST',
@@ -3403,9 +3548,12 @@
           if (placeholder) placeholder.style.display = 'none';
           if (card) card.style.display = 'block';
 
-          // Hide manual check-in/out buttons for auto-logged passes
-          const actionBtnContainer = card ? card.querySelector('div[style*="display: flex; gap: 1.25rem"]') : null;
+          // Hide manual check-in/out buttons and today's history for auto-logged passes
+          const actionBtnContainer = document.getElementById('secActionBtnContainer');
           if (actionBtnContainer) actionBtnContainer.style.display = 'none';
+
+          const historyBox = document.getElementById('secTodayHistoryBox');
+          if (historyBox) historyBox.style.display = 'none';
 
           const secSpecialBanner = document.getElementById('secSpecialBanner');
           if (secSpecialBanner) {
@@ -3462,13 +3610,113 @@
         }
 
         // Regular Manual Flow for Visitors, Confidential, and Evaluation Passes
-        const actionBtnContainer = card ? card.querySelector('div[style*="display: flex; gap: 1.25rem"]') : null;
+        const actionBtnContainer = document.getElementById('secActionBtnContainer');
         if (actionBtnContainer) actionBtnContainer.style.display = 'flex';
 
         playGateChime('success');
         activePassCode = data.pass.pass_code;
         if (placeholder) placeholder.style.display = 'none';
         card.style.display = 'block';
+
+        // Display Today's Entry / Exit History for Non-Staff Visitors
+        const historyBox = document.getElementById('secTodayHistoryBox');
+        const summary = data.today_summary;
+        const todayLogs = data.today_logs || [];
+        const btnCheckIn = document.getElementById('btnCheckIn');
+        const btnCheckOut = document.getElementById('btnCheckOut');
+
+        // Reset button states first
+        if (btnCheckIn) {
+          btnCheckIn.classList.remove('recommended-pulse');
+          btnCheckIn.disabled = false;
+        }
+        if (btnCheckOut) {
+          btnCheckOut.classList.remove('recommended-pulse');
+          btnCheckOut.disabled = false;
+        }
+
+        if (historyBox && summary) {
+          let statusBannerHtml = '';
+
+          if (summary.currently_inside) {
+            // Already Inside: Alert officer and recommend Check-Out
+            statusBannerHtml = `
+              <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 0.85rem 1.15rem; color: #92400e; box-shadow: 0 2px 8px rgba(245,158,11,0.15);">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #d97706; flex-shrink: 0;">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                      <div style="font-size: 1.15rem; font-weight: 800; color: #b45309;">⚠️ දැනටමත් පරිශ්‍රය තුළ රැඳී සිටී (Already Inside Campus)</div>
+                      <div style="font-size: 0.94rem; color: #78350f; margin-top: 2px;">
+                        අද දින ඇතුළු වූ වේලාව: <strong>${formatSecTime(summary.last_entry_time)}</strong> &nbsp;|&nbsp; 
+                        මුර නිලධාරී: <strong>${summary.last_officer || 'Security Gate'}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="font-size: 0.92rem; font-weight: 800; background: #fde68a; color: #78350f; padding: 0.35rem 0.85rem; border-radius: 999px;">
+                    අද දින වාර: ${summary.check_in_count} In / ${summary.check_out_count} Out
+                  </div>
+                </div>
+                ${renderLogsTimeline(todayLogs)}
+              </div>
+            `;
+            if (btnCheckOut) btnCheckOut.classList.add('recommended-pulse');
+          } else if (summary.has_checked_in_today) {
+            // Re-Entry Today: Completed a previous visit today
+            statusBannerHtml = `
+              <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 0.85rem 1.15rem; color: #1e40af; box-shadow: 0 2px 8px rgba(59,130,246,0.15);">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: #dbeafe; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #2563eb; flex-shrink: 0;">
+                      <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                      <div style="font-size: 1.15rem; font-weight: 800; color: #1d4ed8;">🔄 අද දින පෙර පැමිණීමක් අවසන් කර ඇත (Re-entry / Prior Visit Today)</div>
+                      <div style="font-size: 0.94rem; color: #1e3a8a; margin-top: 2px;">
+                        පෙර පිටවූ වේලාව: <strong>${formatSecTime(summary.last_exit_time)}</strong> &nbsp;|&nbsp; 
+                        පෙර ඇතුළු වීම: <strong>${formatSecTime(summary.last_entry_time)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="font-size: 0.92rem; font-weight: 800; background: #bfdbfe; color: #1e3a8a; padding: 0.35rem 0.85rem; border-radius: 999px;">
+                    අද දින පෙර වාර: ${summary.check_in_count}
+                  </div>
+                </div>
+                ${renderLogsTimeline(todayLogs)}
+              </div>
+            `;
+            if (btnCheckIn) btnCheckIn.classList.add('recommended-pulse');
+          } else {
+            // First Entry Today
+            statusBannerHtml = `
+              <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 0.85rem 1.15rem; color: #065f46; box-shadow: 0 2px 8px rgba(16,185,129,0.12);">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #059669; flex-shrink: 0;">
+                      <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div>
+                      <div style="font-size: 1.15rem; font-weight: 800; color: #047857;">🌟 අද දින ප්‍රථම පැමිණීම (First Entry Today)</div>
+                      <div style="font-size: 0.94rem; color: #065f46; margin-top: 2px;">මෙම පුද්ගලයා අද දින මීට පෙර දෙපාර්තමේන්තු පරිශ්‍රයට ඇතුළු වී නොමැත.</div>
+                    </div>
+                  </div>
+                  <div style="font-size: 0.9rem; font-weight: 800; background: #a7f3d0; color: #064e3b; padding: 0.35rem 0.85rem; border-radius: 999px;">
+                    <i class="fa-solid fa-user-check"></i> First Visit
+                  </div>
+                </div>
+              </div>
+            `;
+            if (btnCheckIn) btnCheckIn.classList.add('recommended-pulse');
+          }
+
+          historyBox.innerHTML = statusBannerHtml;
+          historyBox.style.display = 'block';
+        } else if (historyBox) {
+          historyBox.style.display = 'none';
+          historyBox.innerHTML = '';
+        }
 
         // 1. High Visibility Special Pass Security Alert Banner
         const secSpecialBanner = document.getElementById('secSpecialBanner');
@@ -3570,8 +3818,12 @@
       try {
         const btnCheckIn = document.getElementById('btnCheckIn');
         const btnCheckOut = document.getElementById('btnCheckOut');
-        if (actionType === 'CHECK_IN' && btnCheckIn) btnCheckIn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Checking In...`;
-        if (actionType === 'CHECK_OUT' && btnCheckOut) btnCheckOut.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Checking Out...`;
+        if (actionType === 'CHECK_IN' && btnCheckIn) {
+          btnCheckIn.innerHTML = `<div class="tablet-btn-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></div><div class="tablet-btn-text"><span class="tablet-btn-title">Checking In...</span><span class="tablet-btn-sub">සත්‍යාපනය වෙමින් පවතී...</span></div>`;
+        }
+        if (actionType === 'CHECK_OUT' && btnCheckOut) {
+          btnCheckOut.innerHTML = `<div class="tablet-btn-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></div><div class="tablet-btn-text"><span class="tablet-btn-title">Checking Out...</span><span class="tablet-btn-sub">පිටවීම සටහන් වෙමින් පවතී...</span></div>`;
+        }
 
         const res = await fetch('/api/security/verify-entry', {
           method: 'POST',
@@ -3602,9 +3854,8 @@
           secSpecialBanner.style.display = 'flex';
         }
 
-        // Hide buttons after verification
-        const card = document.getElementById('scanResultCard');
-        const actionBtnContainer = card ? card.querySelector('div[style*="display: flex; gap: 1.25rem"]') : null;
+        // Hide action buttons after verification
+        const actionBtnContainer = document.getElementById('secActionBtnContainer');
         if (actionBtnContainer) actionBtnContainer.style.display = 'none';
 
         // Auto-Reset in 1.4 seconds and prepare system for next scan!
@@ -3617,8 +3868,22 @@
         showSecToast(err.message, 'error');
         const btnCheckIn = document.getElementById('btnCheckIn');
         const btnCheckOut = document.getElementById('btnCheckOut');
-        if (btnCheckIn) btnCheckIn.innerHTML = `<i class="fa-solid fa-id-card-clip"></i> Verify NIC & Check-In (ඇතුළු වීම)`;
-        if (btnCheckOut) btnCheckOut.innerHTML = `<i class="fa-solid fa-person-walking-arrow-right"></i> Register Check-Out (පිටවීම)`;
+        if (btnCheckIn) {
+          btnCheckIn.innerHTML = `
+            <div class="tablet-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+            <div class="tablet-btn-text">
+              <span class="tablet-btn-title">ඇතුළු වීම (CHECK-IN)</span>
+              <span class="tablet-btn-sub">Verify NIC & Grant Entry</span>
+            </div>`;
+        }
+        if (btnCheckOut) {
+          btnCheckOut.innerHTML = `
+            <div class="tablet-btn-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+            <div class="tablet-btn-text">
+              <span class="tablet-btn-title">පිටවීම (CHECK-OUT)</span>
+              <span class="tablet-btn-sub">Register Departure & Exit</span>
+            </div>`;
+        }
       }
     }
 

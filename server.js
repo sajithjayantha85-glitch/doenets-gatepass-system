@@ -396,10 +396,44 @@ app.post('/api/security/scan', authenticateToken, (req, res) => {
       return;
     }
 
-    // Ultra-Fast Zero-Delay Response for Visitors, Confidential, and Evaluation Passes (No redundant secondary queries)
-    return res.json({
-      pass,
-      auto_logged: false
+    // For Non-Staff (Visitors, Confidential, Evaluation): Check Today's Gate Log History
+    const passCodeUpper = String(pass.pass_code || '').toUpperCase();
+    const nicUpper = String(pass.nic_number || '').toUpperCase();
+
+    db.all(`
+      SELECT id, pass_code, action_type, timestamp, security_officer_name 
+      FROM gate_logs 
+      WHERE (UPPER(pass_code) = ? OR (nic_number IS NOT NULL AND UPPER(nic_number) = ?))
+      ORDER BY id DESC LIMIT 10
+    `, [passCodeUpper, nicUpper], (logErr, rows) => {
+      const allLogs = rows || [];
+      const now = new Date();
+      const todayDateStr = now.toLocaleDateString('en-CA'); // 'YYYY-MM-DD'
+
+      const todayLogs = allLogs.filter(l => {
+        if (!l.timestamp) return false;
+        const logDateStr = String(l.timestamp).slice(0, 10);
+        return logDateStr === todayDateStr || Math.abs(now - new Date(l.timestamp)) < 24 * 60 * 60 * 1000;
+      });
+
+      const checkInsToday = todayLogs.filter(l => l.action_type === 'CHECK_IN');
+      const checkOutsToday = todayLogs.filter(l => l.action_type === 'CHECK_OUT');
+      const lastLog = todayLogs.length > 0 ? todayLogs[0] : null;
+
+      return res.json({
+        pass,
+        today_logs: todayLogs,
+        today_summary: {
+          has_checked_in_today: checkInsToday.length > 0,
+          currently_inside: (pass.status === 'CHECKED_IN') || (lastLog && lastLog.action_type === 'CHECK_IN'),
+          check_in_count: checkInsToday.length,
+          check_out_count: checkOutsToday.length,
+          last_entry_time: checkInsToday[0] ? checkInsToday[0].timestamp : null,
+          last_exit_time: checkOutsToday[0] ? checkOutsToday[0].timestamp : null,
+          last_officer: lastLog ? lastLog.security_officer_name : null
+        },
+        auto_logged: false
+      });
     });
   };
 

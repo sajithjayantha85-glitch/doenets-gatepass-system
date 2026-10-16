@@ -312,6 +312,9 @@ async function initDatabase() {
         security_officer_name TEXT DEFAULT 'Security Gate'
       )
     `);
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_logs_pass_code ON gate_logs (pass_code)");
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_logs_nic ON gate_logs (nic_number)");
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON gate_logs (timestamp)");
 
     // 4. Dynamic Branches Table
     await runAsync(`
