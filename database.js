@@ -290,9 +290,13 @@ async function initDatabase() {
       )
     `);
 
-    // Migration: Add rfid_card_uid to passes table if missing, and create index
+    // Migration: Add rfid_card_uid to passes table if missing, and create high-speed indexes
     await runAsync("ALTER TABLE passes ADD COLUMN rfid_card_uid TEXT");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_rfid ON passes (rfid_card_uid)");
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_nic ON passes (nic_number)");
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_code ON passes (pass_code)");
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_status ON passes (status)");
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_created ON passes (created_at)");
 
     // 3. Gate Logs Table
     await runAsync(`

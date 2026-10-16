@@ -3207,12 +3207,12 @@
         return;
       }
 
-      // 3. Hardware Barcode Scanner Auto-Search (150ms after scan stream finishes)
+      // 3. Hardware Barcode Scanner Auto-Search (Super-fast 35ms delay after stream finishes)
       if (scanDebounceTimer) clearTimeout(scanDebounceTimer);
       if (val.length >= 6) {
         scanDebounceTimer = setTimeout(() => {
           lookupPassCode(val);
-        }, 150);
+        }, 35);
       }
     }
 
@@ -3288,12 +3288,49 @@
       }, 2800);
     }
 
+    function restoreSecPlaceholder() {
+      const placeholder = document.getElementById('secScanPlaceholder');
+      if (placeholder) {
+        placeholder.style.borderColor = '';
+        placeholder.style.background = '';
+        placeholder.innerHTML = `
+          <i class="fa-solid fa-qrcode" style="font-size: 2.75rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+          <h3 style="font-size: 1.3rem; color: #1e293b; margin-bottom: 0.25rem; font-weight: 800;">Ready to Scan Gate Pass / RFID Card</h3>
+          <p style="color: #64748b; font-size: 0.95rem; margin: 0;">Scan QR code with scanner/camera, tap RFID Card on reader, or enter pass code above.</p>
+        `;
+      }
+      const usbInput = document.getElementById('usbInput');
+      if (usbInput) {
+        usbInput.style.borderColor = '';
+        usbInput.style.boxShadow = '';
+      }
+    }
+
     async function lookupPassCode(code) {
       if (!code) return;
       if (!token) {
         showSecToast('Please log in first to access Security Gate Console!', 'error');
         switchTab('login-tab');
         return;
+      }
+
+      const placeholder = document.getElementById('secScanPlaceholder');
+      const card = document.getElementById('scanResultCard');
+      const usbInput = document.getElementById('usbInput');
+
+      // 0ms Instant Visual Pulse Feedback
+      if (usbInput) {
+        usbInput.style.borderColor = '#2563eb';
+        usbInput.style.boxShadow = '0 0 0 4px rgba(37,99,235,0.25)';
+      }
+      if (placeholder && (!card || card.style.display === 'none')) {
+        placeholder.style.borderColor = '#2563eb';
+        placeholder.style.background = '#eff6ff';
+        placeholder.innerHTML = `
+          <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2.75rem; color: #2563eb; margin-bottom: 0.5rem;"></i>
+          <h3 style="font-size: 1.3rem; color: #1e293b; margin-bottom: 0.25rem; font-weight: 800;">Verifying Pass Data...</h3>
+          <p style="color: #64748b; font-size: 0.95rem; margin: 0;">Code: <strong>${code.replace(/</g, '&lt;')}</strong></p>
+        `;
       }
 
       try {
@@ -3313,8 +3350,11 @@
           throw new Error(data.error || 'Scan error');
         }
 
-        const placeholder = document.getElementById('secScanPlaceholder');
-        const card = document.getElementById('scanResultCard');
+        // Reset visual pulse on input
+        if (usbInput) {
+          usbInput.style.borderColor = '';
+          usbInput.style.boxShadow = '';
+        }
 
         // Express Auto-Log for Internal Staff (No verification buttons needed)
         if (data.auto_logged) {
@@ -3377,7 +3417,10 @@
           if (window.staffAutoResetTimeout) clearTimeout(window.staffAutoResetTimeout);
           window.staffAutoResetTimeout = setTimeout(() => {
             if (card) card.style.display = 'none';
-            if (placeholder) placeholder.style.display = 'block';
+            if (placeholder) {
+              placeholder.style.display = 'block';
+              restoreSecPlaceholder();
+            }
             if (actionBtnContainer) actionBtnContainer.style.display = 'flex';
             const usbIn = document.getElementById('usbInput');
             if (usbIn) {
@@ -3489,6 +3532,7 @@
         }
 
       } catch (err) {
+        restoreSecPlaceholder();
         showSecToast(err.message, 'error');
       }
     }
