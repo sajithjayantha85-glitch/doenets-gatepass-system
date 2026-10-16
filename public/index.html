@@ -1690,14 +1690,14 @@
               <div class="tablet-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
               <div class="tablet-btn-text">
                 <span class="tablet-btn-title">ඇතුළු වීම (CHECK-IN)</span>
-                <span class="tablet-btn-sub">Verify NIC & Grant Entry</span>
+                <span class="tablet-btn-sub">Verify NIC & Grant Entry &nbsp;<kbd style="background: rgba(255,255,255,0.28); padding: 2px 7px; border-radius: 6px; font-size: 0.82rem; font-weight: 800; font-family: monospace;">[Enter / 1]</kbd></span>
               </div>
             </button>
             <button type="button" class="btn btn-tablet-action btn-tablet-checkout" id="btnCheckOut" onclick="verifyEntryAction('CHECK_OUT')">
               <div class="tablet-btn-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
               <div class="tablet-btn-text">
                 <span class="tablet-btn-title">පිටවීම (CHECK-OUT)</span>
-                <span class="tablet-btn-sub">Register Departure & Exit</span>
+                <span class="tablet-btn-sub">Register Departure & Exit &nbsp;<kbd style="background: rgba(255,255,255,0.28); padding: 2px 7px; border-radius: 6px; font-size: 0.82rem; font-weight: 800; font-family: monospace;">[Space / 2 / O]</kbd></span>
               </div>
             </button>
           </div>
@@ -2580,16 +2580,56 @@
       }
     }
 
-    // Global USB Barcode Hardware Scanner Auto-Capture
+    // Global USB Barcode Hardware Scanner Auto-Capture & Security Action Shortcuts
     document.addEventListener('keydown', (e) => {
       const secTab = document.getElementById('security-scan');
       if (!secTab || !secTab.classList.contains('active')) return;
+
+      const card = document.getElementById('scanResultCard');
+      const isCardOpen = card && card.style.display === 'block' && activePassCode;
+
+      if (isCardOpen) {
+        // 1. Check-Out Actions: Spacebar, Key '2', Key 'O' / 'o', or Shift+Enter
+        if (e.code === 'Space' || e.key === ' ' || e.key === '2' || e.key === 'o' || e.key === 'O' || (e.key === 'Enter' && e.shiftKey)) {
+          e.preventDefault();
+          verifyEntryAction('CHECK_OUT');
+          return;
+        }
+
+        // 2. Check-In Actions: Key '1', Key 'I' / 'i'
+        if (e.key === '1' || e.key === 'i' || e.key === 'I') {
+          e.preventDefault();
+          verifyEntryAction('CHECK_IN');
+          return;
+        }
+
+        // 3. Enter Key: Intelligent Verification
+        // If Check-Out is recommended (e.g. person is already inside), Enter executes CHECK_OUT.
+        // Otherwise, Enter executes CHECK_IN.
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const btnCheckOut = document.getElementById('btnCheckOut');
+          if (btnCheckOut && btnCheckOut.classList.contains('recommended-pulse')) {
+            verifyEntryAction('CHECK_OUT');
+          } else {
+            verifyEntryAction('CHECK_IN');
+          }
+          return;
+        }
+
+        // 4. Escape Key: Cancel and reset back to scanner
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          restoreSecPlaceholder();
+          return;
+        }
+      }
 
       const activeEl = document.activeElement;
       const isInputField = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
 
       const usbInput = document.getElementById('usbInput');
-      if (usbInput && !isInputField) {
+      if (usbInput && !isInputField && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         usbInput.focus();
       }
     });
@@ -3406,8 +3446,12 @@
         if (scanDebounceTimer) clearTimeout(scanDebounceTimer);
         const card = document.getElementById('scanResultCard');
         if (card && card.style.display === 'block' && activePassCode) {
-          // If a manual pass card is open waiting for guard verification, Enter key immediately verifies check-in!
-          verifyEntryAction('CHECK_IN');
+          const btnCheckOut = document.getElementById('btnCheckOut');
+          if (btnCheckOut && btnCheckOut.classList.contains('recommended-pulse')) {
+            verifyEntryAction('CHECK_OUT');
+          } else {
+            verifyEntryAction('CHECK_IN');
+          }
         } else {
           lookupPassCode(e.target.value);
         }
@@ -3528,7 +3572,7 @@
           <div class="tablet-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
           <div class="tablet-btn-text">
             <span class="tablet-btn-title">ඇතුළු වීම (CHECK-IN)</span>
-            <span class="tablet-btn-sub">Verify NIC & Grant Entry</span>
+            <span class="tablet-btn-sub">Verify NIC & Grant Entry &nbsp;<kbd style="background: rgba(255,255,255,0.28); padding: 2px 7px; border-radius: 6px; font-size: 0.82rem; font-weight: 800; font-family: monospace;">[Enter / 1]</kbd></span>
           </div>`;
         btnCheckIn.classList.remove('recommended-pulse');
         btnCheckIn.disabled = false;
@@ -3538,7 +3582,7 @@
           <div class="tablet-btn-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
           <div class="tablet-btn-text">
             <span class="tablet-btn-title">පිටවීම (CHECK-OUT)</span>
-            <span class="tablet-btn-sub">Register Departure & Exit</span>
+            <span class="tablet-btn-sub">Register Departure & Exit &nbsp;<kbd style="background: rgba(255,255,255,0.28); padding: 2px 7px; border-radius: 6px; font-size: 0.82rem; font-weight: 800; font-family: monospace;">[Space / 2 / O]</kbd></span>
           </div>`;
         btnCheckOut.classList.remove('recommended-pulse');
         btnCheckOut.disabled = false;
@@ -3984,7 +4028,7 @@
             <div class="tablet-btn-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
             <div class="tablet-btn-text">
               <span class="tablet-btn-title">ඇතුළු වීම (CHECK-IN)</span>
-              <span class="tablet-btn-sub">Verify NIC & Grant Entry</span>
+              <span class="tablet-btn-sub">Verify NIC & Grant Entry &nbsp;<kbd style="background: rgba(255,255,255,0.28); padding: 2px 7px; border-radius: 6px; font-size: 0.82rem; font-weight: 800; font-family: monospace;">[Enter / 1]</kbd></span>
             </div>`;
         }
         if (btnCheckOut) {
@@ -3992,7 +4036,7 @@
             <div class="tablet-btn-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
             <div class="tablet-btn-text">
               <span class="tablet-btn-title">පිටවීම (CHECK-OUT)</span>
-              <span class="tablet-btn-sub">Register Departure & Exit</span>
+              <span class="tablet-btn-sub">Register Departure & Exit &nbsp;<kbd style="background: rgba(255,255,255,0.28); padding: 2px 7px; border-radius: 6px; font-size: 0.82rem; font-weight: 800; font-family: monospace;">[Space / 2 / O]</kbd></span>
             </div>`;
         }
       }
