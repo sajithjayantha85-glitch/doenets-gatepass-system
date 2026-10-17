@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+  <meta charset="UTF-8">
+  <title>ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව - අභ්‍යන්තර Server ස්ථාපන මාර්ගෝපදේශය</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 14mm 14mm 16mm 14mm;
+    }
+    
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Noto Sans Sinhala', 'Iskoola Pota', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.55;
+      font-size: 12.5px;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* COVER PAGE */
+    .cover-page {
+      height: 100%;
+      min-height: 250mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 3px solid #1e3a8a;
+      border-radius: 12px;
+      padding: 40px 35px;
+      page-break-after: always;
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 60%, #eff6ff 100%);
+    }
+
+    .cover-top {
+      text-align: center;
+    }
+
+    .emblem-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #1e3a8a;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .emblem-sub {
+      font-size: 14px;
+      color: #475569;
+      font-weight: 600;
+      margin-bottom: 25px;
+    }
+
+    .cover-divider {
+      height: 4px;
+      background: linear-gradient(90deg, #1e3a8a, #059669, #d97706);
+      border-radius: 2px;
+      margin: 15px auto 35px auto;
+      width: 80%;
+    }
+
+    .doc-badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1e40af;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 16px;
+      border-radius: 999px;
+      border: 1px solid #bfdbfe;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    .cover-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1.35;
+      margin-bottom: 12px;
+    }
+
+    .cover-sub {
+      font-size: 15px;
+      color: #2563eb;
+      font-weight: 700;
+      line-height: 1.4;
+      max-width: 90%;
+      margin: 0 auto;
+    }
+
+    .cover-highlights {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin: 40px 0;
+    }
+
+    .highlight-card {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .highlight-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .highlight-desc {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .cover-meta {
+      border-top: 1.5px solid #e2e8f0;
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .cover-meta strong {
+      color: #1e293b;
+    }
+
+    /* DOCUMENT CONTENT */
+    .page {
+      page-break-after: always;
+      padding-top: 10px;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 18px;
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .page-header .brand {
+      color: #1e3a8a;
+      font-weight: 800;
+    }
+
+    h2.section-title {
+      font-size: 17px;
+      color: #1e3a8a;
+      border-left: 5px solid #2563eb;
+      padding-left: 10px;
+      margin-top: 20px;
+      margin-bottom: 12px;
+      font-weight: 900;
+    }
+
+    h3.sub-title {
+      font-size: 13.5px;
+      color: #0f172a;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      font-weight: 800;
+    }
+
+    p {
+      margin-top: 0;
+      margin-bottom: 10px;
+      text-align: justify;
+    }
+
+    /* CALLOUT BOXES */
+    .callout {
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 12px 0;
+      font-size: 12px;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #1e40af;
+    }
+
+    .callout-success {
+      background: #ecfdf5;
+      border-color: #10b981;
+      color: #065f46;
+    }
+
+    .callout-warning {
+      background: #fffbeb;
+      border-color: #f59e0b;
+      color: #92400e;
+    }
+
+    .callout-danger {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #991b1b;
+    }
+
+    .callout-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* CODE BOXES */
+    .code-box {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11.5px;
+      margin: 8px 0 12px 0;
+      line-height: 1.5;
+      border: 1px solid #334155;
+    }
+
+    .code-box .comment {
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    .code-box .cmd {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    .code-box .kw {
+      color: #a78bfa;
+    }
+
+    /* STEP CARDS */
+    .step-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .step-badge {
+      background: #1e3a8a;
+      color: #ffffff;
+      font-weight: 900;
+      font-size: 11px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1e293b;
+      margin: 0;
+    }
+
+    /* TABLES */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 11.5px;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+      text-align: left;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #1e293b;
+      font-weight: 800;
+    }
+
+    tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+
+    /* FOOTER */
+    .page-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      font-size: 9.5px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== COVER PAGE ==================== -->
+  <div class="cover-page">
+    <div class="cover-top">
+      <div class="emblem-title">🏛️ ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව</div>
+      <div class="emblem-sub">Department of Examinations, Sri Lanka</div>
+      <div class="cover-divider"></div>
+      
+      <span class="doc-badge">Official Technical Deployment Manual</span>
+      
+      <h1 class="cover-title">
+        QR Gate Pass & Security Entry Management System
+      </h1>
+      
+      <div class="cover-sub">
+        දෙපාර්තමේන්තු අභ්‍යන්තර සේවාදායකයක (Local On-Premise Server / LAN) පද්ධතිය ස්වාධීනව ස්ථාපනය සහ නඩත්තු කිරීමේ පූර්ණ මාර්ගෝපදේශය
+      </div>
+    </div>
+
+    <div class="cover-highlights">
+      <div class="highlight-card">
+        <div class="highlight-title">🔒 100% Offline & Data Security</div>
+        <div class="highlight-desc">අන්තර්ජාලය නොමැතිව Local Wi-Fi මඟින් ක්‍රියාත්මක වන අතර රහස්‍ය අංශයේ කිසිදු දත්තයක් පරිශ්‍රයෙන් පිටතට නොයයි.</div>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-title">⚡ 0ms Zero-Lag Gate Scanning</div>
+        <div class="highlight-desc">Cloud ප්‍රමාදයන් නැත. ගේට්ටුවේ මුර කුටියේ සිට ක්ෂණිකව මිලි තත්පර තුළ සත්‍යාපනය සිදු වේ.</div>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-title">💰 100% Free & No Monthly Fees</div>
+        <div class="highlight-desc">මාසික Cloud Hosting ගාස්තු හෝ Database ගාස්තු කිසිවක් නැත. සදාකාලිකව නොමිලේ ධාවනය කළ හැක.</div>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-title">🔄 Auto-Start & Crash Recovery</div>
+        <div class="highlight-desc">විදුලිය විසන්ධි වී පරිගණකය නැවත On වන විට පද්ධතිය පසුබිමින් ඉබේම ආරම්භ වේ (PM2 Daemon).</div>
+      </div>
+    </div>
+
+    <div class="cover-meta">
+      <div><strong>අනුවාදය:</strong> 2.0 (LTS Production)</div>
+      <div><strong>ලේඛන වර්ගය:</strong> Confidential Technical Document</div>
+      <div><strong>දෙපාර්තමේන්තු අංශය:</strong> IT & Administration Branch</div>
+      <div><strong>දිනය:</strong> 2026 ඔක්තෝබර්</div>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE 1 ==================== -->
+  <div class="page">
+    <div class="page-header">
+      <span class="brand">ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව | Gate Pass System</span>
+      <span>පරිච්ඡේදය 1 & 2: පද්ධති වාසි සහ අවශ්‍යතා</span>
+    </div>
+
+    <h2 class="section-title">1. හැඳින්වීම සහ අභ්‍යන්තර Server එකක ධාවනය කිරීමේ වාසි</h2>
+    <p>
+      මෙම පද්ධතිය ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තු පරිශ්‍රයේ දෛනික අමුත්තන්, අභ්‍යන්තර ස්ථීර කාර්ය මණ්ඩලය (Establishment Staff), රහස්‍ය අංශයේ ප්‍රශ්න පත්‍ර සම්පාදකයින් (Confidential Paper Setters) සහ ඇගයීම් මණ්ඩල සාමාජිකයින් (Evaluation Officers) ගේ පැමිණීම සහ පිටවීම ස්වයංක්‍රීයව QR Code සහ RFID Smart Card මඟින් සත්‍යාපනය කිරීම සඳහා නිර්මාණය කර ඇත.
+    </p>
+
+    <div class="callout callout-success">
+      <div class="callout-title">🌟 අභ්‍යන්තර Local Server එකක ධාවනය කිරීමේ සුවිශේෂී වාසි:</div>
+      <ul style="margin: 6px 0 0 16px; padding: 0;">
+        <li><strong>අන්තර්ජාලය අත්‍යවශ්‍ය නොවේ (100% Offline):</strong> දෙපාර්තමේන්තුවේ අන්තර්ජාල සබඳතාව බිඳවැටුණද ගේට්ටුවේ මුරකුටියේ පද්ධතිය සාමාන්‍ය පරිදි ක්‍රියාත්මක වේ.</li>
+        <li><strong>දත්ත රහස්‍යභාවය (Absolute Confidentiality):</strong> රහස්‍ය අංශයේ මහාචාර්යවරුන්ගේ, විභාග පරීක්ෂකවරුන්ගේ සහ සේවකයින්ගේ විස්තර විදේශීය Cloud Servers වෙත නොගොස් දෙපාර්තමේන්තුව තුළම භෞතිකව පවතී.</li>
+        <li><strong>පිටතින් හැක් කළ නොහැකි වීම:</strong> පද්ධතිය අන්තර්ජාලයට විවෘත නොවන බැවින්, බාහිර හැකර්වරුන්ට අන්තර්ජාලය ඔස්සේ Database එකට ප්‍රවේශ විය නොහැක.</li>
+        <li><strong>ශුන්‍ය පිරිවැය (Zero Cost):</strong> වාර්ෂික හෝ මාසික කිසිදු නඩත්තු ගාස්තුවක් හෝ සේවාදායක බිල්පත් ගෙවීමට සිදු නොවේ.</li>
+      </ul>
+    </div>
+
+    <h2 class="section-title">2. අවශ්‍ය අවම පිරිවිතර (System Specifications)</h2>
+    
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 28%;">අංශය (Component)</th>
+          <th style="width: 36%;">අවම අවශ්‍යතාවය (Minimum)</th>
+          <th style="width: 36%;">නිර්දේශිත මට්ටම (Recommended)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Server පරිගණකය</strong></td>
+          <td>Core i3 (4th Gen) / 4 GB RAM</td>
+          <td>Core i5 (8th Gen හෝ ඉහළ) / 8 GB RAM / SSD</td>
+        </tr>
+        <tr>
+          <td><strong>මෙහෙයුම් පද්ධතිය (OS)</strong></td>
+          <td>Windows 10 (64-bit)</td>
+          <td>Windows 11 Pro හෝ Windows Server 2022</td>
+        </tr>
+        <tr>
+          <td><strong>මෘදුකාංග පරිසරය</strong></td>
+          <td>Node.js v18.x LTS</td>
+          <td>Node.js v20.x හෝ v22.x LTS (නොමිලේ)</td>
+        </tr>
+        <tr>
+          <td><strong>දත්ත ගබඩාව (Database)</strong></td>
+          <td>Built-in Local SQLite (`gatepass.db`)</td>
+          <td>Local SQLite (ස්වයංක්‍රීයව නිර්මාණය වේ)</td>
+        </tr>
+        <tr>
+          <td><strong>දේශීය ජාලය (LAN / Wi-Fi)</strong></td>
+          <td>100 Mbps Wi-Fi Router එකක්</td>
+          <td>Gigabit LAN Switch / Dual-Band Wi-Fi Router</td>
+        </tr>
+        <tr>
+          <td><strong>ගේට්ටුවේ උපාංග (Gate Device)</strong></td>
+          <td>ඕනෑම Android / iPad Tablet එකක්</td>
+          <td>10-inch Tablet + 2D USB/Bluetooth QR Scanner</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <div class="callout-title">ℹ️ වැදගත් සටහන:</div>
+      කාර්යාලයේ සාමාන්‍ය භාවිතය සඳහා දැනටමත් පවතින ඕනෑම Desktop පරිගණකයක් Server එකක් ලෙස යොදාගත හැකි අතර වෙනම විශේෂිත Server යන්ත්‍රයක් මිලදී ගැනීම අවශ්‍ය නොවේ.
+    </div>
+
+    <div class="page-footer">
+      <span>ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව - අභ්‍යන්තර Server ස්ථාපන මාර්ගෝපදේශය</span>
+      <span>පිටුව 1</span>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE 2 ==================== -->
+  <div class="page">
+    <div class="page-header">
+      <span class="brand">ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව | Gate Pass System</span>
+      <span>පරිච්ඡේදය 3: පියවරෙන් පියවර ස්ථාපන උපදෙස් (Part 1)</span>
+    </div>
+
+    <h2 class="section-title">3. පියවරෙන් පියවර සේවාදායකය සැකසීම (Step-by-Step Setup)</h2>
+
+    <!-- STEP 1 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-badge">1</div>
+        <h3 class="step-title">Node.js පරිසරය Server පරිගණකයේ ස්ථාපනය කිරීම</h3>
+      </div>
+      <p>
+        පද්ධතියේ පසුබිම් සේවා (Backend Engine) ධාවනය කිරීම සඳහා නොමිලේ ලබාගත හැකි Node.js ස්ථාපනය කරගත යුතුය:
+      </p>
+      <ol style="margin: 0 0 8px 18px; padding: 0;">
+        <li>වෙබ් බ්‍රවුසරයෙන් <strong style="color:#2563eb;">https://nodejs.org</strong> වෙත පිවිසෙන්න.</li>
+        <li>එහි ඇති <strong>LTS (Long Term Support)</strong> අනුවාදයේ Installer ගොනුව බාගත (Download) කරගන්න.</li>
+        <li>බාගත වූ Setup එක Run කර සාමාන්‍ය පරිදි Next කරමින් Install කරගන්න.</li>
+        <li>ස්ථාපනය සාර්ථකදැයි පරීක්ෂා කිරීමට Command Prompt (cmd) විවෘත කර පහත විධානය ලබා දෙන්න:</li>
+      </ol>
+      <div class="code-box">
+        <span class="cmd">node -v</span><br>
+        <span class="comment"># Output: v20.x.x හෝ v22.x.x ලෙස අනුවාදය දිස්වනු ඇත.</span>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-badge">2</div>
+        <h3 class="step-title">පද්ධති ගොනු පිටපත් කිරීම සහ Dependencies ස්ථාපනය</h3>
+      </div>
+      <p>
+        පද්ධතියේ සම්පූර්ණ ෆෝල්ඩරය Server පරිගණකයේ ආරක්ෂිත ස්ථානයකට පිටපත් කර අවශ්‍ය සංරචක සකස් කරගන්න:
+      </p>
+      <ol style="margin: 0 0 8px 18px; padding: 0;">
+        <li><code>gate pass system</code> ෆෝල්ඩරය Server පරිගණකයේ <code>C:\doenets-gatepass</code> ලෙස Copy කරන්න.</li>
+        <li>Command Prompt එක විවෘත කර එම ෆෝල්ඩරය තුළට පිවිසෙන්න:</li>
+      </ol>
+      <div class="code-box">
+        <span class="cmd">cd C:\doenets-gatepass</span><br>
+        <span class="cmd">npm install</span><br>
+        <span class="comment"># මෙය මඟින් express, sqlite3, qrcode ආදී සියලුම අවශ්‍ය පුස්තකාල ස්වයංක්‍රීයව ස්ථාපනය වේ.</span>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-badge">3</div>
+        <h3 class="step-title">Local SQLite දත්ත ගබඩාව (Offline Database) ක්‍රියාත්මක වීම</h3>
+      </div>
+      <p>
+        පද්ධතිය ආරම්භ වන විටම එය ස්වයංක්‍රීයව දේශීය <strong>Local SQLite (gatepass.db)</strong> ක්‍රමවේදයට මාරු වේ. කිසිදු අතිරේක Database Server එකක් (MySQL, SQL Server) ස්ථාපනය කිරීම හෝ ගෙවීම් කිරීම අවශ්‍ය නොවේ. සියලුම දත්ත <code>gatepass.db</code> ගොනුව තුළ අතිශය වේගවත්ව තැන්පත් වේ.
+      </p>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-badge">4</div>
+        <h3 class="step-title">Server පරිගණකයේ ස්ථාවර IP ලිපිනය (Static IP) සොයාගැනීම</h3>
+      </div>
+      <p>
+        ගේට්ටුවේ ටැබ්ලට් සහ කාර්යාල පරිගණක Server එකට සම්බන්ධ කරගැනීමට Server එකේ IP ලිපිනය අවශ්‍ය වේ:
+      </p>
+      <div class="code-box">
+        <span class="cmd">ipconfig</span><br>
+        <span class="comment"># එහි ඇති "IPv4 Address" එක සටහන් කරගන්න (උදා: 192.168.1.100)</span>
+      </div>
+      <div class="callout callout-warning" style="margin-top: 6px;">
+        <div class="callout-title">💡 තාක්ෂණික උපදෙස (Static IP):</div>
+        Router එක Restart වන විට පරිගණකයේ IP එක මාරු වීම වැළැක්වීමට, Server පරිගණකයේ Network Properties වෙත ගොස් Static IP එකක් (උදා: <code>192.168.1.100</code>) ලබාදීම හෝ Router එකෙහි DHCP IP Reservation කිරීම වඩාත් සුදුසුය.
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span>ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව - අභ්‍යන්තර Server ස්ථාපන මාර්ගෝපදේශය</span>
+      <span>පිටුව 2</span>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE 3 ==================== -->
+  <div class="page">
+    <div class="page-header">
+      <span class="brand">ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව | Gate Pass System</span>
+      <span>පරිච්ඡේදය 3 (Part 2) & 4: Auto-Start සහ උපාංග සම්බන්ධ කිරීම</span>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-badge">5</div>
+        <h3 class="step-title">පරිගණකය On වන විට ඉබේ Server ආරම්භ වීම (PM2 Daemon Setup)</h3>
+      </div>
+      <p>
+        විදුලිය විසන්ධි වී පරිගණකය නැවත Restart වන විට, කිසිවෙකු Login නොවී වුවද පද්ධතිය පසුබිමින් (Background Service) ඉබේම Start වීමට <strong>PM2 Process Manager</strong> ස්ථාපනය කරගත යුතුය.
+      </p>
+      <p>Command Prompt එක <strong>"Run as Administrator"</strong> ලෙස විවෘත කර පහත විධානයන් පිළිවෙලින් ක්‍රියාත්මක කරන්න:</p>
+      <div class="code-box">
+        <span class="comment"># 1. PM2 සහ Windows Startup Helper ස්ථාපනය කරන්න</span><br>
+        <span class="cmd">npm install -g pm2</span><br>
+        <span class="cmd">npm install -g pm2-windows-startup</span><br>
+        <span class="cmd">pm2-startup install</span><br><br>
+        <span class="comment"># 2. Gate Pass Server එක PM2 මඟින් ආරම්භ කර Save කරන්න</span><br>
+        <span class="cmd">cd C:\doenets-gatepass</span><br>
+        <span class="cmd">pm2 start server.js --name "doenets-gatepass"</span><br>
+        <span class="cmd">pm2 save</span>
+      </div>
+      <div class="callout callout-success">
+        <div class="callout-title">✓ ප්‍රතිඵලය:</div>
+        දැන් පරිගණකය Restart වුවද, කිසිදු කළු තිරයක් (cmd window) විවෘත නොවී පසුබිමින් නොනවත්වා පද්ධතිය පැය 24 පුරාම සක්‍රීයව පවතී.
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-badge">6</div>
+        <h3 class="step-title">Windows Firewall හරහා Port 5000 විවෘත කිරීම</h3>
+      </div>
+      <p>
+        ගේට්ටුවේ මුර කුටියේ ඇති Tablets, Phones සහ අනෙකුත් කාර්යාල පරිගණක වලට Server එකට සම්බන්ධ වීමට ඉඩදීම සඳහා Windows Firewall හි Port 5000 විවෘත කළ යුතුය:
+      </p>
+      <ol style="margin: 0 0 8px 18px; padding: 0;">
+        <li>Start Menu එකෙහි <strong>"Windows Defender Firewall with Advanced Security"</strong> විවෘත කරන්න.</li>
+        <li>වම් පස ඇති <strong>Inbound Rules</strong> ක්ලික් කර දකුණු පස ඇති <strong>New Rule...</strong> තෝරන්න.</li>
+        <li><strong>Port</strong> තෝරා Next කරන්න &rarr; <strong>TCP</strong> සහ Specific local ports හි <code>5000</code> ලෙස සටහන් කර Next කරන්න.</li>
+        <li><strong>Allow the connection</strong> තෝරා Next කරන්න &rarr; Domain, Private, Public තුනම Tick කර Next කරන්න.</li>
+        <li>Name ලෙස <code>DoenetsGatePassPort5000</code> ලෙස ලබා දී <strong>Finish</strong> කරන්න.</li>
+      </ol>
+    </div>
+
+    <h2 class="section-title">4. ප්‍රධාන ගේට්ටුවේ ටැබ්ලට් සහ කාර්යාල පරිගණක සම්බන්ධ කිරීම</h2>
+    <p>
+      දෙපාර්තමේන්තු Wi-Fi හෝ LAN ජාලයට සම්බන්ධ වී ඇති ඕනෑම පරිගණකයකින් හෝ Tablet එකකින් වෙබ් බ්‍රවුසරය (Google Chrome / Microsoft Edge / Safari) විවෘත කර පහත ලිපිනය ඇතුළත් කරන්න:
+    </p>
+
+    <div class="callout callout-info" style="font-size: 14px; text-align: center; padding: 12px;">
+      👉 <strong>http://192.168.1.100:5000</strong><br>
+      <span style="font-size: 11px; color: #475569;">(මෙහි <code>192.168.1.100</code> වෙනුවට ඔබගේ Server පරිගණකයේ සැබෑ IP ලිපිනය ඇතුළත් කරන්න)</span>
+    </div>
+
+    <div class="page-footer">
+      <span>ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව - අභ්‍යන්තර Server ස්ථාපන මාර්ගෝපදේශය</span>
+      <span>පිටුව 3</span>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE 4 ==================== -->
+  <div class="page">
+    <div class="page-header">
+      <span class="brand">ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව | Gate Pass System</span>
+      <span>පරිච්ඡේදය 5 & 6: උපස්ථ කිරීම් (Backups), ආරක්ෂාව සහ නඩත්තුව</span>
+    </div>
+
+    <h2 class="section-title">5. දෛනික දත්ත උපස්ථ කිරීම සහ ප්‍රතිස්ථාපනය (Data Backup & Recovery)</h2>
+    <p>
+      පද්ධතියේ දත්ත කිසිදු ආකාරයකින් අහිමි නොවන පරිදි ඉතා පහසුවෙන් උපස්ථ (Backup) ලබාගත හැකි ක්‍රම 2 ක් සකසා ඇත:
+    </p>
+
+    <h3 class="sub-title">ක්‍රමය 1: Admin Dashboard එකෙන් One-Click JSON Backup ලබාගැනීම</h3>
+    <ol style="margin: 0 0 10px 18px; padding: 0;">
+      <li>Super Admin ගිණුමෙන් පද්ධතියට ලොග් වී <strong>Admin Live Console</strong> වෙත පිවිසෙන්න.</li>
+      <li>ඉහළ දකුණු කෙළවරේ ඇති <strong>📥 Backup DB</strong> බොත්තම ක්ලික් කරන්න.</li>
+      <li>එවිට සම්පූර්ණ දත්ත ගබඩාවම (Passes, Logs, Users, System Audit) JSON ගොනුවක් ලෙස තත්පර 1 කින් ඔබගේ පරිගණකයට බාගත වේ.</li>
+    </ol>
+
+    <h3 class="sub-title">ක්‍රමය 2: භෞතික Database File එක Copy කර තබා ගැනීම</h3>
+    <p>
+      පද්ධතියේ සියලු දත්ත ගබඩා වී ඇත්තේ <code>C:\doenets-gatepass\gatepass.db</code> නම් තනි ගොනුවකය. 
+      සෑම සතියකම හෝ මසකට වරක් මෙම <code>gatepass.db</code> ගොනුව External Hard Drive එකකට හෝ Pen Drive එකකට Copy කර තබා ගැනීමෙන් පරිගණකය මුළුමනින්ම අක්‍රිය වුවද වෙනත් ඕනෑම පරිගණකයකට එම ගොනුව පිටපත් කර පද්ධතිය යථා තත්ත්වයට පත් කරගත හැක.
+    </p>
+
+    <h2 class="section-title">6. පෙරනිමි පරිශීලක ගිණුම් (Default System Logins)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>පරිශීලක භූමිකාව (Role)</th>
+          <th>Username</th>
+          <th>Default Password</th>
+          <th>ප්‍රවේශ බලතල (Permissions)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Super Administrator</strong></td>
+          <td><code>admin</code></td>
+          <td><code>admin123</code></td>
+          <td>සම්පූර්ණ පාලනය, පරිශීලක කළමනාකරණය, Backups, Cards</td>
+        </tr>
+        <tr>
+          <td><strong>Establishment Branch (HR)</strong></td>
+          <td><code>hr_admin</code></td>
+          <td><code>staff123</code></td>
+          <td>ස්ථීර සේවක QR Pass & RFID Card නිකුත් කිරීම, සේවක නාමාවලිය</td>
+        </tr>
+        <tr>
+          <td><strong>Confidential Branch</strong></td>
+          <td><code>confidential</code></td>
+          <td><code>secret123</code></td>
+          <td>රහස්‍ය අංශයේ ප්‍රශ්න පත්‍ර සම්පාදක විශේෂ බලපත්‍ර නිකුත් කිරීම</td>
+        </tr>
+        <tr>
+          <td><strong>Evaluation Branch</strong></td>
+          <td><code>evaluation</code></td>
+          <td><code>eval123</code></td>
+          <td>ඇගයීම් මණ්ඩල සාමාජිකයින්ගේ විශේෂ පාස් නිකුත් කිරීම</td>
+        </tr>
+        <tr>
+          <td><strong>Main Gate Security</strong></td>
+          <td><code>security</code></td>
+          <td><code>gate123</code></td>
+          <td>ගේට්ටුවේ මුර කුටිය, QR / RFID ස්කෑනරය, Check-In / Check-Out</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warning">
+      <div class="callout-title">⚠️ ආරක්ෂක උපදෙස (Security Notice):</div>
+      පද්ධතිය පළමු වරට නිෂ්පාදන මට්ටමේ (Production) ස්ථාපනය කළ වහාම, Admin Dashboard හි ඇති <strong>User Accounts & Roles</strong> අංශය වෙත පිවිස ඉහත පෙරනිමි මුරපද (Default Passwords) ශක්තිමත් නව මුරපද වලට මාරු කරන්න.
+    </div>
+
+    <h2 class="section-title">7. නිතර අසන ගැටලු සහ විසඳුම් (Troubleshooting FAQs)</h2>
+    <div style="font-size: 11.5px;">
+      <p style="margin-bottom: 4px;"><strong>Q1: ගේට්ටුවේ ටැබ්ලට් එකෙන් Server එකට සම්බන්ධ විය නොහැක (Site cannot be reached)?</strong><br>
+      <span style="color:#475569;">A: 1) Server පරිගණකය සහ ටැබ්ලට් එක එකම Wi-Fi Router එකට සම්බන්ධ වී ඇත්දැයි බලන්න. 2) Windows Firewall හි Port 5000 Inbound Rule එක සකසා ඇත්දැයි පරීක්ෂා කරන්න. 3) Server එකේ IP එක වෙනස් වී ඇත්දැයි <code>ipconfig</code> මඟින් බලන්න.</span></p>
+
+      <p style="margin-bottom: 4px;"><strong>Q2: ටැබ්ලට් එකේ කැමරාව ක්‍රියාත්මක නොවන්නේ නම්?</strong><br>
+      <span style="color:#475569;">A: Chrome බ්‍රවුසරයේ Settings &rarr; Site Settings වෙත ගොස් Camera Permission එක "Allow" කර ඇති බව තහවුරු කරන්න.</span></p>
+
+      <p style="margin-bottom: 0;"><strong>Q3: විදුලිය ඇනහිටීමකදී දත්ත විනාශ වේද?</strong><br>
+      <span style="color:#475569;">A: නැත. SQLite දත්ත ගබඩාව ACID Compliant වන බැවින් සටහන් වූ දත්ත කිසිවක් විනාශ නොවේ. පරිගණකය සඳහා කුඩා UPS එකක් භාවිත කිරීම වඩාත් සුදුසුය.</span></p>
+    </div>
+
+    <div class="page-footer">
+      <span>ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව - අභ්‍යන්තර Server ස්ථාපන මාර්ගෝපදේශය</span>
+      <span>පිටුව 4 (අවසාන පිටුව)</span>
+    </div>
+  </div>
+
+</body>
+</html>
