@@ -6868,6 +6868,9 @@
 
       try {
         const recipient = document.getElementById('txtEmailRecipient') ? document.getElementById('txtEmailRecipient').value.trim() : 'admin@doenets.lk';
+        const brevo_api_key = document.getElementById('txtBrevoApiKey') ? document.getElementById('txtBrevoApiKey').value.trim() : '';
+        const brevo_sender_email = document.getElementById('txtBrevoSenderEmail') ? document.getElementById('txtBrevoSenderEmail').value.trim() : '';
+        const resend_api_key = document.getElementById('txtResendApiKey') ? document.getElementById('txtResendApiKey').value.trim() : '';
 
         const res = await fetch('/api/admin/email-report/test', {
           method: 'POST',
@@ -6875,7 +6878,7 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ recipient })
+          body: JSON.stringify({ recipient, brevo_api_key, brevo_sender_email, resend_api_key })
         });
 
         const data = await res.json();

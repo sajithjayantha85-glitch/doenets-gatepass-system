@@ -1704,13 +1704,23 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
   ];
   if (resend_api_key !== undefined) {
     const val = String(resend_api_key).trim();
-    queries.push({ key: 'resend_api_key', val });
-    emailReportConfig.resend_api_key = val;
+    if (val === '__CLEAR__') {
+      queries.push({ key: 'resend_api_key', val: '' });
+      emailReportConfig.resend_api_key = '';
+    } else if (val !== '') {
+      queries.push({ key: 'resend_api_key', val });
+      emailReportConfig.resend_api_key = val;
+    }
   }
   if (brevo_api_key !== undefined) {
     const val = String(brevo_api_key).trim();
-    queries.push({ key: 'brevo_api_key', val });
-    emailReportConfig.brevo_api_key = val;
+    if (val === '__CLEAR__') {
+      queries.push({ key: 'brevo_api_key', val: '' });
+      emailReportConfig.brevo_api_key = '';
+    } else if (val !== '') {
+      queries.push({ key: 'brevo_api_key', val });
+      emailReportConfig.brevo_api_key = val;
+    }
   }
   if (brevo_sender_email !== undefined) {
     const val = String(brevo_sender_email).trim();
@@ -1766,6 +1776,40 @@ app.post('/api/admin/email-report/test', authenticateToken, async (req, res) => 
     return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
   }
   const recipient = req.body.recipient || emailReportConfig.recipient;
+
+  if (req.body.brevo_api_key && String(req.body.brevo_api_key).trim() !== '') {
+    const bKey = String(req.body.brevo_api_key).trim();
+    emailReportConfig.brevo_api_key = bKey;
+    db.run(
+      `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+       VALUES ('brevo_api_key', ?, 'Test Dispatcher')
+       ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP`,
+      [bKey]
+    );
+  }
+
+  if (req.body.brevo_sender_email && String(req.body.brevo_sender_email).trim() !== '') {
+    const bSender = String(req.body.brevo_sender_email).trim();
+    emailReportConfig.brevo_sender_email = bSender;
+    db.run(
+      `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+       VALUES ('brevo_sender_email', ?, 'Test Dispatcher')
+       ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP`,
+      [bSender]
+    );
+  }
+
+  if (req.body.resend_api_key && String(req.body.resend_api_key).trim() !== '') {
+    const rKey = String(req.body.resend_api_key).trim();
+    emailReportConfig.resend_api_key = rKey;
+    db.run(
+      `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+       VALUES ('resend_api_key', ?, 'Test Dispatcher')
+       ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP`,
+      [rKey]
+    );
+  }
+
   try {
     const result = await sendDailyIntelligenceEmail(recipient);
 
@@ -1787,7 +1831,7 @@ app.post('/api/admin/email-report/test', authenticateToken, async (req, res) => 
     }
 
     res.json({
-      success: result.mode === 'SMTP' || result.mode === 'RESEND_API' || result.mode === 'BREVO_API' || result.mode === 'SIMULATION',
+      success: (result.mode === 'SMTP' || result.mode === 'RESEND_API' || result.mode === 'BREVO_API') && result.success,
       mode: result.mode,
       message,
       result
