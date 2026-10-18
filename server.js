@@ -1697,8 +1697,16 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
     { key: 'email_report_recipient', val: recipientVal },
     { key: 'email_report_time', val: timeVal }
   ];
-  if (resend_api_key !== undefined && String(resend_api_key).trim() !== '') queries.push({ key: 'resend_api_key', val: String(resend_api_key).trim() });
-  if (brevo_api_key !== undefined && String(brevo_api_key).trim() !== '') queries.push({ key: 'brevo_api_key', val: String(brevo_api_key).trim() });
+  if (resend_api_key !== undefined) {
+    const val = String(resend_api_key).trim();
+    queries.push({ key: 'resend_api_key', val });
+    emailReportConfig.resend_api_key = val;
+  }
+  if (brevo_api_key !== undefined) {
+    const val = String(brevo_api_key).trim();
+    queries.push({ key: 'brevo_api_key', val });
+    emailReportConfig.brevo_api_key = val;
+  }
   if (smtp_host !== undefined) queries.push({ key: 'smtp_host', val: String(smtp_host).trim() });
   if (smtp_port !== undefined) queries.push({ key: 'smtp_port', val: String(smtp_port).trim() });
   if (smtp_user !== undefined) queries.push({ key: 'smtp_user', val: String(smtp_user).trim() });
@@ -1716,8 +1724,6 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
   emailReportConfig.enabled = enabled ? 1 : 0;
   emailReportConfig.recipient = recipientVal;
   emailReportConfig.time = timeVal;
-  if (resend_api_key !== undefined && String(resend_api_key).trim() !== '') emailReportConfig.resend_api_key = String(resend_api_key).trim();
-  if (brevo_api_key !== undefined && String(brevo_api_key).trim() !== '') emailReportConfig.brevo_api_key = String(brevo_api_key).trim();
   if (smtp_host !== undefined) emailReportConfig.smtp_host = String(smtp_host).trim();
   if (smtp_port !== undefined) emailReportConfig.smtp_port = parseInt(smtp_port) || 587;
   if (smtp_user !== undefined) emailReportConfig.smtp_user = String(smtp_user).trim();
