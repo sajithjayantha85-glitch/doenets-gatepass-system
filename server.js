@@ -106,7 +106,8 @@ let emailReportConfig = {
   from_name: 'DoENETS Gate Pass Intelligence',
   from_address: process.env.EMAIL_FROM || 'gatepass-alerts@doenets.lk',
   last_sent_date: null,
-  last_sent_status: null
+  last_sent_status: null,
+  last_sent_error: null
 };
 
 function loadEmailSettingsFromDb() {
@@ -117,6 +118,8 @@ function loadEmailSettingsFromDb() {
         if (r.setting_key === 'email_report_recipient') emailReportConfig.recipient = r.setting_value;
         if (r.setting_key === 'email_report_time') emailReportConfig.time = r.setting_value;
         if (r.setting_key === 'email_report_last_sent') emailReportConfig.last_sent_date = r.setting_value;
+        if (r.setting_key === 'email_report_last_status') emailReportConfig.last_sent_status = r.setting_value;
+        if (r.setting_key === 'email_report_last_error') emailReportConfig.last_sent_error = r.setting_value;
         if (r.setting_key === 'resend_api_key') emailReportConfig.resend_api_key = r.setting_value;
         if (r.setting_key === 'smtp_host') emailReportConfig.smtp_host = r.setting_value;
         if (r.setting_key === 'smtp_port') emailReportConfig.smtp_port = parseInt(r.setting_value) || 587;
@@ -645,7 +648,13 @@ function sendViaResendHttps(apiKey, fromAddress, toAddress, subject, htmlContent
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve(parsed);
           } else {
-            reject(new Error(parsed.message || `Resend Error ${res.statusCode}: ${data}`));
+            let errorMsg = parsed.message || `Resend Error ${res.statusCode}: ${data}`;
+            if (errorMsg.includes('only send testing emails to your own email address')) {
+              errorMsg = `Resend පරීක්ෂණ සීමාව: නොමිලේ Resend Test ගිණුමකින් (onboarding@resend.dev) ඊමේල් යැවිය හැක්කේ ඔබ Resend ගිණුම ලියාපදිංචි කළ ඔබගේම ඊමේල් ලිපිනයට (උදා: ඔබගේ Gmail ලිපිනයට) පමණි. කරුණාකර "ලබන්නාගේ ඊමේල් ලිපිනය (Recipient Email)" කොටුවට ඔබ Resend ලියාපදිංචි කළ ඊමේල් ලිපිනයම ඇතුළත් කර සුරකින්න.`;
+            } else if (res.statusCode === 401 || errorMsg.toLowerCase().includes('api key')) {
+              errorMsg = `Resend API Key එක වලංගු නැත: කරුණාකර resend.com වෙතින් ලබාගත් 're_' වලින් පටන්ගන්නා නිවැරදි API Key එක ඇතුළත් කරන්න.`;
+            }
+            reject(new Error(errorMsg));
           }
         } catch (e) {
           reject(new Error(`Resend Response Error: ${data}`));
@@ -750,10 +759,19 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
   const todayStr = new Date().toISOString().split('T')[0];
   emailReportConfig.last_sent_date = todayStr;
   emailReportConfig.last_sent_status = `${dispatchResult.mode}:${dispatchResult.success ? 'SUCCESS' : 'FAILED'}`;
+  emailReportConfig.last_sent_error = dispatchResult.error || '';
 
   db.run(
     "INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('email_report_last_sent', ?, 'System Scheduler') ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP",
     [todayStr]
+  );
+  db.run(
+    "INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('email_report_last_status', ?, 'System Scheduler') ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP",
+    [emailReportConfig.last_sent_status]
+  );
+  db.run(
+    "INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('email_report_last_error', ?, 'System Scheduler') ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP",
+    [emailReportConfig.last_sent_error]
   );
 
   return dispatchResult;
@@ -1568,7 +1586,8 @@ app.get('/api/admin/email-settings', authenticateToken, (req, res) => {
     has_resend_key: !!emailReportConfig.resend_api_key,
     from_address: emailReportConfig.from_address,
     last_sent_date: emailReportConfig.last_sent_date,
-    last_sent_status: emailReportConfig.last_sent_status
+    last_sent_status: emailReportConfig.last_sent_status,
+    last_sent_error: emailReportConfig.last_sent_error || ''
   });
 });
 

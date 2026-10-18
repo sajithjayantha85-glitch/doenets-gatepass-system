@@ -2614,7 +2614,8 @@
                   <input type="password" id="txtResendApiKey" class="form-control" placeholder="re_123456789... (Render Cloud හි Port Blocks මඟහැරීමට මෙය යොදන්න)" style="font-size: 0.88rem;">
                 </div>
                 <p style="margin: 0.45rem 0 0 0; font-size: 0.8rem; color: #166534; line-height: 1.45;">
-                  * <strong>Render Cloud Free Tier</strong> මඟින් සාමාන්‍ය SMTP Ports (465/587) අවහිර කරන බැවින්, Render හි සැබෑ ඊමේල් ලැබීමට Resend API Key එකක් භාවිත කිරීම වඩාත් විශ්වාසදායකය.
+                  * <strong>Render Cloud Free Tier</strong> මඟින් සාමාන්‍ය SMTP Ports (465/587) අවහිර කරන බැවින්, Render හි සැබෑ ඊමේල් ලැබීමට Resend API Key එකක් භාවිත කිරීම වඩාත් විශ්වාසදායකය.<br>
+                  * 💡 <strong>විශේෂ සටහන (Resend Test Mode):</strong> නොමිලේ Resend Test මාදිලියේදී (onboarding@resend.dev) ඊමේල් යැවිය හැක්කේ ඔබ <strong>Resend ගිණුම සෑදූ ඔබගේම ඊමේල් ලිපිනයට පමණි</strong>. එබැවින් ඉහත <em>"ලබන්නාගේ ඊමේල් ලිපිනය (Recipient Email)"</em> කොටුවට ඔබ Resend ලියාපදිංචි කළ ඔබගේම ඊමේල් ලිපිනය (උදා: ඔබගේ Gmail ලිපිනය) ඇතුළත් කර සුරකින්න!
                 </p>
               </div>
 
@@ -6730,7 +6731,13 @@
         const info = document.getElementById('lblLastEmailSentInfo');
         if (info) {
           if (data.last_sent_date) {
-            info.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #059669;"></i> අවසන් වරට වාර්තාව යවන ලද්දේ: <strong>${data.last_sent_date}</strong> (තත්ත්වය: ${data.last_sent_status || 'OK'})`;
+            const isFailed = (data.last_sent_status || '').includes('FAILED');
+            if (isFailed) {
+              const errDetail = data.last_sent_error ? `<div style="margin-top: 0.35rem; color: #b91c1c; font-size: 0.82rem; font-weight: 600; line-height: 1.4;"><i class="fa-solid fa-circle-exclamation"></i> ${data.last_sent_error}</div>` : '';
+              info.innerHTML = `<span style="color: #dc2626;"><i class="fa-solid fa-triangle-exclamation"></i> අවසන් වරට වාර්තාව යැවීමේදී දෝෂයක් සිදුවිය: <strong>${data.last_sent_date}</strong> (තත්ත්වය: ${data.last_sent_status})</span>${errDetail}`;
+            } else {
+              info.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #059669;"></i> අවසන් වරට වාර්තාව යවන ලද්දේ: <strong>${data.last_sent_date}</strong> (තත්ත්වය: ${data.last_sent_status || 'OK'})`;
+            }
           } else {
             info.innerHTML = `<i class="fa-solid fa-circle-info" style="color: #2563eb;"></i> අද දින ස්වයංක්‍රීය වාර්තාව <strong>${data.time}</strong> ට ${data.recipient} වෙත යැවීමට නියමිතයි.`;
           }
