@@ -2197,14 +2197,14 @@
       <div id="subtab-analytics" class="admin-subtab-pane">
         
         <!-- Header & Filter Bar -->
-        <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+        <div class="card" style="margin-bottom: 1.25rem; padding: 1.15rem;">
           <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
             <div>
               <h2 style="font-size: 1.45rem; color: var(--primary-dark); margin: 0 0 0.25rem 0; font-weight: 800;">
                 <i class="fa-solid fa-chart-line" style="color: #2563eb;"></i> Executive Analytics & Institutional Intelligence
               </h2>
-              <p style="color: #64748b; font-size: 0.95rem; margin: 0;">
-                දෙපාර්තමේන්තු පරිශ්‍රයේ දෛනික පැමිණීම්, කාර්යබහුල වේලාවන්, ශාඛා ඉල්ලුම සහ සේවක පැමිණීම් සවිස්තරාත්මක විශ්ලේෂණය
+              <p style="color: #64748b; font-size: 0.92rem; margin: 0;">
+                Departmental gate traffic, peak hours, branch demand, and staff attendance analytics.
               </p>
             </div>
 
@@ -2212,26 +2212,26 @@
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
               <div>
                 <label style="font-size: 0.8rem; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">
-                  <i class="fa-solid fa-layer-group" style="color: #2563eb;"></i> කාණ්ඩය (Category):
+                  <i class="fa-solid fa-layer-group" style="color: #2563eb;"></i> Category:
                 </label>
                 <select id="anFilterCategory" class="form-control" style="padding: 0.5rem 0.85rem; font-weight: 700; min-width: 170px;" onchange="loadAdminAnalytics()">
-                  <option value="ALL">සියලු දෙනා (All Combined)</option>
-                  <option value="STAFF">අභ්‍යන්තර සේවකයින් (Staff Only)</option>
-                  <option value="VISITOR">මහජන අමුත්තන් (Visitors Only)</option>
-                  <option value="CONFIDENTIAL">රහස්‍ය අංශය (Confidential)</option>
-                  <option value="EVALUATION">ඇගයීම් මණ්ඩල (Evaluation)</option>
+                  <option value="ALL">All Categories</option>
+                  <option value="STAFF">Staff Only</option>
+                  <option value="VISITOR">Visitors Only</option>
+                  <option value="CONFIDENTIAL">Confidential Unit</option>
+                  <option value="EVALUATION">Evaluation Panels</option>
                 </select>
               </div>
 
               <div>
                 <label style="font-size: 0.8rem; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">
-                  <i class="fa-solid fa-calendar" style="color: #2563eb;"></i> කාල පරාසය (Timeframe):
+                  <i class="fa-solid fa-calendar" style="color: #2563eb;"></i> Timeframe:
                 </label>
                 <select id="anFilterTimeframe" class="form-control" style="padding: 0.5rem 0.85rem; font-weight: 700; min-width: 160px;" onchange="loadAdminAnalytics()">
-                  <option value="today">අද දින (Today)</option>
-                  <option value="week">පසුගිය දින 7 (Last 7 Days)</option>
-                  <option value="month">පසුගිය දින 30 (Last 30 Days)</option>
-                  <option value="all">සමස්ත ඉතිහාසය (All Time)</option>
+                  <option value="today">Today</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                  <option value="all">All Time</option>
                 </select>
               </div>
 
@@ -2250,471 +2250,502 @@
           </div>
         </div>
 
-        <!-- 6 Main Executive Analytics Metric Cards -->
-        <div class="metrics-grid" style="margin-bottom: 1.5rem;">
-          <div class="metric-card" style="border-left: 6px solid #2563eb;">
-            <div>
-              <div class="metric-val" id="anTotalEntries" style="color: #2563eb;">0</div>
-              <div class="metric-label">Total Gate Check-Ins (මුළු ඇතුළුවීම්)</div>
+        <!-- Sub-Tabs Navigation Bar -->
+        <div class="an-tabs-nav" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; background: #f8fafc; padding: 6px; border-radius: 10px; border: 1.5px solid #e2e8f0;">
+          <button type="button" class="btn an-main-tab-btn active" id="tabBtnOverview" onclick="switchAnalyticsSubTab('an-pane-overview')" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem; background: #2563eb; color: #ffffff; border: none; cursor: pointer; transition: all 0.2s;">
+            <i class="fa-solid fa-chart-pie"></i> Overview & Charts
+          </button>
+          <button type="button" class="btn an-main-tab-btn" id="tabBtnStaff" onclick="switchAnalyticsSubTab('an-pane-staff')" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem; background: transparent; color: #475569; border: none; cursor: pointer; transition: all 0.2s;">
+            <i class="fa-solid fa-user-clock"></i> Staff Attendance & Movement
+          </button>
+          <button type="button" class="btn an-main-tab-btn" id="tabBtnOverstay" onclick="switchAnalyticsSubTab('an-pane-overstay')" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem; background: transparent; color: #475569; border: none; cursor: pointer; transition: all 0.2s;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Overstay & Alerts
+            <span id="anTabBadgeOverstay" class="badge" style="background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 10px; font-size: 0.75rem; margin-left: 2px;">0</span>
+          </button>
+          <button type="button" class="btn an-main-tab-btn" id="tabBtnEmail" onclick="switchAnalyticsSubTab('an-pane-email')" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem; background: transparent; color: #475569; border: none; cursor: pointer; transition: all 0.2s;">
+            <i class="fa-solid fa-envelope-open-text"></i> Automated Daily Reports
+          </button>
+        </div>
+
+        <!-- ==================== SUB-PANE 1: Overview & Charts ==================== -->
+        <div id="an-pane-overview" class="an-subtab-pane active" style="display: block;">
+          <!-- 6 Main Executive Analytics Metric Cards -->
+          <div class="metrics-grid" style="margin-bottom: 1.5rem;">
+            <div class="metric-card" style="border-left: 6px solid #2563eb;">
+              <div>
+                <div class="metric-val" id="anTotalEntries" style="color: #2563eb;">0</div>
+                <div class="metric-label">Total Gate Check-Ins</div>
+              </div>
+              <div class="metric-icon" style="color: #2563eb;"><i class="fa-solid fa-right-to-bracket"></i></div>
             </div>
-            <div class="metric-icon" style="color: #2563eb;"><i class="fa-solid fa-right-to-bracket"></i></div>
+
+            <div class="metric-card" style="border-left: 6px solid #059669;">
+              <div>
+                <div class="metric-val" id="anCurrentlyInside" style="color: #059669;">0</div>
+                <div class="metric-label">Currently Inside Campus</div>
+              </div>
+              <div class="metric-icon" style="color: #059669;"><i class="fa-solid fa-building-user"></i></div>
+            </div>
+
+            <div class="metric-card" style="border-left: 6px solid #0891b2;">
+              <div>
+                <div class="metric-val" id="anAvgDwell" style="color: #0891b2;">-</div>
+                <div class="metric-label">Avg. Dwell Time</div>
+              </div>
+              <div class="metric-icon" style="color: #0891b2;"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            </div>
+
+            <div class="metric-card" style="border-left: 6px solid #d97706;">
+              <div>
+                <div class="metric-val" id="anPeakHour" style="color: #d97706; font-size: 1.35rem; font-weight: 800;">-</div>
+                <div class="metric-label">Peak Entry Hour</div>
+              </div>
+              <div class="metric-icon" style="color: #d97706;"><i class="fa-solid fa-chart-simple"></i></div>
+            </div>
+
+            <div class="metric-card" style="border-left: 6px solid #8b5cf6;">
+              <div>
+                <div class="metric-val" id="anVehiclesInside" style="color: #8b5cf6;">0</div>
+                <div class="metric-label">Vehicles Inside Campus</div>
+              </div>
+              <div class="metric-icon" style="color: #8b5cf6;"><i class="fa-solid fa-car-side"></i></div>
+            </div>
+
+            <div class="metric-card" style="border-left: 6px solid #ef4444;">
+              <div>
+                <div class="metric-val" id="anOverstayCount" style="color: #ef4444;">0</div>
+                <div class="metric-label">Extended Stays (> 4h)</div>
+              </div>
+              <div class="metric-icon" style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
           </div>
 
-          <div class="metric-card" style="border-left: 6px solid #059669;">
-            <div>
-              <div class="metric-val" id="anCurrentlyInside" style="color: #059669;">0</div>
-              <div class="metric-label">Currently Inside Campus (පරිශ්‍රය තුළ)</div>
+          <!-- 2 Visual Analytic Charts (2-Column Grid) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+            <!-- Chart 1: Hourly Peak Traffic Distribution Bar Graph -->
+            <div class="card" style="padding: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; font-weight: 800;">
+                  <i class="fa-solid fa-chart-column" style="color: #2563eb;"></i> Hourly Traffic Distribution
+                </h3>
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Check-Ins per Hour</span>
+              </div>
+              <div id="anHourlyChartContainer" style="min-height: 240px; display: flex; align-items: flex-end; gap: 8px; padding-top: 25px; border-bottom: 2px solid #cbd5e1;">
+                <!-- Dynamic Bars rendered by JS -->
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.78rem; color: #64748b; font-weight: 700;">
+                <span>06:00 AM</span>
+                <span>10:00 AM (Peak)</span>
+                <span>02:00 PM</span>
+                <span>06:00 PM</span>
+              </div>
             </div>
-            <div class="metric-icon" style="color: #059669;"><i class="fa-solid fa-building-user"></i></div>
+
+            <!-- Chart 2: Branch Demand & Workload Progress Bars -->
+            <div class="card" style="padding: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; font-weight: 800;">
+                  <i class="fa-solid fa-building-columns" style="color: #059669;"></i> Branch Workload & Demand
+                </h3>
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Visits Percentage</span>
+              </div>
+              <div id="anBranchDemandContainer" style="display: flex; flex-direction: column; gap: 0.85rem; min-height: 240px;">
+                <!-- Dynamic Branch Rows rendered by JS -->
+              </div>
+            </div>
           </div>
 
-          <div class="metric-card" style="border-left: 6px solid #0891b2;">
-            <div>
-              <div class="metric-val" id="anAvgDwell" style="color: #0891b2;">-</div>
-              <div class="metric-label">Avg. Dwell Time (සාමාන්‍ය රැඳී සිටි කාලය)</div>
+          <!-- Category Breakdown Bar -->
+          <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+              <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; font-weight: 800;">
+                <i class="fa-solid fa-pie-chart" style="color: #8b5cf6;"></i> Category Share Distribution
+              </h3>
+              <span id="anCategoryTotalBadge" class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">0 Total</span>
             </div>
-            <div class="metric-icon" style="color: #0891b2;"><i class="fa-solid fa-clock-rotate-left"></i></div>
-          </div>
-
-          <div class="metric-card" style="border-left: 6px solid #d97706;">
-            <div>
-              <div class="metric-val" id="anPeakHour" style="color: #d97706; font-size: 1.35rem; font-weight: 800;">-</div>
-              <div class="metric-label">Peak Entry Hour (කාර්යබහුලම පැය)</div>
+            <div id="anCategoryBarContainer" style="display: flex; height: 26px; border-radius: 999px; overflow: hidden; background: #e2e8f0; margin-bottom: 0.85rem;">
+              <!-- Dynamic Category segments rendered by JS -->
             </div>
-            <div class="metric-icon" style="color: #d97706;"><i class="fa-solid fa-chart-simple"></i></div>
-          </div>
-
-          <div class="metric-card" style="border-left: 6px solid #8b5cf6;">
-            <div>
-              <div class="metric-val" id="anVehiclesInside" style="color: #8b5cf6;">0</div>
-              <div class="metric-label">Vehicles Inside Campus (වාහන සංඛ්‍යාව)</div>
+            <div id="anCategoryLegendContainer" style="display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.88rem; font-weight: 700;">
+              <!-- Dynamic Legend items rendered by JS -->
             </div>
-            <div class="metric-icon" style="color: #8b5cf6;"><i class="fa-solid fa-car-side"></i></div>
-          </div>
-
-          <div class="metric-card" style="border-left: 6px solid #ef4444;">
-            <div>
-              <div class="metric-val" id="anOverstayCount" style="color: #ef4444;">0</div>
-              <div class="metric-label">Extended Stays &gt; 4 hrs (දීර්ඝ රැඳීසිටීම්)</div>
-            </div>
-            <div class="metric-icon" style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i></div>
           </div>
         </div>
 
-        <!-- Special Staff Attendance & Punctuality Intelligence Banner (Auto-shows for ALL & STAFF) -->
-        <div id="anStaffCard" class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; padding: 1.25rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <div style="width: 36px; height: 36px; border-radius: 8px; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.15rem;">
-                <i class="fa-solid fa-id-badge"></i>
+        <!-- ==================== SUB-PANE 2: Staff Attendance & Movement ==================== -->
+        <div id="an-pane-staff" class="an-subtab-pane" style="display: none;">
+          <!-- Non-applicable Notice -->
+          <div id="anStaffNonApplicableNotice" style="display: none; padding: 2rem; text-align: center; background: white; border-radius: 12px; border: 1.5px dashed #cbd5e1; margin-bottom: 1.5rem;">
+            <i class="fa-solid fa-user-clock" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 0.75rem;"></i>
+            <h4 style="margin: 0 0 0.5rem 0; color: #334155;">Staff Tracking Not Applicable for Selected Category</h4>
+            <p style="margin: 0; color: #64748b; font-size: 0.92rem;">
+              Staff attendance and movement analytics are available when Category is set to <strong>All Categories</strong> or <strong>Staff Only</strong>.
+            </p>
+          </div>
+
+          <!-- Staff Attendance & Punctuality Overview Banner -->
+          <div id="anStaffCard" class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.15rem;">
+                  <i class="fa-solid fa-id-badge"></i>
+                </div>
+                <div>
+                  <h3 style="margin: 0; font-size: 1.2rem; color: #1e3a8a; font-weight: 800;">
+                    Staff Attendance & Punctuality Overview
+                  </h3>
+                  <p style="margin: 0; color: #64748b; font-size: 0.88rem;">
+                    Real-time attendance and punctuality tracking via employee ID and RFID.
+                  </p>
+                </div>
               </div>
+              <span class="badge" style="background: #dbeafe; color: #1e40af; font-size: 0.9rem; padding: 0.4rem 0.85rem; font-weight: 800;">
+                <i class="fa-solid fa-check-double"></i> Live Staff Tracking
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem;">
+              <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 700;">Total Registered Staff</div>
+                <div id="anStaffTotal" style="font-size: 1.6rem; font-weight: 900; color: #1e293b; margin-top: 0.2rem;">0</div>
+              </div>
+
+              <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 700;">Staff Currently on Duty</div>
+                <div id="anStaffInside" style="font-size: 1.6rem; font-weight: 900; color: #059669; margin-top: 0.2rem;">0</div>
+              </div>
+
+              <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
+                <div style="font-size: 0.85rem; color: #059669; font-weight: 700;">On-Time (Before 8:30 AM)</div>
+                <div id="anStaffOnTime" style="font-size: 1.6rem; font-weight: 900; color: #059669; margin-top: 0.2rem;">0</div>
+              </div>
+
+              <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
+                <div style="font-size: 0.85rem; color: #d97706; font-weight: 700;">Late Arrivals (After 8:30 AM)</div>
+                <div id="anStaffLate" style="font-size: 1.6rem; font-weight: 900; color: #d97706; margin-top: 0.2rem;">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dedicated Staff Movement & Disciplinary Analytics Section -->
+          <div id="anStaffMovementSection" class="card" style="margin-bottom: 1.5rem; border: 1.5px solid #cbd5e1; padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
               <div>
-                <h3 style="margin: 0; font-size: 1.2rem; color: #1e3a8a; font-weight: 800;">
-                  Internal Staff Attendance & Punctuality Overview (අභ්‍යන්තර කාර්ය මණ්ඩල පැමිණීම)
+                <h3 style="margin: 0; font-size: 1.25rem; color: #1e3a8a; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                  <i class="fa-solid fa-person-walking-dashed-line-arrow-right" style="color: #d97706;"></i> 
+                  Staff Movement & Disciplinary Analytics
                 </h3>
                 <p style="margin: 0; color: #64748b; font-size: 0.88rem;">
-                  සේවක අංකය සහ RFID භාවිතයෙන් වාර්තා වන නිල පැමිණීම්, නියමිත වේලාව සහ පමාවීම් නිරීක්ෂණය
+                  Tracking repeat daily exits, prolonged out-of-office stays, and night shift departures.
                 </p>
               </div>
-            </div>
-            <span class="badge" style="background: #dbeafe; color: #1e40af; font-size: 0.9rem; padding: 0.4rem 0.85rem; font-weight: 800;">
-              <i class="fa-solid fa-check-double"></i> Live Staff Tracking
-            </span>
-          </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem;">
-            <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
-              <div style="font-size: 0.85rem; color: #64748b; font-weight: 700;">Total Registered Staff (ලියාපදිංචි සේවකයින්)</div>
-              <div id="anStaffTotal" style="font-size: 1.6rem; font-weight: 900; color: #1e293b; margin-top: 0.2rem;">0</div>
-            </div>
-
-            <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
-              <div style="font-size: 0.85rem; color: #64748b; font-weight: 700;">Staff Currently on Duty (රාජකාරියේ නියුතු)</div>
-              <div id="anStaffInside" style="font-size: 1.6rem; font-weight: 900; color: #059669; margin-top: 0.2rem;">0</div>
-            </div>
-
-            <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
-              <div style="font-size: 0.85rem; color: #059669; font-weight: 700;">On-Time (8:30 ට පෙර පැමිණි)</div>
-              <div id="anStaffOnTime" style="font-size: 1.6rem; font-weight: 900; color: #059669; margin-top: 0.2rem;">0</div>
-            </div>
-
-            <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
-              <div style="font-size: 0.85rem; color: #d97706; font-weight: 700;">Late Arrivals (8:30 න් පසු පැමිණි)</div>
-              <div id="anStaffLate" style="font-size: 1.6rem; font-weight: 900; color: #d97706; margin-top: 0.2rem;">0</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Dedicated Staff Movement & Disciplinary Analytics Section -->
-        <div id="anStaffMovementSection" class="card" style="margin-bottom: 1.5rem; border: 1.5px solid #cbd5e1; padding: 1.25rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
-            <div>
-              <h3 style="margin: 0; font-size: 1.25rem; color: #1e3a8a; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
-                <i class="fa-solid fa-person-walking-dashed-line-arrow-right" style="color: #d97706;"></i> 
-                Staff Movement & Disciplinary Analytics (සේවක ගමන් බිමන් හා විනය අධීක්ෂණය)
-              </h3>
-              <p style="margin: 0; color: #64748b; font-size: 0.88rem;">
-                දිනකට වැඩි වාර ගණනක් එළියට යාම්, කාර්යාල වේලාවේ දීර්ඝතම කාලයක් පිටත රැඳීම්, සහ රාත්‍රී පිටවීම් විශ්ලේෂණය
-              </p>
-            </div>
-
-            <!-- Movement Sub-Navigation Buttons -->
-            <div style="display: flex; gap: 0.4rem; background: #f1f5f9; padding: 4px; border-radius: 8px;">
-              <button type="button" class="btn an-mov-tab-btn active" id="btnMovFrequent" onclick="switchStaffMovementView('mov-frequent')" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px;">
-                <i class="fa-solid fa-arrows-split-up-and-left"></i> බහුවිධ පිටවීම් (<span id="anBadgeFrequentCount">0</span>)
-              </button>
-              <button type="button" class="btn an-mov-tab-btn" id="btnMovLongest" onclick="switchStaffMovementView('mov-longest')" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; background: transparent; color: #475569;">
-                <i class="fa-solid fa-hourglass-end"></i> වැඩිම කාලයක් පිටත රැඳීම් (<span id="anBadgeLongestCount">0</span>)
-              </button>
-              <button type="button" class="btn an-mov-tab-btn" id="btnMovNight" onclick="switchStaffMovementView('mov-night')" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; background: transparent; color: #475569;">
-                <i class="fa-solid fa-moon"></i> රාත්‍රී කාලයේ පිටවීම් (<span id="anBadgeNightCount">0</span>)
-              </button>
-            </div>
-          </div>
-
-          <!-- View 1: Frequent Exits Leaderboard -->
-          <div id="mov-frequent" class="mov-sub-pane">
-            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 0.85rem; font-size: 0.88rem; color: #92400e;">
-              <i class="fa-solid fa-circle-info"></i> <strong>බහුවිධ පිටවීම් (Repeat Daily Exits):</strong> රාජකාරී දිනය තුළ ප්‍රධාන ගේට්ටුවෙන් 2 වතාවක් හෝ ඊට වැඩි වාර ගණනක් පිටතට ගිය අභ්‍යන්තර සේවකයින් මෙහි දැක්වේ.
-            </div>
-            <div class="table-container">
-              <table id="tblFrequentExits">
-                <thead>
-                  <tr>
-                    <th>Pass Code</th>
-                    <th>Employee Name</th>
-                    <th>Branch / Department</th>
-                    <th>Exit Count (පිටවූ වාර)</th>
-                    <th>Check-Ins</th>
-                    <th>Last Departure Time</th>
-                    <th>Recorded Departure Times</th>
-                  </tr>
-                </thead>
-                <tbody><!-- Dynamic Rows --></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- View 2: Longest Out-of-Campus Durations -->
-          <div id="mov-longest" class="mov-sub-pane" style="display: none;">
-            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 0.85rem; font-size: 0.88rem; color: #1e40af;">
-              <i class="fa-solid fa-clock"></i> <strong>වැඩිම කාලයක් පිටත රැඳී සිටි අවස්ථා (Longest Out-of-Office Dwell Times):</strong> සේවයට පැමිණීමෙන් පසු දිවා කාලයේ පිටවී (Check-Out) නැවත පැමිණෙන තෙක් හෝ දැනටමත් පිටත ගතවී ඇති වැඩිම කාල සීමාවන් මෙහි දැක්වේ.
-            </div>
-            <div class="table-container">
-              <table id="tblLongestOutings">
-                <thead>
-                  <tr>
-                    <th>Pass Code</th>
-                    <th>Employee Name</th>
-                    <th>Branch</th>
-                    <th>Exit Time (පිටවූ වේලාව)</th>
-                    <th>Return Time (නැවත පැමිණීම)</th>
-                    <th>Total Time Outside (පිටත ගතකළ කාලය)</th>
-                    <th>Current Status</th>
-                  </tr>
-                </thead>
-                <tbody><!-- Dynamic Rows --></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- View 3: Night Shift Outings (7 PM - 6 AM) -->
-          <div id="mov-night" class="mov-sub-pane" style="display: none;">
-            <div style="background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 0.85rem; font-size: 0.88rem; color: #9d174d;">
-              <i class="fa-solid fa-shield-halved"></i> <strong>රාත්‍රී කාලයේ පිටත රැඳී සිටීම් (Night Security Movement Alerts - 7:00 PM to 6:00 AM):</strong> රාත්‍රී සේවා / විභාග මුද්‍රණ හෝ රහස්‍ය රාජකාරී කාල සීමාවන්හිදී සේවකයින් පරිශ්‍රයෙන් පිටතට ගිය අවස්ථා සහ ගතකළ කාලය මෙහි දැක්වේ.
-            </div>
-            <div class="table-container">
-              <table id="tblNightOutings">
-                <thead>
-                  <tr>
-                    <th>Pass Code</th>
-                    <th>Employee Name</th>
-                    <th>Branch</th>
-                    <th>Night Exit Time</th>
-                    <th>Return Time</th>
-                    <th>Absence Duration</th>
-                    <th>Security Status Alert</th>
-                  </tr>
-                </thead>
-                <tbody><!-- Dynamic Rows --></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2 Visual Analytic Charts (2-Column Grid) -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
-          
-          <!-- Chart 1: Hourly Peak Traffic Distribution Bar Graph -->
-          <div class="card" style="padding: 1.25rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-              <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; font-weight: 800;">
-                <i class="fa-solid fa-chart-column" style="color: #2563eb;"></i> Hourly Traffic Distribution (පැය අනුව තදබදය)
-              </h3>
-              <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Check-Ins per Hour</span>
-            </div>
-            <div id="anHourlyChartContainer" style="min-height: 240px; display: flex; align-items: flex-end; gap: 8px; padding-top: 25px; border-bottom: 2px solid #cbd5e1;">
-              <!-- Dynamic Bars rendered by JS -->
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.78rem; color: #64748b; font-weight: 700;">
-              <span>06:00 AM</span>
-              <span>10:00 AM (Peak)</span>
-              <span>02:00 PM</span>
-              <span>06:00 PM</span>
-            </div>
-          </div>
-
-          <!-- Chart 2: Branch Demand & Workload Progress Bars -->
-          <div class="card" style="padding: 1.25rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-              <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; font-weight: 800;">
-                <i class="fa-solid fa-building-columns" style="color: #059669;"></i> Branch Workload & Demand (ශාඛා අනුව ඉල්ලුම)
-              </h3>
-              <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Visits Percentage</span>
-            </div>
-            <div id="anBranchDemandContainer" style="display: flex; flex-direction: column; gap: 0.85rem; min-height: 240px;">
-              <!-- Dynamic Branch Rows rendered by JS -->
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Category Breakdown Bar -->
-        <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-            <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; font-weight: 800;">
-              <i class="fa-solid fa-pie-chart" style="color: #8b5cf6;"></i> Category Share Distribution (කාණ්ඩ අනුව අනුපාතය)
-            </h3>
-            <span id="anCategoryTotalBadge" class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">0 Total</span>
-          </div>
-          <div id="anCategoryBarContainer" style="display: flex; height: 26px; border-radius: 999px; overflow: hidden; background: #e2e8f0; margin-bottom: 0.85rem;">
-            <!-- Dynamic Category segments rendered by JS -->
-          </div>
-          <div id="anCategoryLegendContainer" style="display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.88rem; font-weight: 700;">
-            <!-- Dynamic Legend items rendered by JS -->
-          </div>
-        </div>
-
-        <!-- Overstay & Extended Stays Table Alert Section -->
-        <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 1.25rem;"></i>
-              <h3 style="margin: 0; font-size: 1.2rem; color: #991b1b; font-weight: 800;">
-                Extended Stays & Overstay Security Audit (පැය 4 කට වඩා පරිශ්‍රයේ රැඳී සිටින පුද්ගලයින්)
-              </h3>
-            </div>
-            <span id="anOverstayBadge" class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 800; font-size: 0.9rem;">
-              0 Persons Overstayed
-            </span>
-          </div>
-
-          <div class="table-container">
-            <table id="anOverstayTable">
-              <thead>
-                <tr>
-                  <th>Pass Code</th>
-                  <th>Person Name</th>
-                  <th>Employee / NIC No</th>
-                  <th>Category</th>
-                  <th>Visiting Branch</th>
-                  <th>Vehicle No</th>
-                  <th>Check-In Time</th>
-                  <th>Duration Inside</th>
-                </tr>
-              </thead>
-              <tbody><!-- Dynamic Rows --></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Automated Daily Intelligence Email Reports Section -->
-        <div class="card" style="padding: 1.5rem; margin-bottom: 1.5rem; border: 1.5px solid #bfdbfe; background: linear-gradient(to right bottom, #ffffff, #f0f7ff); border-radius: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div style="width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);">
-                  <i class="fa-solid fa-envelope-open-text"></i>
-                </div>
-                <div>
-                  <h3 style="margin: 0; font-size: 1.25rem; color: #1e3a8a; font-weight: 800;">
-                    ස්වයංක්‍රීය දෛනික බුද්ධිමත් ඊමේල් වාර්තාකරණය (Automated Daily Intelligence Email Reports)
-                  </h3>
-                  <p style="margin: 3px 0 0 0; color: #64748b; font-size: 0.92rem;">
-                    සෑම දිනකම නියමිත වේලාවට දෛනික ගේට්ටු දත්ත සාරාංශය සහ ආරක්ෂක අසාමාන්‍යතා (Security & Disciplinary Anomalies) බුද්ධිමත් වාර්තාවක් ලෙස නම් කළ ඊමේල් ලිපිනයට ස්වයංක්‍රීයව යැවීම.
-                  </p>
-                </div>
+              <!-- Movement Sub-Navigation Buttons -->
+              <div style="display: flex; gap: 0.4rem; background: #f1f5f9; padding: 4px; border-radius: 8px;">
+                <button type="button" class="btn an-mov-tab-btn active" id="btnMovFrequent" onclick="switchStaffMovementView('mov-frequent')" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px;">
+                  <i class="fa-solid fa-arrows-split-up-and-left"></i> Repeat Exits (<span id="anBadgeFrequentCount">0</span>)
+                </button>
+                <button type="button" class="btn an-mov-tab-btn" id="btnMovLongest" onclick="switchStaffMovementView('mov-longest')" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; background: transparent; color: #475569;">
+                  <i class="fa-solid fa-hourglass-end"></i> Longest Outings (<span id="anBadgeLongestCount">0</span>)
+                </button>
+                <button type="button" class="btn an-mov-tab-btn" id="btnMovNight" onclick="switchStaffMovementView('mov-night')" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; background: transparent; color: #475569;">
+                  <i class="fa-solid fa-moon"></i> Night Outings (<span id="anBadgeNightCount">0</span>)
+                </button>
               </div>
             </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-              <span id="smtpConnectionBadge">
-                <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;">
-                  <i class="fa-solid fa-triangle-exclamation"></i> Simulation Mode (SMTP නැත)
-                </span>
+
+            <!-- View 1: Frequent Exits Leaderboard -->
+            <div id="mov-frequent" class="mov-sub-pane">
+              <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 0.85rem; font-size: 0.88rem; color: #92400e;">
+                <i class="fa-solid fa-circle-info"></i> <strong>Repeat Daily Exits:</strong> Staff members who exited through the gate 2 or more times during official hours.
+              </div>
+              <div class="table-container">
+                <table id="tblFrequentExits">
+                  <thead>
+                    <tr>
+                      <th>Pass Code</th>
+                      <th>Employee Name</th>
+                      <th>Branch / Department</th>
+                      <th>Exit Count</th>
+                      <th>Check-Ins</th>
+                      <th>Last Departure Time</th>
+                      <th>Recorded Departure Times</th>
+                    </tr>
+                  </thead>
+                  <tbody><!-- Dynamic Rows --></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- View 2: Longest Out-of-Campus Durations -->
+            <div id="mov-longest" class="mov-sub-pane" style="display: none;">
+              <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 0.85rem; font-size: 0.88rem; color: #1e40af;">
+                <i class="fa-solid fa-clock"></i> <strong>Longest Outings:</strong> Staff who departed and remained outside for extended periods during work hours.
+              </div>
+              <div class="table-container">
+                <table id="tblLongestOutings">
+                  <thead>
+                    <tr>
+                      <th>Pass Code</th>
+                      <th>Employee Name</th>
+                      <th>Branch</th>
+                      <th>Exit Time</th>
+                      <th>Return Time</th>
+                      <th>Time Outside</th>
+                      <th>Current Status</th>
+                    </tr>
+                  </thead>
+                  <tbody><!-- Dynamic Rows --></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- View 3: Night Shift Outings (7 PM - 6 AM) -->
+            <div id="mov-night" class="mov-sub-pane" style="display: none;">
+              <div style="background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 0.85rem; font-size: 0.88rem; color: #9d174d;">
+                <i class="fa-solid fa-shield-halved"></i> <strong>Night Shift Movement Alerts (7:00 PM - 6:00 AM):</strong> Security monitoring for personnel leaving campus during confidential or night shifts.
+              </div>
+              <div class="table-container">
+                <table id="tblNightOutings">
+                  <thead>
+                    <tr>
+                      <th>Pass Code</th>
+                      <th>Employee Name</th>
+                      <th>Branch</th>
+                      <th>Night Exit Time</th>
+                      <th>Return Time</th>
+                      <th>Absence Duration</th>
+                      <th>Security Status Alert</th>
+                    </tr>
+                  </thead>
+                  <tbody><!-- Dynamic Rows --></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== SUB-PANE 3: Overstay & Security Alerts ==================== -->
+        <div id="an-pane-overstay" class="an-subtab-pane" style="display: none;">
+          <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 1.25rem;"></i>
+                <h3 style="margin: 0; font-size: 1.2rem; color: #991b1b; font-weight: 800;">
+                  Extended Stays & Overstay Security Audit (> 4 Hours)
+                </h3>
+              </div>
+              <span id="anOverstayBadge" class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 800; font-size: 0.9rem;">
+                0 Persons Overstayed
               </span>
-              <div id="emailReportStatusBadge">
-                <span class="badge" style="background: #e0f2fe; color: #0284c7; font-size: 0.9rem; padding: 0.5rem 0.9rem; font-weight: 800; border-radius: 8px;">
-                  <i class="fa-solid fa-clock"></i> Scheduled: Daily at 17:00
-                </span>
-              </div>
+            </div>
+
+            <div class="table-container">
+              <table id="anOverstayTable">
+                <thead>
+                  <tr>
+                    <th>Pass Code</th>
+                    <th>Person Name</th>
+                    <th>Employee / NIC No</th>
+                    <th>Category</th>
+                    <th>Visiting Branch</th>
+                    <th>Vehicle No</th>
+                    <th>Check-In Time</th>
+                    <th>Duration Inside</th>
+                  </tr>
+                </thead>
+                <tbody><!-- Dynamic Rows --></tbody>
+              </table>
             </div>
           </div>
+        </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; background: #ffffff; padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 1.25rem;">
-            <!-- Active Toggle -->
-            <div>
-              <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">
-                <i class="fa-solid fa-power-off" style="color: #2563eb;"></i> සේවාව ක්‍රියාත්මක බව (Service Status):
-              </label>
-              <div style="display: flex; align-items: center; gap: 0.85rem; margin-top: 4px;">
-                <label class="admin-switch">
-                  <input type="checkbox" id="chkEmailReportActive" checked onchange="updateEmailReportUIState()">
-                  <span class="admin-switch-slider"></span>
-                </label>
-                <span id="lblEmailReportActiveText" style="font-weight: 800; color: #059669; font-size: 0.95rem;">සක්‍රීයයි (Active)</span>
-              </div>
-            </div>
-
-            <!-- Recipient Email -->
-            <div>
-              <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
-                <i class="fa-solid fa-at" style="color: #2563eb;"></i> ලබන්නාගේ ඊමේල් ලිපිනය (Recipient Email):
-                <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">(කොමා මඟින් වෙන් කර ඊමේල් ලිපින කිහිපයක් දිය හැක)</span>
-              </label>
-              <input type="text" id="txtEmailRecipient" class="form-control" placeholder="e.g. sajithjayantha85@gmail.com, commissioner@doenets.lk" value="admin@doenets.lk" style="font-weight: 700;">
-            </div>
-
-            <!-- Schedule Time -->
-            <div>
-              <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
-                <i class="fa-regular fa-clock" style="color: #2563eb;"></i> ස්වයංක්‍රීයව යවන වේලාව (Daily Scheduled Time - 24H):
-              </label>
-              <input type="time" id="txtEmailTime" class="form-control" value="17:00" style="font-weight: 800; font-size: 1.05rem;">
-            </div>
-          </div>
-
-          <!-- Advanced SMTP Settings Accordion / Toggle -->
-          <details id="detailsSmtpSettings" open style="margin-bottom: 1.25rem; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem 1.15rem;">
-            <summary style="cursor: pointer; font-weight: 700; color: #1e3a8a; font-size: 0.95rem; user-select: none; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-              <span><i class="fa-solid fa-server" style="color: #2563eb; margin-right: 6px;"></i> පිටතට ඊමේල් යැවීමේ සේවාදායක සැකසුම් (Outgoing SMTP Mail Server Setup)</span>
-              <span id="smtpMiniIndicator" style="font-size: 0.8rem; font-weight: 600; color: #b45309;">⚠️ සැබෑ ඊමේල් ලැබීමට Brevo / Resend හෝ Gmail සකසන්න</span>
-            </summary>
-
-            <div style="margin-top: 1rem;">
-              <!-- Option A: Cloud HTTPS API (100% Guaranteed for Render Cloud - Port 443) -->
-              <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
-                <div style="font-size: 0.88rem; font-weight: 800; color: #166534; margin-bottom: 0.75rem;">
-                  <i class="fa-solid fa-cloud-arrow-up" style="color: #16a34a;"></i> ක්‍රමය 1: Render Cloud සඳහා HTTPS API ක්‍රමය (Port 443 - 100% නොමිලේ):
-                </div>
-
-                <!-- Brevo Option (Allows ANY Recipient Email!) -->
-                <div style="background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.85rem;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.4rem;">
-                    <span style="font-size: 0.82rem; font-weight: 800; color: #15803d;">
-                      (A) Brevo API Key <span style="background: #16a34a; color: white; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem;">⭐ වෙනත් ඕනෑම ඊමේල් ලිපිනයකට යැවීමට</span>
-                    </span>
-                    <a href="https://app.brevo.com/settings/keys/api" target="_blank" style="font-size: 0.78rem; font-weight: 700; color: #15803d; text-decoration: underline;">
-                      <i class="fa-solid fa-arrow-up-right-from-square"></i> brevo.com වෙතින් නොමිලේ API Key එකක් ගන්න
-                    </a>
+        <!-- ==================== SUB-PANE 4: Automated Email Reports ==================== -->
+        <div id="an-pane-email" class="an-subtab-pane" style="display: none;">
+          <div class="card" style="padding: 1.5rem; margin-bottom: 1.5rem; border: 1.5px solid #bfdbfe; background: linear-gradient(to right bottom, #ffffff, #f0f7ff); border-radius: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <div style="width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);">
+                    <i class="fa-solid fa-envelope-open-text"></i>
                   </div>
-                  <input type="password" id="txtBrevoApiKey" class="form-control" placeholder="xkeysib-... (Domain එකක් නැතත් වෙනත් ඕනෑම ඊමේල් ලිපිනයකට යැවිය හැක)" style="font-size: 0.85rem; margin-bottom: 0.5rem;">
-                  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.5rem 0.65rem; margin-bottom: 0.4rem;">
-                    <label style="font-size: 0.78rem; font-weight: 700; color: #166534; display: block; margin-bottom: 0.2rem;">
-                      <i class="fa-solid fa-at"></i> Brevo හි ලියාපදිංචි ඔබගේ ඊමේල් ලිපිනය (Verified Sender Email):
-                    </label>
-                    <input type="email" id="txtBrevoSenderEmail" class="form-control" placeholder="sajithjayantha85@gmail.com" value="sajithjayantha85@gmail.com" style="font-size: 0.85rem;">
-                    <p style="margin: 0.25rem 0 0 0; font-size: 0.73rem; color: #475569;">
-                      💡 Brevo නොමිලේ සැලසුමේදී ඊමේල් යැවිය හැක්කේ ඔබ Brevo හි ලියාපදිංචි කර ඇති ඔබගේම ඊමේල් ලිපිනය යවන්නා (Sender) ලෙස තැබුවහොත් පමණි. (ලබන්නා ලෙස වෙනත් ඕනෑම ලිපිනයක් ලබාදිය හැක).
+                  <div>
+                    <h3 style="margin: 0; font-size: 1.25rem; color: #1e3a8a; font-weight: 800;">
+                      Automated Daily Intelligence Email Reports
+                    </h3>
+                    <p style="margin: 3px 0 0 0; color: #64748b; font-size: 0.92rem;">
+                      Automated daily dispatch of gate traffic summary and security anomalies to designated recipients.
                     </p>
                   </div>
-                  <p style="margin: 0.35rem 0 0 0; font-size: 0.78rem; color: #166534;">
-                    * Brevo හිදී ඔබගේ ඊමේල් ලිපිනය Verify කරගත් පසු, <strong>ලෝකයේ ඕනෑම ඊමේල් ලිපිනයකට</strong> දිනකට ඊමේල් 300ක් සම්පූර්ණයෙන්ම නොමිලේ යැවිය හැක.
-                  </p>
                 </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <span id="smtpConnectionBadge">
+                  <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Simulation Mode
+                  </span>
+                </span>
+                <div id="emailReportStatusBadge">
+                  <span class="badge" style="background: #e0f2fe; color: #0284c7; font-size: 0.9rem; padding: 0.5rem 0.9rem; font-weight: 800; border-radius: 8px;">
+                    <i class="fa-solid fa-clock"></i> Scheduled: Daily at 17:00
+                  </span>
+                </div>
+              </div>
+            </div>
 
-                <!-- Resend Option -->
-                <div style="background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.75rem;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.4rem;">
-                    <span style="font-size: 0.82rem; font-weight: 800; color: #15803d;">
-                      (B) Resend API Key (ඔබගේම ඊමේල් ලිපිනයට හෝ Verified Custom Domain සඳහා)
-                    </span>
-                    <a href="https://resend.com" target="_blank" style="font-size: 0.78rem; font-weight: 700; color: #15803d; text-decoration: underline;">
-                      <i class="fa-solid fa-arrow-up-right-from-square"></i> resend.com වෙතින් ගන්න
-                    </a>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; background: #ffffff; padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 1.25rem;">
+              <!-- Active Toggle -->
+              <div>
+                <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">
+                  <i class="fa-solid fa-power-off" style="color: #2563eb;"></i> Service Status:
+                </label>
+                <div style="display: flex; align-items: center; gap: 0.85rem; margin-top: 4px;">
+                  <label class="admin-switch">
+                    <input type="checkbox" id="chkEmailReportActive" checked onchange="updateEmailReportUIState()">
+                    <span class="admin-switch-slider"></span>
+                  </label>
+                  <span id="lblEmailReportActiveText" style="font-weight: 800; color: #059669; font-size: 0.95rem;">Active</span>
+                </div>
+              </div>
+
+              <!-- Recipient Email -->
+              <div>
+                <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
+                  <i class="fa-solid fa-at" style="color: #2563eb;"></i> Recipient Email(s):
+                  <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">(Comma-separated for multiple recipients)</span>
+                </label>
+                <input type="text" id="txtEmailRecipient" class="form-control" placeholder="e.g. sajithjayantha85@gmail.com, commissioner@doenets.lk" value="admin@doenets.lk" style="font-weight: 700;">
+              </div>
+
+              <!-- Schedule Time -->
+              <div>
+                <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
+                  <i class="fa-regular fa-clock" style="color: #2563eb;"></i> Daily Scheduled Time (24H):
+                </label>
+                <input type="time" id="txtEmailTime" class="form-control" value="17:00" style="font-weight: 800; font-size: 1.05rem;">
+              </div>
+            </div>
+
+            <!-- Advanced SMTP Settings Accordion -->
+            <details id="detailsSmtpSettings" open style="margin-bottom: 1.25rem; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem 1.15rem;">
+              <summary style="cursor: pointer; font-weight: 700; color: #1e3a8a; font-size: 0.95rem; user-select: none; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <span><i class="fa-solid fa-server" style="color: #2563eb; margin-right: 6px;"></i> Outgoing Mail Server Settings (Brevo / SMTP)</span>
+                <span id="smtpMiniIndicator" style="font-size: 0.8rem; font-weight: 600; color: #b45309;">⚠️ Configure Brevo or Gmail to receive real emails</span>
+              </summary>
+
+              <div style="margin-top: 1rem;">
+                <!-- Option A: Cloud HTTPS API (100% Guaranteed for Render Cloud - Port 443) -->
+                <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
+                  <div style="font-size: 0.88rem; font-weight: 800; color: #166534; margin-bottom: 0.75rem;">
+                    <i class="fa-solid fa-cloud-arrow-up" style="color: #16a34a;"></i> Method 1: Cloud HTTPS API (Port 443 - Recommended for Render Cloud):
                   </div>
-                  <input type="password" id="txtResendApiKey" class="form-control" placeholder="re_123456789... (Test mode: ඔබ ලියාපදිංචි වූ ඊමේල් ලිපිනයට පමණි)" style="font-size: 0.85rem;">
+
+                  <!-- Brevo Option -->
+                  <div style="background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.4rem;">
+                      <span style="font-size: 0.82rem; font-weight: 800; color: #15803d;">
+                        (A) Brevo API Key <span style="background: #16a34a; color: white; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem;">⭐ Recommended</span>
+                      </span>
+                      <a href="https://app.brevo.com/settings/keys/api" target="_blank" style="font-size: 0.78rem; font-weight: 700; color: #15803d; text-decoration: underline;">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Get free API Key from brevo.com
+                      </a>
+                    </div>
+                    <input type="password" id="txtBrevoApiKey" class="form-control" placeholder="xkeysib-... (Allows sending to any recipient address)" style="font-size: 0.85rem; margin-bottom: 0.5rem;">
+                    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.5rem 0.65rem; margin-bottom: 0.4rem;">
+                      <label style="font-size: 0.78rem; font-weight: 700; color: #166534; display: block; margin-bottom: 0.2rem;">
+                        <i class="fa-solid fa-at"></i> Brevo Verified Sender Email:
+                      </label>
+                      <input type="email" id="txtBrevoSenderEmail" class="form-control" placeholder="sajithjayantha85@gmail.com" value="sajithjayantha85@gmail.com" style="font-size: 0.85rem;">
+                      <p style="margin: 0.25rem 0 0 0; font-size: 0.73rem; color: #475569;">
+                        💡 On Brevo's free plan, emails will be delivered using your verified Brevo account email as the sender.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Resend Option -->
+                  <div style="background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.4rem;">
+                      <span style="font-size: 0.82rem; font-weight: 800; color: #15803d;">
+                        (B) Resend API Key
+                      </span>
+                      <a href="https://resend.com" target="_blank" style="font-size: 0.78rem; font-weight: 700; color: #15803d; text-decoration: underline;">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Get from resend.com
+                      </a>
+                    </div>
+                    <input type="password" id="txtResendApiKey" class="form-control" placeholder="re_123456789... (For verified custom domains)" style="font-size: 0.85rem;">
+                  </div>
+                </div>
+
+                <!-- Option B: Direct SMTP (Gmail / Office 365) -->
+                <div style="font-size: 0.88rem; font-weight: 800; color: #1e40af; margin-bottom: 0.65rem;">
+                  <i class="fa-solid fa-network-wired"></i> Method 2: Direct SMTP Server (Local PC or Office 365):
+                </div>
+
+                <!-- Quick Presets -->
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
+                  <div style="font-size: 0.85rem; font-weight: 700; color: #1e40af;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Quick Presets:
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button type="button" class="btn" onclick="applySmtpPreset('gmail')" style="background: #ea4335; color: white; padding: 5px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 6px;">
+                      <i class="fa-brands fa-google"></i> Gmail
+                    </button>
+                    <button type="button" class="btn" onclick="applySmtpPreset('office365')" style="background: #0078d4; color: white; padding: 5px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 6px;">
+                      <i class="fa-brands fa-microsoft"></i> Office 365 / Outlook
+                    </button>
+                    <button type="button" class="btn" onclick="applySmtpPreset('clear')" style="background: #64748b; color: white; padding: 5px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 6px;">
+                      <i class="fa-solid fa-eraser"></i> Clear
+                    </button>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                  <div>
+                    <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">SMTP Host:</label>
+                    <input type="text" id="txtSmtpHost" class="form-control" placeholder="e.g. smtp.gmail.com" style="font-size: 0.88rem;">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">SMTP Port:</label>
+                    <input type="number" id="txtSmtpPort" class="form-control" placeholder="465 or 587" value="587" style="font-size: 0.88rem;">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">Sender Email:</label>
+                    <input type="text" id="txtSmtpUser" class="form-control" placeholder="your-email@gmail.com" style="font-size: 0.88rem;">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">App Password:</label>
+                    <input type="password" id="txtSmtpPass" class="form-control" placeholder="16-digit Google App Password" style="font-size: 0.88rem;">
+                  </div>
+                </div>
+
+                <!-- Gmail Helper Guide -->
+                <div id="smtpHelpGuide" style="margin-top: 0.85rem; padding: 0.75rem 1rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; font-size: 0.84rem; color: #92400e; line-height: 1.5;">
+                  <strong>💡 Gmail App Password Instructions:</strong> Standard Google account password will not work. <br>
+                  1. Go to Google Account -> <strong>Security</strong> -> <strong>2-Step Verification</strong>. <br>
+                  2. Select <strong>App Passwords</strong>, create a 16-character password for <code>Gate Pass System</code>, and paste it above.
                 </div>
               </div>
+            </details>
 
-              <!-- Option B: Direct SMTP (Gmail / Office 365) -->
-              <div style="font-size: 0.88rem; font-weight: 800; color: #1e40af; margin-bottom: 0.65rem;">
-                <i class="fa-solid fa-network-wired"></i> ක්‍රමය 2: සෘජු SMTP සේවාදායක සැකසුම් (Local PC හෝ Office 365 සඳහා):
+            <!-- Action Buttons & Last Sent Info -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div style="font-size: 0.88rem; color: #64748b;">
+                <span id="lblLastEmailSentInfo"><i class="fa-solid fa-circle-info"></i> Loading report status...</span>
               </div>
-
-              <!-- Quick 1-Click Preset Buttons -->
-              <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
-                <div style="font-size: 0.85rem; font-weight: 700; color: #1e40af;">
-                  <i class="fa-solid fa-wand-magic-sparkles"></i> ක්ෂණික සැකසුම් (Quick Presets):
-                </div>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                  <button type="button" class="btn" onclick="applySmtpPreset('gmail')" style="background: #ea4335; color: white; padding: 5px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 6px;">
-                    <i class="fa-brands fa-google"></i> Gmail සැකසුම්
-                  </button>
-                  <button type="button" class="btn" onclick="applySmtpPreset('office365')" style="background: #0078d4; color: white; padding: 5px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 6px;">
-                    <i class="fa-brands fa-microsoft"></i> Office 365 / Outlook
-                  </button>
-                  <button type="button" class="btn" onclick="applySmtpPreset('clear')" style="background: #64748b; color: white; padding: 5px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 6px;">
-                    <i class="fa-solid fa-eraser"></i> Clear
-                  </button>
-                </div>
+              <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+                <button class="btn" type="button" onclick="previewEmailReport()" id="btnPreviewEmailReport" style="background: #0284c7; color: white; padding: 0.65rem 1.25rem; font-weight: 700; border-radius: 8px;" title="View exact HTML email report in browser">
+                  <i class="fa-solid fa-eye"></i> Preview Report
+                </button>
+                <button class="btn" type="button" onclick="downloadEmailReportPdf()" id="btnDownloadReportPdf" style="background: #059669; color: white; padding: 0.65rem 1.25rem; font-weight: 700; border-radius: 8px;" title="Download or Print PDF directly">
+                  <i class="fa-solid fa-file-pdf"></i> Download / Print PDF
+                </button>
+                <button class="btn" type="button" onclick="sendTestEmailReport()" id="btnSendTestEmail" style="background: #4338ca; color: white; padding: 0.65rem 1.35rem; font-weight: 700; border-radius: 8px;">
+                  <i class="fa-solid fa-paper-plane"></i> Send Test Report Now
+                </button>
+                <button class="btn btn-primary" type="button" onclick="saveEmailReportSettings()" id="btnSaveEmailSettings" style="padding: 0.65rem 1.45rem; font-weight: 700; border-radius: 8px;">
+                  <i class="fa-solid fa-floppy-disk"></i> Save Settings
+                </button>
               </div>
-
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                <div>
-                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">SMTP Host:</label>
-                  <input type="text" id="txtSmtpHost" class="form-control" placeholder="e.g. smtp.gmail.com" style="font-size: 0.88rem;">
-                </div>
-                <div>
-                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">SMTP Port:</label>
-                  <input type="number" id="txtSmtpPort" class="form-control" placeholder="465 or 587" value="587" style="font-size: 0.88rem;">
-                </div>
-                <div>
-                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">Sender Email (යවන්නාගේ ඊමේල්):</label>
-                  <input type="text" id="txtSmtpUser" class="form-control" placeholder="your-email@gmail.com" style="font-size: 0.88rem;">
-                </div>
-                <div>
-                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">App Password / මුරපදය:</label>
-                  <input type="password" id="txtSmtpPass" class="form-control" placeholder="16-digit Google App Password" style="font-size: 0.88rem;">
-                </div>
-              </div>
-
-              <!-- Gmail Helper Guide -->
-              <div id="smtpHelpGuide" style="margin-top: 0.85rem; padding: 0.75rem 1rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; font-size: 0.84rem; color: #92400e; line-height: 1.5;">
-                <strong>💡 Gmail භාවිත කරන්නේ නම් සැබෑ ඊමේල් ලබාගැනීමට:</strong> Google ගිණුමේ සාමාන්‍ය මුරපදය භාවිත කළ නොහැක. <br>
-                1. ඔබගේ Google Account -> <strong>Security</strong> -> <strong>2-Step Verification</strong> වෙත යන්න. <br>
-                2. එහි පහළ ඇති <strong>App Passwords</strong> තෝරා <code>Gate Pass System</code> නමින් අකුරු 16 ක App Password එකක් සාදාගෙන එය මෙහි Password කොටුවට ඇතුළත් කරන්න.
-              </div>
-            </div>
-          </details>
-
-          <!-- Action Buttons & Last Sent Info -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div style="font-size: 0.88rem; color: #64748b;">
-              <span id="lblLastEmailSentInfo"><i class="fa-solid fa-circle-info"></i> වාර්තා තත්ත්වය පූරණය වෙමින් පවතී...</span>
-            </div>
-            <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
-              <button class="btn" type="button" onclick="previewEmailReport()" id="btnPreviewEmailReport" style="background: #0284c7; color: white; padding: 0.65rem 1.25rem; font-weight: 700; border-radius: 8px;" title="View exact HTML email report in browser">
-                <i class="fa-solid fa-eye"></i> වාර්තාව Preview කරන්න
-              </button>
-              <button class="btn" type="button" onclick="downloadEmailReportPdf()" id="btnDownloadReportPdf" style="background: #059669; color: white; padding: 0.65rem 1.25rem; font-weight: 700; border-radius: 8px;" title="Download or Print PDF directly">
-                <i class="fa-solid fa-file-pdf"></i> PDF වාර්තාව (Download)
-              </button>
-              <button class="btn" type="button" onclick="sendTestEmailReport()" id="btnSendTestEmail" style="background: #4338ca; color: white; padding: 0.65rem 1.35rem; font-weight: 700; border-radius: 8px;">
-                <i class="fa-solid fa-paper-plane"></i> දැන්ම පරීක්ෂණ වාර්තාවක් යවන්න (Send Test Report Now)
-              </button>
-              <button class="btn btn-primary" type="button" onclick="saveEmailReportSettings()" id="btnSaveEmailSettings" style="padding: 0.65rem 1.45rem; font-weight: 700; border-radius: 8px;">
-                <i class="fa-solid fa-floppy-disk"></i> සැකසුම් සුරකින්න (Save Settings)
-              </button>
             </div>
           </div>
         </div>
@@ -6080,27 +6111,30 @@
         document.getElementById('anPeakHour').innerText = data.summary.peak_hour || 'No entries';
         document.getElementById('anVehiclesInside').innerText = data.summary.vehicles_inside || 0;
         document.getElementById('anOverstayCount').innerText = data.summary.overstay_count || 0;
+        const tabBadgeOverstay = document.getElementById('anTabBadgeOverstay');
+        if (tabBadgeOverstay) {
+          tabBadgeOverstay.innerText = data.summary.overstay_count || 0;
+        }
 
         // 2. Staff Attendance & Punctuality
         const staffCard = document.getElementById('anStaffCard');
-        if (staffCard) {
-          if (category === 'VISITOR' || category === 'CONFIDENTIAL' || category === 'EVALUATION') {
-            staffCard.style.display = 'none';
-          } else {
+        const movSection = document.getElementById('anStaffMovementSection');
+        const staffNotice = document.getElementById('anStaffNonApplicableNotice');
+
+        if (category === 'VISITOR' || category === 'CONFIDENTIAL' || category === 'EVALUATION') {
+          if (staffCard) staffCard.style.display = 'none';
+          if (movSection) movSection.style.display = 'none';
+          if (staffNotice) staffNotice.style.display = 'block';
+        } else {
+          if (staffNotice) staffNotice.style.display = 'none';
+          if (staffCard) {
             staffCard.style.display = 'block';
             document.getElementById('anStaffTotal').innerText = data.staff_analytics.total_registered || 0;
             document.getElementById('anStaffInside').innerText = data.staff_analytics.currently_inside || 0;
             document.getElementById('anStaffOnTime').innerText = data.staff_analytics.punctuality.on_time || 0;
             document.getElementById('anStaffLate').innerText = data.staff_analytics.punctuality.late || 0;
           }
-        }
-
-        // 2.1 Render Staff Movement & Disciplinary Analytics
-        const movSection = document.getElementById('anStaffMovementSection');
-        if (movSection) {
-          if (category === 'VISITOR' || category === 'CONFIDENTIAL' || category === 'EVALUATION') {
-            movSection.style.display = 'none';
-          } else {
+          if (movSection) {
             movSection.style.display = 'block';
             renderStaffMovement(data.staff_movement);
           }
@@ -6276,6 +6310,37 @@
       `).join('');
     }
 
+    function switchAnalyticsSubTab(paneId) {
+      document.querySelectorAll('.an-subtab-pane').forEach(el => {
+        el.style.display = 'none';
+        el.classList.remove('active');
+      });
+      document.querySelectorAll('.an-main-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.background = 'transparent';
+        btn.style.color = '#475569';
+      });
+
+      const targetPane = document.getElementById(paneId);
+      if (targetPane) {
+        targetPane.style.display = 'block';
+        targetPane.classList.add('active');
+      }
+
+      let activeBtnId = 'tabBtnOverview';
+      if (paneId === 'an-pane-overview') activeBtnId = 'tabBtnOverview';
+      else if (paneId === 'an-pane-staff') activeBtnId = 'tabBtnStaff';
+      else if (paneId === 'an-pane-overstay') activeBtnId = 'tabBtnOverstay';
+      else if (paneId === 'an-pane-email') activeBtnId = 'tabBtnEmail';
+
+      const activeBtn = document.getElementById(activeBtnId);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.style.background = '#2563eb';
+        activeBtn.style.color = '#ffffff';
+      }
+    }
+
     function switchStaffMovementView(viewId) {
       document.querySelectorAll('.mov-sub-pane').forEach(el => el.style.display = 'none');
       document.querySelectorAll('.an-mov-tab-btn').forEach(btn => {
@@ -6320,7 +6385,7 @@
       const tblFreq = document.querySelector('#tblFrequentExits tbody');
       if (tblFreq) {
         if (frequent.length === 0) {
-          tblFreq.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.25rem; color:#059669; font-weight:700;"><i class="fa-solid fa-circle-check"></i> දිනකට බහුවිධ වාර ගණනක් පිටතට ගිය සේවකයින් කිසිවෙකු නොමැත. (No repeat exits detected)</td></tr>`;
+          tblFreq.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.25rem; color:#059669; font-weight:700;"><i class="fa-solid fa-circle-check"></i> No repeat exits detected during this timeframe.</td></tr>`;
         } else {
           tblFreq.innerHTML = frequent.map(f => `
             <tr>
@@ -6329,7 +6394,7 @@
               <td>${f.branch_name || '-'}</td>
               <td>
                 <span class="badge" style="background:${f.exit_count >= 3 ? '#fee2e2' : '#fef3c7'}; color:${f.exit_count >= 3 ? '#991b1b' : '#92400e'}; font-weight:900; font-size:0.92rem;">
-                  <i class="fa-solid fa-person-walking-arrow-right"></i> ${f.exit_count} වාරයක් පිටතට
+                  <i class="fa-solid fa-person-walking-arrow-right"></i> ${f.exit_count} Exits
                 </span>
               </td>
               <td>${f.check_in_count} In</td>
@@ -6344,7 +6409,7 @@
       const tblLong = document.querySelector('#tblLongestOutings tbody');
       if (tblLong) {
         if (longest.length === 0) {
-          tblLong.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.25rem; color:#059669; font-weight:700;"><i class="fa-solid fa-circle-check"></i> කාර්යාල වේලාවේ දීර්ඝ කාලයක් පිටත රැඳී සිටි අවස්ථා නොමැත. (No extended mid-day outings)</td></tr>`;
+          tblLong.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.25rem; color:#059669; font-weight:700;"><i class="fa-solid fa-circle-check"></i> No extended out-of-office outings recorded.</td></tr>`;
         } else {
           tblLong.innerHTML = longest.map(l => `
             <tr>
@@ -6352,7 +6417,7 @@
               <td><strong>${l.person_name}</strong></td>
               <td>${l.branch_name || '-'}</td>
               <td>${new Date(l.exit_time).toLocaleTimeString()}</td>
-              <td>${l.return_time ? new Date(l.return_time).toLocaleTimeString() : '<span style="color:#ef4444; font-weight:800;">නොපැමිණියේය (Still Out)</span>'}</td>
+              <td>${l.return_time ? new Date(l.return_time).toLocaleTimeString() : '<span style="color:#ef4444; font-weight:800;">Still Outside</span>'}</td>
               <td>
                 <span class="badge" style="background:${l.duration_minutes >= 120 ? '#fee2e2' : '#eff6ff'}; color:${l.duration_minutes >= 120 ? '#991b1b' : '#1e40af'}; font-weight:900; font-size:0.92rem;">
                   <i class="fa-solid fa-clock"></i> ${l.duration_display}
@@ -6360,7 +6425,7 @@
               </td>
               <td>
                 <span class="badge ${l.status === 'RETURNED' ? 'badge-checkedin' : 'badge-pending'}" style="${l.status !== 'RETURNED' ? 'background:#fee2e2; color:#991b1b; border:1px solid #fecaca;' : ''}">
-                  ${l.status === 'RETURNED' ? 'නැවත පැමිණියේය (Returned)' : '⚠️ දැනටමත් පිටත සිටී (Currently Out)'}
+                  ${l.status === 'RETURNED' ? 'Returned' : '⚠️ Currently Outside'}
                 </span>
               </td>
             </tr>
@@ -6372,7 +6437,7 @@
       const tblNight = document.querySelector('#tblNightOutings tbody');
       if (tblNight) {
         if (night.length === 0) {
-          tblNight.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.25rem; color:#059669; font-weight:700;"><i class="fa-solid fa-circle-check"></i> රාත්‍රී කාලයේ (7 PM - 6 AM) අනවශ්‍ය ලෙස පිටත රැඳී සිටීම් කිසිවක් වාර්තා වී නොමැත. (Zero night absence incidents)</td></tr>`;
+          tblNight.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.25rem; color:#059669; font-weight:700;"><i class="fa-solid fa-circle-check"></i> Zero night absence incidents recorded (7:00 PM - 6:00 AM).</td></tr>`;
         } else {
           tblNight.innerHTML = night.map(n => `
             <tr>
@@ -6380,7 +6445,7 @@
               <td><strong>${n.person_name}</strong></td>
               <td>${n.branch_name || '-'}</td>
               <td><i class="fa-solid fa-moon" style="color:#9d174d;"></i> ${new Date(n.exit_time).toLocaleTimeString()}</td>
-              <td>${n.return_time ? new Date(n.return_time).toLocaleTimeString() : '<span style="color:#dc2626; font-weight:900;">රාත්‍රියේ පිටත සිටී!</span>'}</td>
+              <td>${n.return_time ? new Date(n.return_time).toLocaleTimeString() : '<span style="color:#dc2626; font-weight:900;">Outside at Night!</span>'}</td>
               <td>
                 <span class="badge" style="background:#fdf2f8; color:#9d174d; border:1px solid #fbcfe8; font-weight:900;">
                   ${n.duration_display}
@@ -6643,10 +6708,10 @@
       const lbl = document.getElementById('lblEmailReportActiveText');
       if (chk && lbl) {
         if (chk.checked) {
-          lbl.innerText = 'සක්‍රීයයි (Active)';
+          lbl.innerText = 'Active';
           lbl.style.color = '#059669';
         } else {
-          lbl.innerText = 'අක්‍රියයි (Disabled)';
+          lbl.innerText = 'Disabled';
           lbl.style.color = '#94a3b8';
         }
       }
@@ -6667,30 +6732,30 @@
         portEl.value = '465';
         if (userEl && !userEl.value) userEl.placeholder = 'your-name@gmail.com';
         if (passEl) passEl.placeholder = '16-digit Google App Password';
-        showSecToast('Gmail සැකසුම් (smtp.gmail.com:465) යොදන ලදී. කරුණාකර ඔබගේ Email සහ App Password ඇතුළත් කර සුරකින්න.', 'info');
+        showSecToast('Gmail preset applied (smtp.gmail.com:465). Enter your email and 16-digit App Password, then save.', 'info');
       } else if (type === 'office365') {
         hostEl.value = 'smtp.office365.com';
         portEl.value = '587';
         if (userEl && !userEl.value) userEl.placeholder = 'admin@doenets.lk';
         if (passEl) passEl.placeholder = 'Office 365 Password / App Key';
-        showSecToast('Office 365 සැකසුම් (smtp.office365.com:587) යොදන ලදී.', 'info');
+        showSecToast('Office 365 preset applied (smtp.office365.com:587).', 'info');
       } else if (type === 'clear') {
         hostEl.value = '';
         portEl.value = '587';
         if (userEl) userEl.value = '';
         if (passEl) passEl.value = '';
-        showSecToast('SMTP සැකසුම් ඉවත් කරන ලදී (Simulation Mode).', 'info');
+        showSecToast('SMTP settings cleared (Simulation Mode active).', 'info');
       }
     }
 
     function previewEmailReport() {
-      if (!token) return alert('කරුණාකර පද්ධතියට Log In වන්න.');
+      if (!token) return alert('Please log in to system first.');
       const url = '/api/admin/email-report/preview?token=' + encodeURIComponent(token);
       window.open(url, '_blank');
     }
 
     function downloadEmailReportPdf() {
-      if (!token) return alert('කරුණාකර පද්ධතියට Log In වන්න.');
+      if (!token) return alert('Please log in to system first.');
       const url = '/api/admin/email-report/preview?token=' + encodeURIComponent(token) + '&auto_print=1';
       const w = window.open(url, '_blank');
       if (w) {
@@ -6728,16 +6793,16 @@
 
         const txtPass = document.getElementById('txtSmtpPass');
         if (txtPass && data.has_smtp_pass) {
-          txtPass.placeholder = '•••••••• (App Password සුරකින ලදී)';
+          txtPass.placeholder = '•••••••• (App Password Saved)';
         }
 
         const txtResend = document.getElementById('txtResendApiKey');
         if (txtResend) {
           if (data.has_resend_key) {
             txtResend.value = '';
-            txtResend.placeholder = '•••••••• (Resend API Key සුරකින ලදී - සක්‍රීයයි)';
+            txtResend.placeholder = '•••••••• (Resend API Key Saved - Active)';
           } else {
-            txtResend.placeholder = 're_123456789... (Test mode: ඔබ ලියාපදිංචි වූ ඊමේල් ලිපිනයට පමණි)';
+            txtResend.placeholder = 're_123456789... (Test mode: registered account email only)';
           }
         }
 
@@ -6745,9 +6810,9 @@
         if (txtBrevo) {
           if (data.has_brevo_key) {
             txtBrevo.value = '';
-            txtBrevo.placeholder = '•••••••• (Brevo API Key සුරකින ලදී - සක්‍රීයයි)';
+            txtBrevo.placeholder = '•••••••• (Brevo API Key Saved - Active)';
           } else {
-            txtBrevo.placeholder = 'xkeysib-... (Domain එකක් නැතත් වෙනත් ඕනෑම ඊමේල් ලිපිනයකට යැවිය හැක)';
+            txtBrevo.placeholder = 'xkeysib-... (Allows sending to any recipient address)';
           }
         }
 
@@ -6764,17 +6829,17 @@
         const hasSmtpConfigured = data.smtp_host && data.smtp_user && data.has_smtp_pass;
 
         if (hasBrevoConfigured) {
-          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-paper-plane"></i> Real Email (Brevo Cloud Active - ඕනෑම ලිපිනයකට)</span>`;
-          if (miniInd) { miniInd.innerText = '✅ Brevo HTTPS Cloud සක්‍රීයයි (ඕනෑම ඊමේල් ලිපිනයකට සැබෑ ඊමේල් යැවේ)'; miniInd.style.color = '#15803d'; }
+          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-paper-plane"></i> Real Email (Brevo HTTPS Active)</span>`;
+          if (miniInd) { miniInd.innerText = '✅ Brevo HTTPS Cloud Active (Delivers real emails to any recipient)'; miniInd.style.color = '#15803d'; }
         } else if (hasResendConfigured) {
-          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-cloud-bolt"></i> Real Email (Resend HTTPS Cloud Active)</span>`;
-          if (miniInd) { miniInd.innerText = '✅ Resend HTTPS Cloud සක්‍රීයයි (ඔබගේ ඊමේල් ලිපිනයට සැබෑ ඊමේල් යැවේ)'; miniInd.style.color = '#15803d'; }
+          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-cloud-bolt"></i> Real Email (Resend HTTPS Active)</span>`;
+          if (miniInd) { miniInd.innerText = '✅ Resend HTTPS Cloud Active'; miniInd.style.color = '#15803d'; }
         } else if (hasSmtpConfigured) {
-          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-circle-check"></i> Real Email (Gmail / Local SMTP Ready)</span>`;
-          if (miniInd) { miniInd.innerText = '✅ Gmail SMTP සකසා ඇත (Localhost හි සැබෑ ඊමේල් යැවේ; Render හි නම් Brevo/Resend යොදන්න)'; miniInd.style.color = '#0369a1'; }
+          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-circle-check"></i> Real Email (SMTP Ready)</span>`;
+          if (miniInd) { miniInd.innerText = '✅ Direct SMTP Configured'; miniInd.style.color = '#0369a1'; }
         } else {
-          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Simulation Mode (Mail Service නැත)</span>`;
-          if (miniInd) { miniInd.innerText = '⚠️ සැබෑ ඊමේල් ලැබීමට Brevo / Resend හෝ Gmail App Password සකසන්න'; miniInd.style.color = '#b45309'; }
+          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Simulation Mode</span>`;
+          if (miniInd) { miniInd.innerText = '⚠️ Configure Brevo or Gmail App Password to receive real emails'; miniInd.style.color = '#b45309'; }
         }
 
         const badge = document.getElementById('emailReportStatusBadge');
@@ -6792,12 +6857,12 @@
             const isFailed = (data.last_sent_status || '').includes('FAILED');
             if (isFailed) {
               const errDetail = data.last_sent_error ? `<div style="margin-top: 0.35rem; color: #b91c1c; font-size: 0.82rem; font-weight: 600; line-height: 1.4;"><i class="fa-solid fa-circle-exclamation"></i> ${data.last_sent_error}</div>` : '';
-              info.innerHTML = `<span style="color: #dc2626;"><i class="fa-solid fa-triangle-exclamation"></i> අවසන් වරට වාර්තාව යැවීමේදී දෝෂයක් සිදුවිය: <strong>${data.last_sent_date}</strong> (තත්ත්වය: ${data.last_sent_status})</span>${errDetail}`;
+              info.innerHTML = `<span style="color: #dc2626;"><i class="fa-solid fa-triangle-exclamation"></i> Last dispatch failed on <strong>${data.last_sent_date}</strong> (${data.last_sent_status})</span>${errDetail}`;
             } else {
-              info.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #059669;"></i> අවසන් වරට වාර්තාව යවන ලද්දේ: <strong>${data.last_sent_date}</strong> (තත්ත්වය: ${data.last_sent_status || 'OK'})`;
+              info.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #059669;"></i> Last report sent on: <strong>${data.last_sent_date}</strong> (Status: ${data.last_sent_status || 'OK'})`;
             }
           } else {
-            info.innerHTML = `<i class="fa-solid fa-circle-info" style="color: #2563eb;"></i> අද දින ස්වයංක්‍රීය වාර්තාව <strong>${data.time}</strong> ට ${data.recipient} වෙත යැවීමට නියමිතයි.`;
+            info.innerHTML = `<i class="fa-solid fa-circle-info" style="color: #2563eb;"></i> Today's automated report scheduled for <strong>${data.time}</strong> to ${data.recipient}.`;
           }
         }
       } catch (err) {
@@ -6811,7 +6876,7 @@
       const originalText = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> සුරකිමින්...`;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
       }
 
       try {
@@ -6827,7 +6892,7 @@
         const smtp_pass = document.getElementById('txtSmtpPass') ? document.getElementById('txtSmtpPass').value.trim() : '';
 
         if (!recipient || !recipient.includes('@')) {
-          alert('කරුණාකර වලංගු ඊමේල් ලිපිනයක් ඇතුළත් කරන්න (Please enter a valid recipient email).');
+          alert('Please enter a valid recipient email address.');
           if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
           return;
         }
@@ -6854,13 +6919,13 @@
 
         const data = await res.json();
         if (res.ok) {
-          showSecToast(data.message || 'ස්වයංක්‍රීය ඊමේල් වාර්තා සැකසුම් සුරකින ලදී!', 'success');
+          showSecToast(data.message || 'Email reporting settings saved successfully!', 'success');
           await loadEmailSettings();
         } else {
           alert('Error: ' + (data.error || 'Failed to save settings'));
         }
       } catch (err) {
-        alert('දෝෂයක් සිදුවිය: ' + err.message);
+        alert('Error: ' + err.message);
       } finally {
         if (btn) {
           btn.disabled = false;
