@@ -1529,7 +1529,8 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
 // 7.2 Bulk Gate Pass Generation (Confidential, Evaluation, Admin / Visitors)
 app.post('/api/passes/bulk', authenticateToken, async (req, res) => {
   const userRole = req.user.role;
-  const { category, batch_name, branch_name, purpose, valid_from, valid_to, valid_days, passes } = req.body;
+  const { category, batch_name, branch_name, purpose, valid_from, valid_to, valid_days } = req.body;
+  const passes = req.body.passes || req.body.items;
 
   if (!category) {
     return res.status(400).json({ error: 'Pass category is required' });
@@ -1688,6 +1689,7 @@ app.get('/api/passes/bulk/batches', authenticateToken, async (req, res) => {
       branch_name, 
       purpose, 
       COUNT(*) as total_passes, 
+      COUNT(*) as pass_count, 
       MIN(valid_from) as valid_from, 
       MAX(valid_to) as valid_to, 
       MAX(created_at) as created_at

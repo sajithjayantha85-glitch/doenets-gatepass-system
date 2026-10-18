@@ -2093,6 +2093,127 @@
           </table>
         </div>
       </div>
+
+      <!-- Bulk Confidential Pass Generation & A4 Badge Sheets -->
+      <div class="card" style="margin-top: 2rem; border-left: 5px solid #8b5cf6; background: #faf5ff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <h3 style="font-size: 1.3rem; font-weight: 800; color: #581c87; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.6rem;">
+              <i class="fa-solid fa-layer-group" style="color: #8b5cf6;"></i> Bulk Confidential Passes & Badge Printing (කණ්ඩායම් රහස්‍ය පාස්)
+            </h3>
+            <p style="color: #6b21a8; font-size: 0.9rem; margin: 0;">
+              Quickly issue special access passes in bulk for paper setters, moderators, and printing shifts via CSV.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+            <button type="button" class="btn" onclick="downloadSampleBulkCsv('CONFIDENTIAL')" style="background: white; border: 1.5px solid #d8b4fe; color: #6b21a8; font-weight: 700; padding: 0.5rem 1rem;">
+              <i class="fa-solid fa-file-csv" style="color: #8b5cf6;"></i> Sample CSV
+            </button>
+            <button type="button" class="btn" onclick="loadBulkPassBatches('bulkBatchesTbodyConf', 'CONFIDENTIAL')" style="background: white; border: 1.5px solid #d8b4fe; color: #6b21a8; font-weight: 700; padding: 0.5rem 1rem;">
+              <i class="fa-solid fa-rotate"></i> Refresh Batches
+            </button>
+          </div>
+        </div>
+
+        <form id="bulkPassFormConf" onsubmit="handleBulkPassFormSubmit(event, 'conf')">
+          <input type="hidden" id="bulkCategoryConf" value="CONFIDENTIAL">
+          <input type="hidden" id="bulkBranchNameConf" value="Confidential Branch">
+          <div class="form-grid" style="margin-bottom: 1.25rem;">
+            <div class="form-group">
+              <label style="font-weight: 700; color: #4c1d95;">Confidential Batch Name / Title *</label>
+              <input type="text" id="bulkBatchNameConf" class="form-control" required placeholder="e.g. 2026-AL-Paper-Setting-Shift-1" style="font-weight: 600;">
+            </div>
+            <div class="form-group">
+              <label style="font-weight: 700; color: #4c1d95;">Validity Duration (Days) *</label>
+              <input type="number" id="bulkValidDaysConf" class="form-control" value="3" min="1" max="90" required>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label style="font-weight: 700; color: #4c1d95;">Subject / Confidential Duty Description</label>
+              <input type="text" id="bulkPurposeConf" class="form-control" placeholder="e.g. G.C.E. A/L Combined Mathematics Paper Setting">
+            </div>
+          </div>
+
+          <!-- CSV Upload Dropzone -->
+          <div style="background: white; border: 2px dashed #c084fc; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; text-align: center;">
+            <p style="font-weight: 700; color: #581c87; margin-bottom: 0.5rem;">Select CSV File with Resource Persons (name, nic, mobile, vehicle, duty):</p>
+            <div style="display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
+              <label class="btn" style="cursor: pointer; background: #8b5cf6; color: white; padding: 0.55rem 1.25rem; font-weight: 700;">
+                <i class="fa-solid fa-folder-open"></i> Upload Confidential CSV
+                <input type="file" id="bulkCsvFileInputConf" accept=".csv,text/csv" style="display: none;" onchange="handleBulkCsvUpload(this, 'conf')">
+              </label>
+              <button type="button" class="btn" onclick="toggleBulkManualEntry('bulkManualEntryBoxConf')" style="background: white; border: 1.5px solid #d8b4fe; color: #581c87; font-weight: 700; padding: 0.55rem 1rem;">
+                <i class="fa-solid fa-keyboard"></i> Quick Text Paste
+              </button>
+            </div>
+
+            <!-- Collapsible Quick Text Paste -->
+            <div id="bulkManualEntryBoxConf" style="display: none; margin-top: 1rem; text-align: left;">
+              <label style="font-weight: 700; font-size: 0.85rem; color: #4c1d95;">Paste rows (Name, NIC, Mobile, Vehicle):</label>
+              <textarea id="bulkPasteTextConf" class="form-control" rows="3" placeholder="Prof. N. Silva, 197012345678, 0771234567, WP CAB-1234" style="font-family: monospace; font-size: 0.9rem; margin-top: 0.3rem;"></textarea>
+              <div style="margin-top: 0.4rem;">
+                <button type="button" class="btn btn-primary" onclick="parseBulkPasteText('conf')" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; background: #8b5cf6;">
+                  Load Pasted Rows
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview of Loaded Members Table -->
+          <div id="bulkPreviewContainerConf" style="display: none; margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span id="bulkLoadedCountBadgeConf" class="badge" style="background: #8b5cf6; color: white; font-size: 0.9rem; padding: 0.35rem 0.75rem;">0 Persons</span>
+              <button type="button" class="btn" onclick="clearLoadedBulkItems('conf')" style="background: #fee2e2; color: #991b1b; font-size: 0.8rem; padding: 0.3rem 0.6rem;">Clear All</button>
+            </div>
+            <div class="table-container" style="max-height: 250px; overflow-y: auto;">
+              <table id="bulkPreviewTableConf">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Resource Person Name</th>
+                    <th>NIC</th>
+                    <th>Mobile</th>
+                    <th>Vehicle</th>
+                    <th>Duty</th>
+                    <th>Remove</th>
+                  </tr>
+                </thead>
+                <tbody id="bulkPreviewTbodyConf"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
+            <span id="bulkStatusMsgConf" style="font-weight: 700;"></span>
+            <button type="submit" id="btnSubmitBulkConf" class="btn" style="background: #8b5cf6; color: white; font-size: 1.05rem; font-weight: 700; padding: 0.75rem 1.5rem;">
+              <i class="fa-solid fa-key"></i> Generate Confidential Bulk Passes
+            </button>
+          </div>
+        </form>
+
+        <!-- Recent Confidential Batches Table -->
+        <div style="margin-top: 1.75rem;">
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: #4c1d95; margin-bottom: 0.75rem;">
+            <i class="fa-solid fa-print"></i> Confidential Batches & Printable A4 Badge Sheets
+          </h4>
+          <div class="table-container">
+            <table id="bulkBatchesTableConf">
+              <thead>
+                <tr>
+                  <th>Batch Identifier</th>
+                  <th>Passes</th>
+                  <th>Duty</th>
+                  <th>Valid Range</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="bulkBatchesTbodyConf">
+                <tr><td colspan="6" style="text-align: center; color: #6b21a8; padding: 1rem;">Click "Refresh Batches" or generate a batch.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- TAB 4: EVALUATION BRANCH PORTAL -->
@@ -2342,6 +2463,131 @@
             </thead>
             <tbody><!-- Dynamic Rows --></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Bulk Staff QR Pass Generation & A4 Badge Sheets (Establishment / Institutional HR Branch) -->
+      <div class="card" style="margin-top: 2rem; border-left: 5px solid #059669; background: #ecfdf5;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <h3 style="font-size: 1.3rem; font-weight: 800; color: #065f46; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.6rem;">
+              <i class="fa-solid fa-users" style="color: #059669;"></i> Bulk Staff QR Passes & Badge Printing (ආයතන කාර්ය මණ්ඩල කණ්ඩායම් පාස්)
+            </h3>
+            <p style="color: #047857; font-size: 0.9rem; margin: 0;">
+              දෙපාර්තමේන්තුවේ ශාඛා, අංශ හා නව බඳවාගැනීම් සඳහා කාර්ය මණ්ඩල ස්ථිර/තාවකාලික QR පාස් එකවර නිකුත් කිරීම සහ A4 Badge Sheets මුද්‍රණය.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+            <button type="button" class="btn" onclick="downloadSampleBulkCsv('STAFF')" style="background: white; border: 1.5px solid #a7f3d0; color: #047857; font-weight: 700; padding: 0.5rem 1rem;">
+              <i class="fa-solid fa-file-csv" style="color: #059669;"></i> Sample Staff CSV
+            </button>
+            <button type="button" class="btn" onclick="loadBulkPassBatches('bulkBatchesTbodyHr', 'STAFF')" style="background: white; border: 1.5px solid #a7f3d0; color: #047857; font-weight: 700; padding: 0.5rem 1rem;">
+              <i class="fa-solid fa-rotate"></i> Refresh Batches
+            </button>
+          </div>
+        </div>
+
+        <form id="bulkPassFormHr" onsubmit="handleBulkPassFormSubmit(event, 'hr')">
+          <input type="hidden" id="bulkCategoryHr" value="STAFF">
+          <div class="form-grid" style="margin-bottom: 1.25rem;">
+            <div class="form-group">
+              <label style="font-weight: 700; color: #065f46;">Staff Batch Identifier / Title (කාණ්ඩයේ නම) *</label>
+              <input type="text" id="bulkBatchNameHr" class="form-control" required placeholder="e.g. Establishment-Branch-Batch-2026 or Certificate-Branch-Staff" style="font-weight: 600;">
+            </div>
+            <div class="form-group">
+              <label style="font-weight: 700; color: #065f46;">Pass Validity Duration (Days) *</label>
+              <input type="number" id="bulkValidDaysHr" class="form-control" value="365" min="1" max="1825" required>
+            </div>
+            <div class="form-group">
+              <label style="font-weight: 700; color: #065f46;">Default Department Branch (අංශය)</label>
+              <input type="text" id="bulkBranchNameHr" class="form-control" value="Establishment Branch" placeholder="e.g. Establishment Branch">
+            </div>
+            <div class="form-group">
+              <label style="font-weight: 700; color: #065f46;">Default Designation / Purpose (කාර්යය / තනතුර)</label>
+              <input type="text" id="bulkPurposeHr" class="form-control" placeholder="e.g. Permanent Staff Member / Development Officer">
+            </div>
+          </div>
+
+          <!-- CSV Upload Dropzone -->
+          <div style="background: white; border: 2px dashed #6ee7b7; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; text-align: center;">
+            <p style="font-weight: 700; color: #065f46; margin-bottom: 0.5rem;">Select CSV File with Staff Members (name, employee_no, nic, branch, mobile, vehicle):</p>
+            <div style="display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
+              <label class="btn btn-success" style="cursor: pointer; padding: 0.55rem 1.25rem; font-weight: 700;">
+                <i class="fa-solid fa-folder-open"></i> Upload Staff CSV
+                <input type="file" id="bulkCsvFileInputHr" accept=".csv,text/csv" style="display: none;" onchange="handleBulkCsvUpload(this, 'hr')">
+              </label>
+              <button type="button" class="btn" onclick="toggleBulkManualEntry('bulkManualEntryBoxHr')" style="background: white; border: 1.5px solid #a7f3d0; color: #065f46; font-weight: 700; padding: 0.55rem 1rem;">
+                <i class="fa-solid fa-keyboard"></i> Quick Text Paste
+              </button>
+            </div>
+
+            <!-- Collapsible Quick Text Paste -->
+            <div id="bulkManualEntryBoxHr" style="display: none; margin-top: 1rem; text-align: left;">
+              <label style="font-weight: 700; font-size: 0.85rem; color: #065f46;">Paste rows (Format: Name, Employee No, NIC, Branch, Mobile, Vehicle):</label>
+              <textarea id="bulkPasteTextHr" class="form-control" rows="3" placeholder="Mr. A.B. Karunaratne, 10452, 198512345678, Certificate Branch, 0771234567, WP CAR-9999" style="font-family: monospace; font-size: 0.9rem; margin-top: 0.3rem;"></textarea>
+              <div style="margin-top: 0.4rem;">
+                <button type="button" class="btn btn-success" onclick="parseBulkPasteText('hr')" style="padding: 0.35rem 0.85rem; font-size: 0.85rem;">
+                  Load Pasted Rows
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview of Loaded Members Table -->
+          <div id="bulkPreviewContainerHr" style="display: none; margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span id="bulkLoadedCountBadgeHr" class="badge" style="background: #059669; color: white; font-size: 0.9rem; padding: 0.35rem 0.75rem;">0 Staff Members</span>
+              <button type="button" class="btn" onclick="clearLoadedBulkItems('hr')" style="background: #fee2e2; color: #991b1b; font-size: 0.8rem; padding: 0.3rem 0.6rem;">Clear All</button>
+            </div>
+            <div class="table-container" style="max-height: 250px; overflow-y: auto;">
+              <table id="bulkPreviewTableHr">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Employee Name</th>
+                    <th>Emp No</th>
+                    <th>NIC No</th>
+                    <th>Branch / Designation</th>
+                    <th>Mobile</th>
+                    <th>Vehicle</th>
+                    <th>Remove</th>
+                  </tr>
+                </thead>
+                <tbody id="bulkPreviewTbodyHr"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
+            <span id="bulkStatusMsgHr" style="font-weight: 700;"></span>
+            <button type="submit" id="btnSubmitBulkHr" class="btn btn-success" style="font-size: 1.05rem; font-weight: 700; padding: 0.75rem 1.5rem;">
+              <i class="fa-solid fa-id-card"></i> Generate Staff Bulk Passes
+            </button>
+          </div>
+        </form>
+
+        <!-- Recent Staff Batches Table -->
+        <div style="margin-top: 1.75rem;">
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: #065f46; margin-bottom: 0.75rem;">
+            <i class="fa-solid fa-print"></i> Staff Batches & Printable A4 Badge Sheets
+          </h4>
+          <div class="table-container">
+            <table id="bulkBatchesTableHr">
+              <thead>
+                <tr>
+                  <th>Batch Identifier</th>
+                  <th>Passes</th>
+                  <th>Branch & Designation</th>
+                  <th>Valid Range</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="bulkBatchesTbodyHr">
+                <tr><td colspan="6" style="text-align: center; color: #047857; padding: 1rem;">Click "Refresh Batches" or generate a batch.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -3671,129 +3917,7 @@
             </button>
           </div>
         </div>
-
-        <!-- Bulk Confidential Pass Generation & A4 Badge Sheets -->
-        <div class="card" style="margin-top: 2rem; border-left: 5px solid #8b5cf6; background: #faf5ff;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-            <div>
-              <h3 style="font-size: 1.3rem; font-weight: 800; color: #581c87; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.6rem;">
-                <i class="fa-solid fa-layer-group" style="color: #8b5cf6;"></i> Bulk Confidential Passes & Badge Printing (කණ්ඩායම් රහස්‍ය පාස්)
-              </h3>
-              <p style="color: #6b21a8; font-size: 0.9rem; margin: 0;">
-                Quickly issue special access passes in bulk for paper setters, moderators, and printing shifts via CSV.
-              </p>
-            </div>
-            <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
-              <button type="button" class="btn" onclick="downloadSampleBulkCsv('CONFIDENTIAL')" style="background: white; border: 1.5px solid #d8b4fe; color: #6b21a8; font-weight: 700; padding: 0.5rem 1rem;">
-                <i class="fa-solid fa-file-csv" style="color: #8b5cf6;"></i> Sample CSV
-              </button>
-              <button type="button" class="btn" onclick="loadBulkPassBatches('bulkBatchesTbodyConf', 'CONFIDENTIAL')" style="background: white; border: 1.5px solid #d8b4fe; color: #6b21a8; font-weight: 700; padding: 0.5rem 1rem;">
-                <i class="fa-solid fa-rotate"></i> Refresh Batches
-              </button>
-            </div>
-          </div>
-
-          <form id="bulkPassFormConf" onsubmit="handleBulkPassFormSubmit(event, 'conf')">
-            <input type="hidden" id="bulkCategoryConf" value="CONFIDENTIAL">
-            <input type="hidden" id="bulkBranchNameConf" value="Confidential Branch">
-            <div class="form-grid" style="margin-bottom: 1.25rem;">
-              <div class="form-group">
-                <label style="font-weight: 700; color: #4c1d95;">Confidential Batch Name / Title *</label>
-                <input type="text" id="bulkBatchNameConf" class="form-control" required placeholder="e.g. 2026-AL-Paper-Setting-Shift-1" style="font-weight: 600;">
-              </div>
-              <div class="form-group">
-                <label style="font-weight: 700; color: #4c1d95;">Validity Duration (Days) *</label>
-                <input type="number" id="bulkValidDaysConf" class="form-control" value="3" min="1" max="90" required>
-              </div>
-              <div class="form-group" style="grid-column: span 2;">
-                <label style="font-weight: 700; color: #4c1d95;">Subject / Confidential Duty Description</label>
-                <input type="text" id="bulkPurposeConf" class="form-control" placeholder="e.g. G.C.E. A/L Combined Mathematics Paper Setting">
-              </div>
-            </div>
-
-            <!-- CSV Upload Dropzone -->
-            <div style="background: white; border: 2px dashed #c084fc; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; text-align: center;">
-              <p style="font-weight: 700; color: #581c87; margin-bottom: 0.5rem;">Select CSV File with Resource Persons (name, nic, mobile, vehicle, duty):</p>
-              <div style="display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
-                <label class="btn" style="cursor: pointer; background: #8b5cf6; color: white; padding: 0.55rem 1.25rem; font-weight: 700;">
-                  <i class="fa-solid fa-folder-open"></i> Upload Confidential CSV
-                  <input type="file" id="bulkCsvFileInputConf" accept=".csv,text/csv" style="display: none;" onchange="handleBulkCsvUpload(this, 'conf')">
-                </label>
-                <button type="button" class="btn" onclick="toggleBulkManualEntry('bulkManualEntryBoxConf')" style="background: white; border: 1.5px solid #d8b4fe; color: #581c87; font-weight: 700; padding: 0.55rem 1rem;">
-                  <i class="fa-solid fa-keyboard"></i> Quick Text Paste
-                </button>
-              </div>
-
-              <!-- Collapsible Quick Text Paste -->
-              <div id="bulkManualEntryBoxConf" style="display: none; margin-top: 1rem; text-align: left;">
-                <label style="font-weight: 700; font-size: 0.85rem; color: #4c1d95;">Paste rows (Name, NIC, Mobile, Vehicle):</label>
-                <textarea id="bulkPasteTextConf" class="form-control" rows="3" placeholder="Prof. N. Silva, 197012345678, 0771234567, WP CAB-1234" style="font-family: monospace; font-size: 0.9rem; margin-top: 0.3rem;"></textarea>
-                <div style="margin-top: 0.4rem;">
-                  <button type="button" class="btn btn-primary" onclick="parseBulkPasteText('conf')" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; background: #8b5cf6;">
-                    Load Pasted Rows
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Preview of Loaded Members Table -->
-            <div id="bulkPreviewContainerConf" style="display: none; margin-bottom: 1.25rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <span id="bulkLoadedCountBadgeConf" class="badge" style="background: #8b5cf6; color: white; font-size: 0.9rem; padding: 0.35rem 0.75rem;">0 Persons</span>
-                <button type="button" class="btn" onclick="clearLoadedBulkItems('conf')" style="background: #fee2e2; color: #991b1b; font-size: 0.8rem; padding: 0.3rem 0.6rem;">Clear All</button>
-              </div>
-              <div class="table-container" style="max-height: 250px; overflow-y: auto;">
-                <table id="bulkPreviewTableConf">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Resource Person Name</th>
-                      <th>NIC</th>
-                      <th>Mobile</th>
-                      <th>Vehicle</th>
-                      <th>Duty</th>
-                      <th>Remove</th>
-                    </tr>
-                  </thead>
-                  <tbody id="bulkPreviewTbodyConf"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
-              <span id="bulkStatusMsgConf" style="font-weight: 700;"></span>
-              <button type="submit" id="btnSubmitBulkConf" class="btn" style="background: #8b5cf6; color: white; font-size: 1.05rem; font-weight: 700; padding: 0.75rem 1.5rem;">
-                <i class="fa-solid fa-key"></i> Generate Confidential Bulk Passes
-              </button>
-            </div>
-          </form>
-
-          <!-- Recent Confidential Batches Table -->
-          <div style="margin-top: 1.75rem;">
-            <h4 style="font-size: 1.1rem; font-weight: 700; color: #4c1d95; margin-bottom: 0.75rem;">
-              <i class="fa-solid fa-print"></i> Confidential Batches & Printable A4 Badge Sheets
-            </h4>
-            <div class="table-container">
-              <table id="bulkBatchesTableConf">
-                <thead>
-                  <tr>
-                    <th>Batch Identifier</th>
-                    <th>Passes</th>
-                    <th>Duty</th>
-                    <th>Valid Range</th>
-                    <th>Date</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="bulkBatchesTbodyConf">
-                  <tr><td colspan="6" style="text-align: center; color: #6b21a8; padding: 1rem;">Click "Refresh Batches" or generate a batch.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
       </div>
-    </div>
 
   </main>
 
@@ -4192,6 +4316,7 @@
         loadBulkPassBatches('bulkBatchesTbodyEval', 'EVALUATION');
       } else if (tabId === 'hr-portal') {
         loadBranchPasses();
+        loadBulkPassBatches('bulkBatchesTbodyHr', 'STAFF');
       }
       if (tabId === 'security-scan') {
         document.body.classList.add('security-mode-active');
@@ -7594,7 +7719,8 @@
     const bulkState = {
       admin: [],
       conf: [],
-      eval: []
+      eval: [],
+      hr: []
     };
 
     function handleBulkCategoryChange(cat, prefix) {
@@ -7627,6 +7753,10 @@
         csvContent += "Mrs. K.B. Jayatilake,198056789012,0711234567,NC CAD-5678,Panel-08,G.C.E. O/L Sinhala Examiner\n";
         csvContent += "Mr. W.M. Bandara,197923456789,0772345678,SP BE-4321,Panel-08,G.C.E. O/L Sinhala Examiner\n";
         csvContent += "Ms. T.N. Wickramasinghe,198434567890,0783456789,WP KL-8765,Panel-12,G.C.E. O/L Mathematics Examiner\n";
+      } else if (category === 'STAFF') {
+        csvContent += "Mr. A.B. Karunaratne,198512345678,0771234567,WP CAR-9999,10452,Assistant Commissioner - Certificate Branch\n";
+        csvContent += "Mrs. P.D. Silva,199087654321,0712345678,WP GA-1234,10488,Development Officer - Confidential Branch\n";
+        csvContent += "Mr. M.S. Jayawardena,198234567890,0769876543,WP KA-5678,10512,Administrative Officer - Establishment Branch\n";
       } else {
         csvContent += "Mr. A.B. Perera,198512345678,0712345678,WP CA-1234,,Official Meeting with Commissioner General\n";
         csvContent += "Ms. H.D. Fernando,199276543210,0777654321,WP GA-9876,,Department Audit Team Member\n";
@@ -7664,16 +7794,30 @@
         const clean = line.trim();
         if (!clean) continue;
         const parts = clean.split(/[,\t]/).map(p => p.trim());
-        if (parts.length >= 2) {
-          bulkState[prefix].push({
-            name: parts[0] || '',
-            nic: parts[1] || '',
-            mobile: parts[2] || '',
-            vehicle: parts[3] || '',
-            employee_no: parts[4] || '',
-            purpose: parts[5] || ''
-          });
-          added++;
+        if (prefix === 'hr') {
+          if (parts.length >= 2) {
+            bulkState.hr.push({
+              name: parts[0] || '',
+              employee_no: parts[1] || '',
+              nic: parts[2] || '',
+              purpose: parts[3] || '',
+              mobile: parts[4] || '',
+              vehicle: parts[5] || ''
+            });
+            added++;
+          }
+        } else {
+          if (parts.length >= 2) {
+            bulkState[prefix].push({
+              name: parts[0] || '',
+              nic: parts[1] || '',
+              mobile: parts[2] || '',
+              vehicle: parts[3] || '',
+              employee_no: parts[4] || '',
+              purpose: parts[5] || ''
+            });
+            added++;
+          }
         }
       }
       textElem.value = '';
@@ -7802,22 +7946,73 @@
       }
 
       container.style.display = 'block';
-      tbody.innerHTML = items.map((it, idx) => `
-        <tr>
-          <td><strong>${idx + 1}</strong></td>
-          <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700;" value="${escapeHtml(it.name || '')}" onchange="updateBulkItem('${prefix}', ${idx}, 'name', this.value)"></td>
-          <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-family:monospace;" value="${escapeHtml(it.nic || '')}" onchange="updateBulkItem('${prefix}', ${idx}, 'nic', this.value)"></td>
-          <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.mobile || '')}" onchange="updateBulkItem('${prefix}', ${idx}, 'mobile', this.value)"></td>
-          <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700; color:#d97706;" value="${escapeHtml(it.vehicle || '')}" onchange="updateBulkItem('${prefix}', ${idx}, 'vehicle', this.value)"></td>
-          <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.employee_no || '')}" onchange="updateBulkItem('${prefix}', ${idx}, 'employee_no', this.value)"></td>
-          ${prefix === 'admin' ? `<td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.purpose || '')}" onchange="updateBulkItem('${prefix}', ${idx}, 'purpose', this.value)"></td>` : ''}
-          <td style="text-align: center;">
-            <button type="button" class="btn" onclick="removeBulkRow('${prefix}', ${idx})" style="padding:0.25rem 0.5rem; background:#fee2e2; color:#ef4444; border:none; border-radius:6px;" title="Remove this person">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </td>
-        </tr>
-      `).join('');
+      if (prefix === 'hr') {
+        tbody.innerHTML = items.map((it, idx) => `
+          <tr>
+            <td><strong>${idx + 1}</strong></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700;" value="${escapeHtml(it.name || '')}" onchange="updateBulkItem('hr', ${idx}, 'name', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700;" value="${escapeHtml(it.employee_no || '')}" onchange="updateBulkItem('hr', ${idx}, 'employee_no', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-family:monospace;" value="${escapeHtml(it.nic || '')}" onchange="updateBulkItem('hr', ${idx}, 'nic', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.purpose || it.branch || '')}" onchange="updateBulkItem('hr', ${idx}, 'purpose', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.mobile || '')}" onchange="updateBulkItem('hr', ${idx}, 'mobile', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700; color:#d97706;" value="${escapeHtml(it.vehicle || '')}" onchange="updateBulkItem('hr', ${idx}, 'vehicle', this.value)"></td>
+            <td style="text-align: center;">
+              <button type="button" class="btn" onclick="removeBulkRow('hr', ${idx})" style="padding:0.25rem 0.5rem; background:#fee2e2; color:#ef4444; border:none; border-radius:6px;" title="Remove this person">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } else if (prefix === 'conf') {
+        tbody.innerHTML = items.map((it, idx) => `
+          <tr>
+            <td><strong>${idx + 1}</strong></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700;" value="${escapeHtml(it.name || '')}" onchange="updateBulkItem('conf', ${idx}, 'name', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-family:monospace;" value="${escapeHtml(it.nic || '')}" onchange="updateBulkItem('conf', ${idx}, 'nic', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.mobile || '')}" onchange="updateBulkItem('conf', ${idx}, 'mobile', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700; color:#d97706;" value="${escapeHtml(it.vehicle || '')}" onchange="updateBulkItem('conf', ${idx}, 'vehicle', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.purpose || '')}" onchange="updateBulkItem('conf', ${idx}, 'purpose', this.value)"></td>
+            <td style="text-align: center;">
+              <button type="button" class="btn" onclick="removeBulkRow('conf', ${idx})" style="padding:0.25rem 0.5rem; background:#fee2e2; color:#ef4444; border:none; border-radius:6px;" title="Remove this person">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } else if (prefix === 'eval') {
+        tbody.innerHTML = items.map((it, idx) => `
+          <tr>
+            <td><strong>${idx + 1}</strong></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700;" value="${escapeHtml(it.name || '')}" onchange="updateBulkItem('eval', ${idx}, 'name', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-family:monospace;" value="${escapeHtml(it.nic || '')}" onchange="updateBulkItem('eval', ${idx}, 'nic', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.mobile || '')}" onchange="updateBulkItem('eval', ${idx}, 'mobile', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700; color:#d97706;" value="${escapeHtml(it.vehicle || '')}" onchange="updateBulkItem('eval', ${idx}, 'vehicle', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.employee_no || '')}" onchange="updateBulkItem('eval', ${idx}, 'employee_no', this.value)"></td>
+            <td style="text-align: center;">
+              <button type="button" class="btn" onclick="removeBulkRow('eval', ${idx})" style="padding:0.25rem 0.5rem; background:#fee2e2; color:#ef4444; border:none; border-radius:6px;" title="Remove this person">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = items.map((it, idx) => `
+          <tr>
+            <td><strong>${idx + 1}</strong></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700;" value="${escapeHtml(it.name || '')}" onchange="updateBulkItem('admin', ${idx}, 'name', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-family:monospace;" value="${escapeHtml(it.nic || '')}" onchange="updateBulkItem('admin', ${idx}, 'nic', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.mobile || '')}" onchange="updateBulkItem('admin', ${idx}, 'mobile', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem; font-weight:700; color:#d97706;" value="${escapeHtml(it.vehicle || '')}" onchange="updateBulkItem('admin', ${idx}, 'vehicle', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.employee_no || '')}" onchange="updateBulkItem('admin', ${idx}, 'employee_no', this.value)"></td>
+            <td><input type="text" class="form-control" style="padding:0.35rem 0.5rem; font-size:0.88rem;" value="${escapeHtml(it.purpose || '')}" onchange="updateBulkItem('admin', ${idx}, 'purpose', this.value)"></td>
+            <td style="text-align: center;">
+              <button type="button" class="btn" onclick="removeBulkRow('admin', ${idx})" style="padding:0.25rem 0.5rem; background:#fee2e2; color:#ef4444; border:none; border-radius:6px;" title="Remove this person">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      }
     }
 
     function updateBulkItem(prefix, index, field, value) {
@@ -7945,6 +8140,9 @@
           loadBranchPasses();
         } else if (prefix === 'eval') {
           loadBulkPassBatches('bulkBatchesTbodyEval', 'EVALUATION');
+          loadBranchPasses();
+        } else if (prefix === 'hr') {
+          loadBulkPassBatches('bulkBatchesTbodyHr', 'STAFF');
           loadBranchPasses();
         }
 
