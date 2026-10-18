@@ -621,9 +621,10 @@ function sendViaResendHttps(apiKey, fromAddress, toAddress, subject, htmlContent
   const https = require('https');
   return new Promise((resolve, reject) => {
     const from = (fromAddress && fromAddress.includes('@resend.dev')) ? fromAddress : 'DoENETS Gate Intelligence <onboarding@resend.dev>';
+    const toList = Array.isArray(toAddress) ? toAddress : [toAddress];
     const payload = JSON.stringify({
       from,
-      to: [toAddress],
+      to: toList,
       subject,
       html: htmlContent
     });
@@ -770,19 +771,22 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
       dispatchResult = { success: false, mode: 'BREVO_FAILED', error: brevoErr.message, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
     }
   }
-  // Priority 2: Resend HTTPS API (Recommended for Render Cloud with verified domain or self-test)
-  else if (resendKey && resendKey.trim() !== '') {
+  // Priority 2: Resend HTTPS API (Failover if Brevo was not used or failed)
+  if (!dispatchResult.success && resendKey && resendKey.trim() !== '') {
     try {
       const info = await sendViaResendHttps(resendKey, emailReportConfig.from_address, recipients, subject, htmlContent);
       console.log(`✓ Email report successfully dispatched via Resend HTTPS API to ${recipientStr}: ${info.id}`);
       dispatchResult = { success: true, mode: 'RESEND_API', messageId: info.id, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
     } catch (resendErr) {
       console.error(`✗ Resend API delivery failed: ${resendErr.message}`);
-      dispatchResult = { success: false, mode: 'RESEND_FAILED', error: resendErr.message, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
+      if (!dispatchResult.error) {
+        dispatchResult = { success: false, mode: 'RESEND_FAILED', error: resendErr.message, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
+      }
     }
   }
-  // Priority 3: Direct SMTP (Works on Localhost and cloud instances with open SMTP ports)
-  else if (host && user && pass) {
+
+  // Priority 3: Direct SMTP (Failover if cloud APIs not configured or failed)
+  if (!dispatchResult.success && host && user && pass) {
     try {
       const isGmail = host.toLowerCase().includes('gmail');
       const isSecure = Number(port) === 465;
@@ -819,9 +823,14 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
       dispatchResult = { success: true, mode: 'SMTP', messageId: info.messageId, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
     } catch (sendErr) {
       console.error(`✗ SMTP delivery failed (${sendErr.message}).`);
-      dispatchResult = { success: false, mode: 'SMTP_FAILED', error: sendErr.message, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
+      if (!dispatchResult.error) {
+        dispatchResult = { success: false, mode: 'SMTP_FAILED', error: sendErr.message, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
+      }
     }
-  } else {
+  }
+
+  // Simulation mode only if none of the services are configured
+  if (!dispatchResult.success && !brevoKey && !resendKey && !(host && user && pass)) {
     console.log(`ℹ SMTP credentials not configured. Executed simulated report generation for ${recipientStr}.`);
     dispatchResult = {
       success: true,
