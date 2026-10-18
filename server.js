@@ -9,6 +9,7 @@ const { db, initDatabase, getDbStatus } = require('./database');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'doenets_gatepass_secret_key_2026';
+const REPORTS_API_KEY = process.env.REPORTS_API_KEY || 'doenets_executive_api_key_2026';
 
 // Core Express Middleware
 app.use(cors());
@@ -112,12 +113,20 @@ function logAdminAuditAction(username, role, actionName, targetUser, details, ip
   );
 }
 
-// Authentication Middleware
+// Authentication Middleware (Supports JWT Bearer Token & Executive API Key)
 function authenticateToken(req, res, next) {
+  // 1. Check for Executive API Key (For External BI / Dashboard / Script integrations)
+  const apiKey = req.headers['x-api-key'] || req.query.api_key;
+  if (apiKey && apiKey === REPORTS_API_KEY) {
+    req.user = { username: 'api_executive', role: 'SUPER_ADMIN', display_name: 'Executive Reporting Client' };
+    return next();
+  }
+
+  // 2. Standard Session JWT Bearer Token
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) return res.status(401).json({ error: 'Authentication required' });
+  if (!token) return res.status(401).json({ error: 'Authentication required / අවසරය අවශ්‍යයි (Provide Bearer Token or X-API-KEY)' });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: 'Invalid or expired session' });
@@ -1093,16 +1102,26 @@ app.get('/api/admin/visitors', authenticateToken, (req, res) => {
   });
 });
 
-// 10.2 Executive Analytics & Institutional Intelligence API (Authenticated)
+// 10.2 Executive Analytics & Institutional Intelligence API (Authenticated via Bearer Token or X-API-KEY)
 app.get('/api/admin/analytics', authenticateToken, (req, res) => {
-  const timeframe = req.query.timeframe || 'today'; // 'today', 'week', 'month', 'all'
+  const timeframe = req.query.timeframe || (req.query.start_date ? 'custom' : 'today'); // 'today', 'yesterday', 'week', 'month', 'all', 'custom'
   const categoryFilter = req.query.category && req.query.category !== 'ALL' ? req.query.category.trim().toUpperCase() : null;
+  const startDate = req.query.start_date ? req.query.start_date.trim() : null;
+  const endDate = req.query.end_date ? req.query.end_date.trim() : null;
 
   let logWhereClauses = [];
   let logParams = [];
 
-  if (timeframe === 'today') {
+  if (startDate && endDate) {
+    logWhereClauses.push("DATE(timestamp, 'localtime') >= DATE(?) AND DATE(timestamp, 'localtime') <= DATE(?)");
+    logParams.push(startDate, endDate);
+  } else if (startDate) {
+    logWhereClauses.push("DATE(timestamp, 'localtime') >= DATE(?)");
+    logParams.push(startDate);
+  } else if (timeframe === 'today') {
     logWhereClauses.push("DATE(timestamp, 'localtime') = DATE('now', 'localtime')");
+  } else if (timeframe === 'yesterday') {
+    logWhereClauses.push("DATE(timestamp, 'localtime') = DATE('now', 'localtime', '-1 day')");
   } else if (timeframe === 'week') {
     logWhereClauses.push("DATE(timestamp, 'localtime') >= DATE('now', 'localtime', '-7 days')");
   } else if (timeframe === 'month') {
@@ -1377,6 +1396,60 @@ app.get('/api/admin/analytics', authenticateToken, (req, res) => {
       db.get("SELECT COUNT(*) as count FROM passes WHERE category = 'STAFF'", [], (stfErr, stfRow) => {
         const totalRegisteredStaff = stfRow ? (stfRow.count || 0) : 0;
         const staffCurrentlyInside = checkedInPasses.filter(p => p.category === 'STAFF').length;
+
+        // Direct CSV File Export via API (format=csv)
+        if (req.query.format === 'csv') {
+          let csv = 'DEPARTMENT OF EXAMINATIONS SRI LANKA - GATE PASS EXECUTIVE ANALYTICS REPORT\r\n';
+          csv += `Generated At,${new Date().toISOString()}\r\n`;
+          csv += `Timeframe,${timeframe}\r\n`;
+          csv += `Category Filter,${categoryFilter || 'ALL'}\r\n\r\n`;
+
+          csv += 'KEY PERFORMANCE METRICS\r\n';
+          csv += `Total Check-Ins,${totalCheckIns}\r\n`;
+          csv += `Total Check-Outs,${totalCheckOuts}\r\n`;
+          csv += `Currently Inside Campus,${checkedInPasses.length}\r\n`;
+          csv += `Average Dwell Time (Minutes),${avgDwellMins}\r\n`;
+          csv += `Peak Entry Hour,${peakHour}\r\n`;
+          csv += `Campus Vehicles,${vehiclesInside}\r\n`;
+          csv += `Overstay Alerts (> 4 hrs),${overstayList.length}\r\n\r\n`;
+
+          csv += 'STAFF ATTENDANCE METRICS\r\n';
+          csv += `Total Registered Staff,${totalRegisteredStaff}\r\n`;
+          csv += `Staff Currently on Duty,${staffCurrentlyInside}\r\n`;
+          csv += `On-Time Arrivals (Before 8:30 AM),${staffPunctuality.on_time}\r\n`;
+          csv += `Late Arrivals (After 8:30 AM),${staffPunctuality.late}\r\n\r\n`;
+
+          csv += 'STAFF FREQUENT EXITS (REPEAT OUTINGS)\r\n';
+          csv += 'Pass Code,Name,Branch,Exit Count,Check-Ins,Departure Times\r\n';
+          frequentExits.forEach(f => {
+            csv += `"${f.pass_code}","${f.person_name}","${f.branch_name || '-'}",${f.exit_count},${f.check_in_count},"${(f.all_exit_times || []).join('; ')}"\r\n`;
+          });
+          csv += '\r\n';
+
+          csv += 'LONGEST OUT-OF-OFFICE DURATIONS\r\n';
+          csv += 'Pass Code,Name,Branch,Exit Time,Return Time,Duration,Status\r\n';
+          longestOutings.forEach(l => {
+            csv += `"${l.pass_code}","${l.person_name}","${l.branch_name || '-'}",${l.exit_time},${l.return_time || 'STILL_OUT'},${l.duration_display},${l.status}\r\n`;
+          });
+          csv += '\r\n';
+
+          csv += 'NIGHT SHIFT OUTINGS (7 PM - 6 AM)\r\n';
+          csv += 'Pass Code,Name,Branch,Exit Time,Return Time,Duration,Status\r\n';
+          nightOutings.forEach(n => {
+            csv += `"${n.pass_code}","${n.person_name}","${n.branch_name || '-'}",${n.exit_time},${n.return_time || 'STILL_OUT'},${n.duration_display},${n.status_display}\r\n`;
+          });
+          csv += '\r\n';
+
+          csv += 'BRANCH WORKLOAD BREAKDOWN\r\n';
+          csv += 'Branch Name,Visit Count\r\n';
+          Object.entries(branchCounts).forEach(([b, cnt]) => {
+            csv += `"${b.replace(/"/g, '""')}",${cnt}\r\n`;
+          });
+
+          res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+          res.setHeader('Content-Disposition', `attachment; filename=DoENets_Gate_Analytics_${timeframe}_${new Date().toISOString().split('T')[0]}.csv`);
+          return res.send(csv);
+        }
 
         res.json({
           timeframe,
