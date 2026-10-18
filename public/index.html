@@ -2181,6 +2181,103 @@
           </div>
         </div>
 
+        <!-- Dedicated Staff Movement & Disciplinary Analytics Section -->
+        <div id="anStaffMovementSection" class="card" style="margin-bottom: 1.5rem; border: 1.5px solid #cbd5e1; padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+            <div>
+              <h3 style="margin: 0; font-size: 1.25rem; color: #1e3a8a; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-person-walking-dashed-line-arrow-right" style="color: #d97706;"></i> 
+                Staff Movement & Disciplinary Analytics (සේවක ගමන් බිමන් හා විනය අධීක්ෂණය)
+              </h3>
+              <p style="margin: 0; color: #64748b; font-size: 0.88rem;">
+                දිනකට වැඩි වාර ගණනක් එළියට යාම්, කාර්යාල වේලාවේ දීර්ඝතම කාලයක් පිටත රැඳීම්, සහ රාත්‍රී පිටවීම් විශ්ලේෂණය
+              </p>
+            </div>
+
+            <!-- Movement Sub-Navigation Buttons -->
+            <div style="display: flex; gap: 0.4rem; background: #f1f5f9; padding: 4px; border-radius: 8px;">
+              <button type="button" class="btn an-mov-tab-btn active" id="btnMovFrequent" onclick="switchStaffMovementView('mov-frequent')" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px;">
+                <i class="fa-solid fa-arrows-split-up-and-left"></i> බහුවිධ පිටවීම් (<span id="anBadgeFrequentCount">0</span>)
+              </button>
+              <button type="button" class="btn an-mov-tab-btn" id="btnMovLongest" onclick="switchStaffMovementView('mov-longest')" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; background: transparent; color: #475569;">
+                <i class="fa-solid fa-hourglass-end"></i> වැඩිම කාලයක් පිටත රැඳීම් (<span id="anBadgeLongestCount">0</span>)
+              </button>
+              <button type="button" class="btn an-mov-tab-btn" id="btnMovNight" onclick="switchStaffMovementView('mov-night')" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 6px; background: transparent; color: #475569;">
+                <i class="fa-solid fa-moon"></i> රාත්‍රී කාලයේ පිටවීම් (<span id="anBadgeNightCount">0</span>)
+              </button>
+            </div>
+          </div>
+
+          <!-- View 1: Frequent Exits Leaderboard -->
+          <div id="mov-frequent" class="mov-sub-pane">
+            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 0.85rem; font-size: 0.88rem; color: #92400e;">
+              <i class="fa-solid fa-circle-info"></i> <strong>බහුවිධ පිටවීම් (Repeat Daily Exits):</strong> රාජකාරී දිනය තුළ ප්‍රධාන ගේට්ටුවෙන් 2 වතාවක් හෝ ඊට වැඩි වාර ගණනක් පිටතට ගිය අභ්‍යන්තර සේවකයින් මෙහි දැක්වේ.
+            </div>
+            <div class="table-container">
+              <table id="tblFrequentExits">
+                <thead>
+                  <tr>
+                    <th>Pass Code</th>
+                    <th>Employee Name</th>
+                    <th>Branch / Department</th>
+                    <th>Exit Count (පිටවූ වාර)</th>
+                    <th>Check-Ins</th>
+                    <th>Last Departure Time</th>
+                    <th>Recorded Departure Times</th>
+                  </tr>
+                </thead>
+                <tbody><!-- Dynamic Rows --></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- View 2: Longest Out-of-Campus Durations -->
+          <div id="mov-longest" class="mov-sub-pane" style="display: none;">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 0.85rem; font-size: 0.88rem; color: #1e40af;">
+              <i class="fa-solid fa-clock"></i> <strong>වැඩිම කාලයක් පිටත රැඳී සිටි අවස්ථා (Longest Out-of-Office Dwell Times):</strong> සේවයට පැමිණීමෙන් පසු දිවා කාලයේ පිටවී (Check-Out) නැවත පැමිණෙන තෙක් හෝ දැනටමත් පිටත ගතවී ඇති වැඩිම කාල සීමාවන් මෙහි දැක්වේ.
+            </div>
+            <div class="table-container">
+              <table id="tblLongestOutings">
+                <thead>
+                  <tr>
+                    <th>Pass Code</th>
+                    <th>Employee Name</th>
+                    <th>Branch</th>
+                    <th>Exit Time (පිටවූ වේලාව)</th>
+                    <th>Return Time (නැවත පැමිණීම)</th>
+                    <th>Total Time Outside (පිටත ගතකළ කාලය)</th>
+                    <th>Current Status</th>
+                  </tr>
+                </thead>
+                <tbody><!-- Dynamic Rows --></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- View 3: Night Shift Outings (7 PM - 6 AM) -->
+          <div id="mov-night" class="mov-sub-pane" style="display: none;">
+            <div style="background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 0.85rem; font-size: 0.88rem; color: #9d174d;">
+              <i class="fa-solid fa-shield-halved"></i> <strong>රාත්‍රී කාලයේ පිටත රැඳී සිටීම් (Night Security Movement Alerts - 7:00 PM to 6:00 AM):</strong> රාත්‍රී සේවා / විභාග මුද්‍රණ හෝ රහස්‍ය රාජකාරී කාල සීමාවන්හිදී සේවකයින් පරිශ්‍රයෙන් පිටතට ගිය අවස්ථා සහ ගතකළ කාලය මෙහි දැක්වේ.
+            </div>
+            <div class="table-container">
+              <table id="tblNightOutings">
+                <thead>
+                  <tr>
+                    <th>Pass Code</th>
+                    <th>Employee Name</th>
+                    <th>Branch</th>
+                    <th>Night Exit Time</th>
+                    <th>Return Time</th>
+                    <th>Absence Duration</th>
+                    <th>Security Status Alert</th>
+                  </tr>
+                </thead>
+                <tbody><!-- Dynamic Rows --></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- 2 Visual Analytic Charts (2-Column Grid) -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
           
@@ -5337,6 +5434,17 @@
           }
         }
 
+        // 2.1 Render Staff Movement & Disciplinary Analytics
+        const movSection = document.getElementById('anStaffMovementSection');
+        if (movSection) {
+          if (category === 'VISITOR' || category === 'CONFIDENTIAL' || category === 'EVALUATION') {
+            movSection.style.display = 'none';
+          } else {
+            movSection.style.display = 'block';
+            renderStaffMovement(data.staff_movement);
+          }
+        }
+
         // 3. Render Hourly Peak Traffic Chart
         renderHourlyChart(data.hourly_traffic);
 
@@ -5504,6 +5612,127 @@
       `).join('');
     }
 
+    function switchStaffMovementView(viewId) {
+      document.querySelectorAll('.mov-sub-pane').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.an-mov-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.background = 'transparent';
+        btn.style.color = '#475569';
+      });
+
+      const targetPane = document.getElementById(viewId);
+      if (targetPane) targetPane.style.display = 'block';
+
+      let targetBtn = null;
+      if (viewId === 'mov-frequent') targetBtn = document.getElementById('btnMovFrequent');
+      else if (viewId === 'mov-longest') targetBtn = document.getElementById('btnMovLongest');
+      else if (viewId === 'mov-night') targetBtn = document.getElementById('btnMovNight');
+
+      if (targetBtn) {
+        targetBtn.classList.add('active');
+        targetBtn.style.background = '';
+        targetBtn.style.color = '';
+      }
+    }
+
+    function renderStaffMovement(movementData) {
+      if (!movementData) return;
+
+      const frequent = movementData.frequent_exits || [];
+      const longest = movementData.longest_outings || [];
+      const night = movementData.night_outings || [];
+
+      // Badges
+      const bFreq = document.getElementById('anBadgeFrequentCount');
+      if (bFreq) bFreq.innerText = frequent.length;
+
+      const bLong = document.getElementById('anBadgeLongestCount');
+      if (bLong) bLong.innerText = longest.length;
+
+      const bNight = document.getElementById('anBadgeNightCount');
+      if (bNight) bNight.innerText = night.length;
+
+      // Table 1: Frequent Exits
+      const tblFreq = document.querySelector('#tblFrequentExits tbody');
+      if (tblFreq) {
+        if (frequent.length === 0) {
+          tblFreq.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.25rem; color:#059669; font-weight:700;"><i class="fa-solid fa-circle-check"></i> දිනකට බහුවිධ වාර ගණනක් පිටතට ගිය සේවකයින් කිසිවෙකු නොමැත. (No repeat exits detected)</td></tr>`;
+        } else {
+          tblFreq.innerHTML = frequent.map(f => `
+            <tr>
+              <td><strong style="color:var(--primary);">${f.pass_code}</strong></td>
+              <td><strong>${f.person_name}</strong></td>
+              <td>${f.branch_name || '-'}</td>
+              <td>
+                <span class="badge" style="background:${f.exit_count >= 3 ? '#fee2e2' : '#fef3c7'}; color:${f.exit_count >= 3 ? '#991b1b' : '#92400e'}; font-weight:900; font-size:0.92rem;">
+                  <i class="fa-solid fa-person-walking-arrow-right"></i> ${f.exit_count} වාරයක් පිටතට
+                </span>
+              </td>
+              <td>${f.check_in_count} In</td>
+              <td>${f.last_exit_time ? new Date(f.last_exit_time).toLocaleTimeString() : '-'}</td>
+              <td style="font-size:0.85rem; color:#475569; font-weight:600;">${(f.all_exit_times || []).join(', ')}</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      // Table 2: Longest Outings
+      const tblLong = document.querySelector('#tblLongestOutings tbody');
+      if (tblLong) {
+        if (longest.length === 0) {
+          tblLong.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.25rem; color:#059669; font-weight:700;"><i class="fa-solid fa-circle-check"></i> කාර්යාල වේලාවේ දීර්ඝ කාලයක් පිටත රැඳී සිටි අවස්ථා නොමැත. (No extended mid-day outings)</td></tr>`;
+        } else {
+          tblLong.innerHTML = longest.map(l => `
+            <tr>
+              <td><strong style="color:var(--primary);">${l.pass_code}</strong></td>
+              <td><strong>${l.person_name}</strong></td>
+              <td>${l.branch_name || '-'}</td>
+              <td>${new Date(l.exit_time).toLocaleTimeString()}</td>
+              <td>${l.return_time ? new Date(l.return_time).toLocaleTimeString() : '<span style="color:#ef4444; font-weight:800;">නොපැමිණියේය (Still Out)</span>'}</td>
+              <td>
+                <span class="badge" style="background:${l.duration_minutes >= 120 ? '#fee2e2' : '#eff6ff'}; color:${l.duration_minutes >= 120 ? '#991b1b' : '#1e40af'}; font-weight:900; font-size:0.92rem;">
+                  <i class="fa-solid fa-clock"></i> ${l.duration_display}
+                </span>
+              </td>
+              <td>
+                <span class="badge ${l.status === 'RETURNED' ? 'badge-checkedin' : 'badge-pending'}" style="${l.status !== 'RETURNED' ? 'background:#fee2e2; color:#991b1b; border:1px solid #fecaca;' : ''}">
+                  ${l.status === 'RETURNED' ? 'නැවත පැමිණියේය (Returned)' : '⚠️ දැනටමත් පිටත සිටී (Currently Out)'}
+                </span>
+              </td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      // Table 3: Night Shift Outings
+      const tblNight = document.querySelector('#tblNightOutings tbody');
+      if (tblNight) {
+        if (night.length === 0) {
+          tblNight.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.25rem; color:#059669; font-weight:700;"><i class="fa-solid fa-circle-check"></i> රාත්‍රී කාලයේ (7 PM - 6 AM) අනවශ්‍ය ලෙස පිටත රැඳී සිටීම් කිසිවක් වාර්තා වී නොමැත. (Zero night absence incidents)</td></tr>`;
+        } else {
+          tblNight.innerHTML = night.map(n => `
+            <tr>
+              <td><strong style="color:#9d174d;">${n.pass_code}</strong></td>
+              <td><strong>${n.person_name}</strong></td>
+              <td>${n.branch_name || '-'}</td>
+              <td><i class="fa-solid fa-moon" style="color:#9d174d;"></i> ${new Date(n.exit_time).toLocaleTimeString()}</td>
+              <td>${n.return_time ? new Date(n.return_time).toLocaleTimeString() : '<span style="color:#dc2626; font-weight:900;">රාත්‍රියේ පිටත සිටී!</span>'}</td>
+              <td>
+                <span class="badge" style="background:#fdf2f8; color:#9d174d; border:1px solid #fbcfe8; font-weight:900;">
+                  ${n.duration_display}
+                </span>
+              </td>
+              <td>
+                <span class="badge" style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca; font-weight:900;">
+                  <i class="fa-solid fa-triangle-exclamation"></i> ${n.status_display}
+                </span>
+              </td>
+            </tr>
+          `).join('');
+        }
+      }
+    }
+
     function exportAnalyticsCSV() {
       if (!currentAnalyticsData) {
         alert('Please load analytics data first before exporting.');
@@ -5533,6 +5762,30 @@
       csv += `On-Time Arrivals (Before 8:30 AM),${staff.punctuality.on_time}\r\n`;
       csv += `Late Arrivals (After 8:30 AM),${staff.punctuality.late}\r\n\r\n`;
 
+      if (currentAnalyticsData.staff_movement) {
+        const mov = currentAnalyticsData.staff_movement;
+        csv += 'STAFF FREQUENT EXITS (REPEAT OUTINGS)\r\n';
+        csv += 'Pass Code,Name,Branch,Exit Count,Check-Ins,Departure Times\r\n';
+        (mov.frequent_exits || []).forEach(f => {
+          csv += `"${f.pass_code}","${f.person_name}","${f.branch_name || '-'}",${f.exit_count},${f.check_in_count},"${(f.all_exit_times || []).join('; ')}"\r\n`;
+        });
+        csv += '\r\n';
+
+        csv += 'LONGEST OUT-OF-OFFICE DURATIONS\r\n';
+        csv += 'Pass Code,Name,Branch,Exit Time,Return Time,Duration,Status\r\n';
+        (mov.longest_outings || []).forEach(l => {
+          csv += `"${l.pass_code}","${l.person_name}","${l.branch_name || '-'}",${l.exit_time},${l.return_time || 'STILL_OUT'},${l.duration_display},${l.status}\r\n`;
+        });
+        csv += '\r\n';
+
+        csv += 'NIGHT SHIFT OUTINGS (7 PM - 6 AM)\r\n';
+        csv += 'Pass Code,Name,Branch,Exit Time,Return Time,Duration,Status\r\n';
+        (mov.night_outings || []).forEach(n => {
+          csv += `"${n.pass_code}","${n.person_name}","${n.branch_name || '-'}",${n.exit_time},${n.return_time || 'STILL_OUT'},${n.duration_display},${n.status}\r\n`;
+        });
+        csv += '\r\n';
+      }
+
       csv += 'BRANCH WORKLOAD BREAKDOWN\r\n';
       csv += 'Branch Name,Visit Count\r\n';
       Object.entries(branches).forEach(([b, cnt]) => {
@@ -5557,6 +5810,7 @@
       const summary = currentAnalyticsData.summary;
       const staff = currentAnalyticsData.staff_analytics;
       const branches = currentAnalyticsData.branch_demand;
+      const movement = currentAnalyticsData.staff_movement;
 
       const printWindow = window.open('', '_blank');
       const html = `
@@ -5567,14 +5821,16 @@
           <style>
             body { font-family: 'Segoe UI', Arial, sans-serif; padding: 25px; color: #1e293b; line-height: 1.5; }
             h1 { color: #1e3a8a; margin: 0 0 5px 0; font-size: 22px; }
-            h2 { color: #0f172a; font-size: 16px; border-bottom: 2px solid #2563eb; padding-bottom: 4px; margin-top: 20px; }
+            h2 { color: #0f172a; font-size: 16px; border-bottom: 2px solid #2563eb; padding-bottom: 4px; margin-top: 24px; }
+            h3 { color: #334155; font-size: 14px; margin-top: 16px; margin-bottom: 6px; }
             .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 15px 0; }
-            .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; }
+            .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #fafafa; }
             .val { font-size: 24px; font-weight: 800; color: #1e3a8a; }
-            .lbl { font-size: 12px; color: #64748b; font-weight: 700; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-            th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+            .lbl { font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
             th { background: #f1f5f9; font-weight: 800; }
+            .alert-text { color: #b91c1c; font-weight: bold; }
           </style>
         </head>
         <body>
@@ -5600,6 +5856,92 @@
             <div class="card"><div class="lbl">On-Time Arrivals (< 8:30)</div><div class="val" style="color: #059669;">${staff.punctuality.on_time}</div></div>
             <div class="card"><div class="lbl">Late Arrivals (> 8:30)</div><div class="val" style="color: #d97706;">${staff.punctuality.late}</div></div>
           </div>
+
+          ${movement ? `
+            <h2>Staff Disciplinary & Movement Audit</h2>
+
+            <h3>1. Frequent Repeat Outings (Leaderboard)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Pass Code</th>
+                  <th>Name</th>
+                  <th>Branch</th>
+                  <th>Outings Count</th>
+                  <th>Check-Ins</th>
+                  <th>Departure Timestamps</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(movement.frequent_exits && movement.frequent_exits.length > 0) ? movement.frequent_exits.map(f => `
+                  <tr>
+                    <td><strong>${f.pass_code}</strong></td>
+                    <td>${f.person_name}</td>
+                    <td>${f.branch_name || '-'}</td>
+                    <td><strong class="alert-text">${f.exit_count} Outings</strong></td>
+                    <td>${f.check_in_count} In</td>
+                    <td>${(f.all_exit_times || []).join(', ')}</td>
+                  </tr>
+                `).join('') : '<tr><td colspan="6" style="text-align:center; color:#059669;">No repeat outings recorded</td></tr>'}
+              </tbody>
+            </table>
+
+            <h3>2. Longest Out-of-Office Absences</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Pass Code</th>
+                  <th>Name</th>
+                  <th>Branch</th>
+                  <th>Exit Time</th>
+                  <th>Return Time</th>
+                  <th>Duration</th>
+                  <th>Current Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(movement.longest_outings && movement.longest_outings.length > 0) ? movement.longest_outings.map(l => `
+                  <tr>
+                    <td><strong>${l.pass_code}</strong></td>
+                    <td>${l.person_name}</td>
+                    <td>${l.branch_name || '-'}</td>
+                    <td>${new Date(l.exit_time).toLocaleTimeString()}</td>
+                    <td>${l.return_time ? new Date(l.return_time).toLocaleTimeString() : '<span class="alert-text">Still Out</span>'}</td>
+                    <td><strong>${l.duration_display}</strong></td>
+                    <td>${l.status === 'RETURNED' ? 'Returned' : '<span class="alert-text">Currently Outside</span>'}</td>
+                  </tr>
+                `).join('') : '<tr><td colspan="7" style="text-align:center; color:#059669;">No extended mid-day outings recorded</td></tr>'}
+              </tbody>
+            </table>
+
+            <h3>3. Night Shift Outings (7:00 PM - 6:00 AM)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Pass Code</th>
+                  <th>Name</th>
+                  <th>Branch</th>
+                  <th>Exit Time</th>
+                  <th>Return Time</th>
+                  <th>Duration</th>
+                  <th>Alert Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(movement.night_outings && movement.night_outings.length > 0) ? movement.night_outings.map(n => `
+                  <tr>
+                    <td><strong>${n.pass_code}</strong></td>
+                    <td>${n.person_name}</td>
+                    <td>${n.branch_name || '-'}</td>
+                    <td>${new Date(n.exit_time).toLocaleTimeString()}</td>
+                    <td>${n.return_time ? new Date(n.return_time).toLocaleTimeString() : '<span class="alert-text">Still Out</span>'}</td>
+                    <td><strong>${n.duration_display}</strong></td>
+                    <td><span class="alert-text">${n.status_display}</span></td>
+                  </tr>
+                `).join('') : '<tr><td colspan="7" style="text-align:center; color:#059669;">Zero night absence incidents recorded</td></tr>'}
+              </tbody>
+            </table>
+          ` : ''}
 
           <h2>Branch Workload & Demand</h2>
           <table>

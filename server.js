@@ -1177,6 +1177,108 @@ app.get('/api/admin/analytics', authenticateToken, (req, res) => {
         }
       });
 
+      // Staff Movement & Disciplinary Analytics (Frequent Exits, Longest Outings, Night Shift Outings)
+      let staffLogsByPass = {};
+      logs.forEach(l => {
+        if (l.category === 'STAFF') {
+          if (!staffLogsByPass[l.pass_code]) {
+            staffLogsByPass[l.pass_code] = {
+              pass_code: l.pass_code,
+              person_name: l.person_name,
+              nic_number: l.nic_number,
+              branch_name: l.branch_name,
+              logs: []
+            };
+          }
+          let dateStr = String(l.timestamp || '');
+          if (!dateStr.endsWith('Z') && !dateStr.includes('+')) dateStr = dateStr.replace(' ', 'T');
+          staffLogsByPass[l.pass_code].logs.push({
+            action_type: l.action_type,
+            time: new Date(dateStr)
+          });
+        }
+      });
+
+      let frequentExits = [];
+      let longestOutings = [];
+      let nightOutings = [];
+
+      Object.values(staffLogsByPass).forEach(staff => {
+        staff.logs.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+        let exitCount = 0;
+        let checkInCount = 0;
+        let exitTimes = [];
+
+        for (let i = 0; i < staff.logs.length; i++) {
+          const item = staff.logs[i];
+          if (item.action_type === 'CHECK_IN') {
+            checkInCount++;
+          } else if (item.action_type === 'CHECK_OUT') {
+            exitCount++;
+            exitTimes.push(item.time);
+
+            let returnTime = null;
+            for (let j = i + 1; j < staff.logs.length; j++) {
+              if (staff.logs[j].action_type === 'CHECK_IN') {
+                returnTime = staff.logs[j].time;
+                break;
+              }
+            }
+
+            const outStart = item.time;
+            const outEnd = returnTime || new Date(now);
+            const diffMs = outEnd.getTime() - outStart.getTime();
+            const durationMins = Math.max(1, Math.round(diffMs / 60000));
+            const h = Math.floor(durationMins / 60);
+            const m = durationMins % 60;
+            const durationDisplay = h > 0 ? `${h}h ${m}m` : `${m}m`;
+
+            const exitHour = outStart.getHours();
+            const isNight = (exitHour >= 19 || exitHour < 6); // 7:00 PM to 6:00 AM
+
+            const outingRecord = {
+              pass_code: staff.pass_code,
+              person_name: staff.person_name,
+              branch_name: staff.branch_name,
+              exit_time: outStart.toISOString(),
+              return_time: returnTime ? returnTime.toISOString() : null,
+              duration_minutes: durationMins,
+              duration_display: durationDisplay,
+              status: returnTime ? 'RETURNED' : 'STILL_OUTSIDE',
+              is_night: isNight
+            };
+
+            if (durationMins >= 10 || !returnTime) {
+              longestOutings.push(outingRecord);
+            }
+
+            if (isNight && (durationMins >= 15 || !returnTime)) {
+              nightOutings.push({
+                ...outingRecord,
+                status_display: returnTime ? 'Returned at Night' : 'Still Outside (Night Alert!)'
+              });
+            }
+          }
+        }
+
+        if (exitCount >= 1) {
+          frequentExits.push({
+            pass_code: staff.pass_code,
+            person_name: staff.person_name,
+            branch_name: staff.branch_name,
+            exit_count: exitCount,
+            check_in_count: checkInCount,
+            last_exit_time: exitTimes.length > 0 ? exitTimes[exitTimes.length - 1].toISOString() : null,
+            all_exit_times: exitTimes.map(t => t.toLocaleTimeString())
+          });
+        }
+      });
+
+      frequentExits.sort((a, b) => b.exit_count - a.exit_count);
+      longestOutings.sort((a, b) => b.duration_minutes - a.duration_minutes);
+      nightOutings.sort((a, b) => new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime());
+
       // Total registered staff
       db.get("SELECT COUNT(*) as count FROM passes WHERE category = 'STAFF'", [], (stfErr, stfRow) => {
         const totalRegisteredStaff = stfRow ? (stfRow.count || 0) : 0;
@@ -1198,6 +1300,11 @@ app.get('/api/admin/analytics', authenticateToken, (req, res) => {
             total_registered: totalRegisteredStaff,
             currently_inside: staffCurrentlyInside,
             punctuality: staffPunctuality
+          },
+          staff_movement: {
+            frequent_exits: frequentExits.slice(0, 50),
+            longest_outings: longestOutings.slice(0, 50),
+            night_outings: nightOutings.slice(0, 50)
           },
           hourly_traffic: hourlyCounts,
           branch_demand: branchCounts,
