@@ -2528,6 +2528,107 @@
           </div>
         </div>
 
+        <!-- Automated Daily Intelligence Email Reports Section -->
+        <div class="card" style="padding: 1.5rem; margin-bottom: 1.5rem; border: 1.5px solid #bfdbfe; background: linear-gradient(to right bottom, #ffffff, #f0f7ff); border-radius: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);">
+                  <i class="fa-solid fa-envelope-open-text"></i>
+                </div>
+                <div>
+                  <h3 style="margin: 0; font-size: 1.25rem; color: #1e3a8a; font-weight: 800;">
+                    ස්වයංක්‍රීය දෛනික බුද්ධිමත් ඊමේල් වාර්තාකරණය (Automated Daily Intelligence Email Reports)
+                  </h3>
+                  <p style="margin: 3px 0 0 0; color: #64748b; font-size: 0.92rem;">
+                    සෑම දිනකම නියමිත වේලාවට දෛනික ගේට්ටු දත්ත සාරාංශය සහ ආරක්ෂක අසාමාන්‍යතා (Security & Disciplinary Anomalies) බුද්ධිමත් වාර්තාවක් ලෙස නම් කළ ඊමේල් ලිපිනයට ස්වයංක්‍රීයව යැවීම.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div id="emailReportStatusBadge">
+              <span class="badge" style="background: #e0f2fe; color: #0284c7; font-size: 0.9rem; padding: 0.5rem 0.9rem; font-weight: 800; border-radius: 8px;">
+                <i class="fa-solid fa-clock"></i> Scheduled: Daily at 17:00
+              </span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; background: #ffffff; padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 1.25rem;">
+            <!-- Active Toggle -->
+            <div>
+              <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">
+                <i class="fa-solid fa-power-off" style="color: #2563eb;"></i> සේවාව ක්‍රියාත්මක බව (Service Status):
+              </label>
+              <div style="display: flex; align-items: center; gap: 0.85rem; margin-top: 4px;">
+                <label class="admin-switch">
+                  <input type="checkbox" id="chkEmailReportActive" checked onchange="updateEmailReportUIState()">
+                  <span class="admin-switch-slider"></span>
+                </label>
+                <span id="lblEmailReportActiveText" style="font-weight: 800; color: #059669; font-size: 0.95rem;">සක්‍රීයයි (Active)</span>
+              </div>
+            </div>
+
+            <!-- Recipient Email -->
+            <div>
+              <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
+                <i class="fa-solid fa-at" style="color: #2563eb;"></i> ලබන්නාගේ ඊමේල් ලිපිනය (Recipient Email):
+              </label>
+              <input type="email" id="txtEmailRecipient" class="form-control" placeholder="e.g. admin@doenets.lk" value="admin@doenets.lk" style="font-weight: 700;">
+            </div>
+
+            <!-- Schedule Time -->
+            <div>
+              <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
+                <i class="fa-regular fa-clock" style="color: #2563eb;"></i> ස්වයංක්‍රීයව යවන වේලාව (Daily Scheduled Time - 24H):
+              </label>
+              <input type="time" id="txtEmailTime" class="form-control" value="17:00" style="font-weight: 800; font-size: 1.05rem;">
+            </div>
+          </div>
+
+          <!-- Advanced SMTP Settings Accordion / Toggle -->
+          <details style="margin-bottom: 1.25rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem 1.15rem;">
+            <summary style="cursor: pointer; font-weight: 700; color: #334155; font-size: 0.92rem; user-select: none;">
+              <i class="fa-solid fa-sliders" style="color: #2563eb; margin-right: 4px;"></i> අභිරුචි SMTP සේවාදායක සැකසුම් (Custom SMTP Settings - විකල්ප)
+            </summary>
+            <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <div>
+                <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;">SMTP Host:</label>
+                <input type="text" id="txtSmtpHost" class="form-control" placeholder="e.g. smtp.gmail.com" style="font-size: 0.88rem;">
+              </div>
+              <div>
+                <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;">SMTP Port:</label>
+                <input type="number" id="txtSmtpPort" class="form-control" placeholder="587" value="587" style="font-size: 0.88rem;">
+              </div>
+              <div>
+                <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;">SMTP User / Email:</label>
+                <input type="text" id="txtSmtpUser" class="form-control" placeholder="username or email" style="font-size: 0.88rem;">
+              </div>
+              <div>
+                <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;">SMTP Password / App Key:</label>
+                <input type="password" id="txtSmtpPass" class="form-control" placeholder="මුරපදය වෙනස් නොකරන්නේ නම් හිස්ව තබන්න" style="font-size: 0.88rem;">
+              </div>
+            </div>
+            <p style="font-size: 0.82rem; color: #64748b; margin: 0.75rem 0 0 0;">
+              <i class="fa-solid fa-circle-info" style="color: #0284c7;"></i> සටහන: SMTP සකසා නොමැති අවස්ථාවලදී හෝ නොබැඳි (offline) පරීක්ෂණ වලදී, වාර්තාව සම්පාදනය වී Audit Log එකෙහි simulated delivery ලෙස වාර්තා වේ.
+            </p>
+          </details>
+
+          <!-- Action Buttons & Last Sent Info -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="font-size: 0.88rem; color: #64748b;">
+              <span id="lblLastEmailSentInfo"><i class="fa-solid fa-circle-info"></i> වාර්තා තත්ත්වය පූරණය වෙමින් පවතී...</span>
+            </div>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <button class="btn" onclick="sendTestEmailReport()" id="btnSendTestEmail" style="background: #4338ca; color: white; padding: 0.65rem 1.35rem; font-weight: 700; border-radius: 8px;">
+                <i class="fa-solid fa-paper-plane"></i> දැන්ම පරීක්ෂණ වාර්තාවක් යවන්න (Send Test Report Now)
+              </button>
+              <button class="btn btn-primary" onclick="saveEmailReportSettings()" id="btnSaveEmailSettings" style="padding: 0.65rem 1.45rem; font-weight: 700; border-radius: 8px;">
+                <i class="fa-solid fa-floppy-disk"></i> සැකසුම් සුරකින්න (Save Settings)
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- SUB-TAB 2: Daily Visitors Directory & Real-Time Log -->
@@ -5927,6 +6028,9 @@
         // 6. Render Overstay / Extended Stays Table
         renderOverstayTable(data.overstay_list);
 
+        // 7. Load Automated Daily Email Reporting Settings & Status
+        loadEmailSettings();
+
       } catch (err) {
         console.error('Analytics load error:', err);
         showSecToast('Error loading analytics: ' + err.message, 'error');
@@ -6441,6 +6545,173 @@
       printWindow.document.close();
     }
 
+    // ========================================================
+    // AUTOMATED DAILY INTELLIGENCE EMAIL REPORTING FRONTEND
+    // ========================================================
+    function updateEmailReportUIState() {
+      const chk = document.getElementById('chkEmailReportActive');
+      const lbl = document.getElementById('lblEmailReportActiveText');
+      if (chk && lbl) {
+        if (chk.checked) {
+          lbl.innerText = 'සක්‍රීයයි (Active)';
+          lbl.style.color = '#059669';
+        } else {
+          lbl.innerText = 'අක්‍රියයි (Disabled)';
+          lbl.style.color = '#94a3b8';
+        }
+      }
+    }
+
+    async function loadEmailSettings() {
+      if (!token) return;
+      try {
+        const res = await fetch('/api/admin/email-settings', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const chk = document.getElementById('chkEmailReportActive');
+        if (chk) chk.checked = Boolean(data.enabled);
+        updateEmailReportUIState();
+
+        const txtRec = document.getElementById('txtEmailRecipient');
+        if (txtRec && data.recipient) txtRec.value = data.recipient;
+
+        const txtTime = document.getElementById('txtEmailTime');
+        if (txtTime && data.time) txtTime.value = data.time;
+
+        const txtHost = document.getElementById('txtSmtpHost');
+        if (txtHost && data.smtp_host) txtHost.value = data.smtp_host;
+
+        const txtPort = document.getElementById('txtSmtpPort');
+        if (txtPort && data.smtp_port) txtPort.value = data.smtp_port;
+
+        const txtUser = document.getElementById('txtSmtpUser');
+        if (txtUser && data.smtp_user) txtUser.value = data.smtp_user;
+
+        const badge = document.getElementById('emailReportStatusBadge');
+        if (badge) {
+          if (data.enabled) {
+            badge.innerHTML = `<span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.9rem; padding: 0.5rem 0.9rem; font-weight: 800; border-radius: 8px;"><i class="fa-solid fa-clock"></i> Scheduled: Daily at ${data.time}</span>`;
+          } else {
+            badge.innerHTML = `<span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 0.9rem; padding: 0.5rem 0.9rem; font-weight: 800; border-radius: 8px;"><i class="fa-solid fa-pause"></i> Auto-Reporting Paused</span>`;
+          }
+        }
+
+        const info = document.getElementById('lblLastEmailSentInfo');
+        if (info) {
+          if (data.last_sent_date) {
+            info.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #059669;"></i> අවසන් වරට වාර්තාව යවන ලද්දේ: <strong>${data.last_sent_date}</strong> (තත්ත්වය: ${data.last_sent_status || 'OK'})`;
+          } else {
+            info.innerHTML = `<i class="fa-solid fa-circle-info" style="color: #2563eb;"></i> අද දින ස්වයංක්‍රීය වාර්තාව <strong>${data.time}</strong> ට ${data.recipient} වෙත යැවීමට නියමිතයි.`;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load email reporting settings:', err);
+      }
+    }
+
+    async function saveEmailReportSettings() {
+      if (!token) return;
+      const btn = document.getElementById('btnSaveEmailSettings');
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> සුරකිමින්...`;
+      }
+
+      try {
+        const enabled = document.getElementById('chkEmailReportActive') ? document.getElementById('chkEmailReportActive').checked : true;
+        const recipient = document.getElementById('txtEmailRecipient') ? document.getElementById('txtEmailRecipient').value.trim() : 'admin@doenets.lk';
+        const time = document.getElementById('txtEmailTime') ? document.getElementById('txtEmailTime').value.trim() : '17:00';
+        const smtp_host = document.getElementById('txtSmtpHost') ? document.getElementById('txtSmtpHost').value.trim() : '';
+        const smtp_port = document.getElementById('txtSmtpPort') ? document.getElementById('txtSmtpPort').value.trim() : '587';
+        const smtp_user = document.getElementById('txtSmtpUser') ? document.getElementById('txtSmtpUser').value.trim() : '';
+        const smtp_pass = document.getElementById('txtSmtpPass') ? document.getElementById('txtSmtpPass').value.trim() : '';
+
+        if (!recipient || !recipient.includes('@')) {
+          alert('කරුණාකර වලංගු ඊමේල් ලිපිනයක් ඇතුළත් කරන්න (Please enter a valid recipient email).');
+          if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+          return;
+        }
+
+        const res = await fetch('/api/admin/email-settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            enabled,
+            recipient,
+            time,
+            smtp_host,
+            smtp_port,
+            smtp_user,
+            smtp_pass
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showSecToast(data.message || 'ස්වයංක්‍රීය ඊමේල් වාර්තා සැකසුම් සුරකින ලදී!', 'success');
+          await loadEmailSettings();
+        } else {
+          alert('Error: ' + (data.error || 'Failed to save settings'));
+        }
+      } catch (err) {
+        alert('දෝෂයක් සිදුවිය: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
+    }
+
+    async function sendTestEmailReport() {
+      if (!token) return;
+      const btn = document.getElementById('btnSendTestEmail');
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> සම්පාදනය කර යවමින් පවතී...`;
+      }
+
+      try {
+        const recipient = document.getElementById('txtEmailRecipient') ? document.getElementById('txtEmailRecipient').value.trim() : 'admin@doenets.lk';
+
+        const res = await fetch('/api/admin/email-report/test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ recipient })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          const report = data.result && data.result.reportSummary ? data.result.reportSummary : null;
+          const anomaliesCount = report && report.anomalies ? report.anomalies.totalCount : 0;
+          
+          showSecToast(`✓ පරීක්ෂණ වාර්තාව සාර්ථකයි! (අසාමාන්‍යතා: ${anomaliesCount})`, 'success');
+          alert(`📧 ${data.message}\n\n[වාර්තා සාරාංශය]\nදිනය: ${report ? report.dateStr : 'Today'}\nමුළු ඇතුළුවීම්: ${report ? report.metrics.totalCheckIns : '-'}\nපරිශ්‍රයේ සිටින පිරිස: ${report ? report.metrics.currentlyInside : '-'}\nහඳුනාගත් ආරක්ෂක අසාමාන්‍යතා (Anomalies): ${anomaliesCount}\nබෙදාහැරීමේ ක්‍රමය: ${data.result.mode}`);
+          await loadEmailSettings();
+        } else {
+          alert('වාර්තාව යැවීමට නොහැකි විය: ' + (data.error || 'Server error'));
+        }
+      } catch (err) {
+        alert('දෝෂයක් සිදුවිය: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
+    }
+
     // Switch Sub-Tabs in Dashboard & Card Config
     function switchAdminSubTab(subTabId) {
       document.querySelectorAll('.admin-subtab-pane').forEach(el => el.classList.remove('active'));
@@ -6453,7 +6724,7 @@
       if (btn) btn.classList.add('active');
 
       if (subTabId === 'subtab-overview') loadAdminDashboard();
-      else if (subTabId === 'subtab-analytics') loadAdminAnalytics();
+      else if (subTabId === 'subtab-analytics') { loadAdminAnalytics(); loadEmailSettings(); }
       else if (subTabId === 'subtab-visitors') loadDailyVisitors();
       else if (subTabId === 'subtab-cards') loadFormOptions();
       else if (subTabId === 'subtab-users') loadAdminUsers();

@@ -378,6 +378,20 @@ async function initDatabase() {
       await runAsync("INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('allow_visitor_express', '0', 'System Default')");
     }
 
+    // Seed default Automated Email Reporting Settings
+    const emailReportEnabled = await getAsync("SELECT * FROM system_settings WHERE setting_key = 'email_report_enabled'");
+    if (!emailReportEnabled) {
+      await runAsync("INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('email_report_enabled', '1', 'System Default')");
+    }
+    const emailReportRecipient = await getAsync("SELECT * FROM system_settings WHERE setting_key = 'email_report_recipient'");
+    if (!emailReportRecipient) {
+      await runAsync("INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('email_report_recipient', 'admin@doenets.lk', 'System Default')");
+    }
+    const emailReportTime = await getAsync("SELECT * FROM system_settings WHERE setting_key = 'email_report_time'");
+    if (!emailReportTime) {
+      await runAsync("INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('email_report_time', '17:00', 'System Default')");
+    }
+
     // 30-Day Public Visitor Pass Auto-Purge Cleanup (Keeps Database Light)
     await runAsync("DELETE FROM passes WHERE category = 'VISITOR' AND created_at < datetime('now', '-30 days')");
 

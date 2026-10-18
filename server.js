@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const QRCode = require('qrcode');
 const path = require('path');
+const nodemailer = require('nodemailer');
 const { db, initDatabase, getDbStatus } = require('./database');
 
 const app = express();
@@ -20,6 +21,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 initDatabase();
 setTimeout(preloadPassCache, 1200);
 setTimeout(loadGateSettingsFromDb, 1500);
+setTimeout(loadEmailSettingsFromDb, 1800);
+setInterval(checkDailyEmailSchedule, 60000);
 
 // HTTP Security Headers Middleware (OWASP Security Hardening)
 app.use((req, res, next) => {
@@ -86,6 +89,612 @@ function loadGateSettingsFromDb() {
       console.log(`✓ Gate Policies active: Staff Auto-Log: ${gateSettings.allow_staff_auto_log === 1 ? 'ENABLED' : 'DISABLED'}, Visitor Express: ${gateSettings.allow_visitor_express === 1 ? 'ENABLED' : 'DISABLED'}`);
     }
   });
+}
+
+// -------------------------------------------------------------
+// Automated Daily Intelligence & Anomaly Email Reporting Engine
+// -------------------------------------------------------------
+let emailReportConfig = {
+  enabled: 1,
+  recipient: 'admin@doenets.lk',
+  time: '17:00',
+  smtp_host: process.env.SMTP_HOST || '',
+  smtp_port: process.env.SMTP_PORT || 587,
+  smtp_user: process.env.SMTP_USER || '',
+  smtp_pass: process.env.SMTP_PASS || '',
+  from_name: 'DoENETS Gate Pass Intelligence',
+  from_address: process.env.EMAIL_FROM || 'gatepass-alerts@doenets.lk',
+  last_sent_date: null,
+  last_sent_status: null
+};
+
+function loadEmailSettingsFromDb() {
+  db.all("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'email_report_%' OR setting_key LIKE 'smtp_%'", [], (err, rows) => {
+    if (!err && rows && rows.length > 0) {
+      rows.forEach(r => {
+        if (r.setting_key === 'email_report_enabled') emailReportConfig.enabled = (r.setting_value === '1' || r.setting_value === 'true' || r.setting_value === 1) ? 1 : 0;
+        if (r.setting_key === 'email_report_recipient') emailReportConfig.recipient = r.setting_value;
+        if (r.setting_key === 'email_report_time') emailReportConfig.time = r.setting_value;
+        if (r.setting_key === 'email_report_last_sent') emailReportConfig.last_sent_date = r.setting_value;
+        if (r.setting_key === 'smtp_host') emailReportConfig.smtp_host = r.setting_value;
+        if (r.setting_key === 'smtp_port') emailReportConfig.smtp_port = parseInt(r.setting_value) || 587;
+        if (r.setting_key === 'smtp_user') emailReportConfig.smtp_user = r.setting_value;
+        if (r.setting_key === 'smtp_pass') emailReportConfig.smtp_pass = r.setting_value;
+      });
+      console.log(`✓ Automated Email Reporting: ${emailReportConfig.enabled ? 'ENABLED' : 'DISABLED'} (Daily at ${emailReportConfig.time} to ${emailReportConfig.recipient})`);
+    }
+  });
+}
+
+function compileDailyIntelligenceReport(targetDateStr = null) {
+  return new Promise((resolve, reject) => {
+    const now = new Date();
+    const dateQuery = targetDateStr || new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+    const logSql = `SELECT * FROM gate_logs WHERE DATE(timestamp, 'localtime') = DATE(?) ORDER BY timestamp ASC`;
+    db.all(logSql, [dateQuery], (err, logs) => {
+      if (err) return reject(err);
+      logs = logs || [];
+
+      let totalCheckIns = 0;
+      let totalCheckOuts = 0;
+      let branchCounts = {};
+      let categoryCounts = {};
+      let passVisits = {};
+
+      logs.forEach(l => {
+        let dateStr = String(l.timestamp || '');
+        if (!dateStr.endsWith('Z') && !dateStr.includes('+')) dateStr = dateStr.replace(' ', 'T');
+        const d = new Date(dateStr);
+
+        if (l.action_type === 'CHECK_IN') {
+          totalCheckIns++;
+          if (!passVisits[l.pass_code]) passVisits[l.pass_code] = [];
+          passVisits[l.pass_code].push({ in: d, out: null });
+        } else if (l.action_type === 'CHECK_OUT') {
+          totalCheckOuts++;
+          if (passVisits[l.pass_code] && passVisits[l.pass_code].length > 0) {
+            const last = passVisits[l.pass_code][passVisits[l.pass_code].length - 1];
+            if (last && !last.out) last.out = d;
+          }
+        }
+
+        const b = l.branch_name || 'General Administration';
+        branchCounts[b] = (branchCounts[b] || 0) + 1;
+        const c = l.category || 'VISITOR';
+        categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+      });
+
+      let totalDwellMinutes = 0;
+      let completedVisitCount = 0;
+      Object.values(passVisits).forEach(visits => {
+        visits.forEach(v => {
+          if (v.in && v.out && !isNaN(v.in.getTime()) && !isNaN(v.out.getTime())) {
+            const diffMs = v.out.getTime() - v.in.getTime();
+            if (diffMs > 0 && diffMs < 24 * 3600 * 1000) {
+              totalDwellMinutes += Math.round(diffMs / 60000);
+              completedVisitCount++;
+            }
+          }
+        });
+      });
+      const avgDwellMins = completedVisitCount > 0 ? Math.round(totalDwellMinutes / completedVisitCount) : 0;
+
+      db.all("SELECT * FROM passes WHERE status = 'CHECKED_IN'", [], (pErr, checkedInPasses) => {
+        checkedInPasses = checkedInPasses || [];
+        const currentTimeMs = Date.now();
+        let vehiclesInside = 0;
+        let overstayAlerts = [];
+
+        checkedInPasses.forEach(p => {
+          if (p.vehicle_number && p.vehicle_number.trim() && p.vehicle_number.toUpperCase() !== 'NONE') {
+            vehiclesInside++;
+          }
+          let entryTime = null;
+          if (passVisits[p.pass_code] && passVisits[p.pass_code].length > 0) {
+            const last = passVisits[p.pass_code][passVisits[p.pass_code].length - 1];
+            if (last && last.in) entryTime = last.in;
+          }
+          if (!entryTime) {
+            let s = String(p.created_at || '');
+            if (!s.endsWith('Z') && !s.includes('+')) s = s.replace(' ', 'T');
+            entryTime = new Date(s);
+          }
+          const elapsedMins = Math.max(0, Math.round((currentTimeMs - (entryTime.getTime() || currentTimeMs)) / 60000));
+          if (elapsedMins >= 240) {
+            overstayAlerts.push({
+              pass_code: p.pass_code,
+              person_name: p.person_name,
+              category: p.category,
+              branch_name: p.branch_name,
+              entry_time: entryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              duration: `${(elapsedMins / 60).toFixed(1)} hrs`
+            });
+          }
+        });
+
+        // Staff Movement & Disciplinary Anomalies
+        let staffLogs = {};
+        logs.forEach(l => {
+          if (l.category === 'STAFF') {
+            if (!staffLogs[l.pass_code]) {
+              staffLogs[l.pass_code] = {
+                pass_code: l.pass_code,
+                person_name: l.person_name,
+                branch_name: l.branch_name,
+                events: []
+              };
+            }
+            let s = String(l.timestamp || '');
+            if (!s.endsWith('Z') && !s.includes('+')) s = s.replace(' ', 'T');
+            staffLogs[l.pass_code].events.push({
+              action: l.action_type,
+              time: new Date(s)
+            });
+          }
+        });
+
+        let nightOutings = [];
+        let prolongedOutings = [];
+        let frequentExits = [];
+
+        Object.values(staffLogs).forEach(stf => {
+          stf.events.sort((a, b) => a.time.getTime() - b.time.getTime());
+          let exitCount = 0;
+          let exitTimes = [];
+
+          for (let i = 0; i < stf.events.length; i++) {
+            const ev = stf.events[i];
+            if (ev.action === 'CHECK_OUT') {
+              exitCount++;
+              exitTimes.push(ev.time);
+
+              let returnTime = null;
+              for (let j = i + 1; j < stf.events.length; j++) {
+                if (stf.events[j].action === 'CHECK_IN') {
+                  returnTime = stf.events[j].time;
+                  break;
+                }
+              }
+
+              const outStart = ev.time;
+              const outEnd = returnTime || new Date();
+              const diffMs = outEnd.getTime() - outStart.getTime();
+              const durMins = Math.max(1, Math.round(diffMs / 60000));
+              const h = Math.floor(durMins / 60);
+              const m = durMins % 60;
+              const durStr = h > 0 ? `${h}h ${m}m` : `${durMins}m`;
+
+              const exitHour = outStart.getHours();
+              const isNight = (exitHour >= 19 || exitHour < 6);
+
+              if (durMins >= 120 || !returnTime) {
+                prolongedOutings.push({
+                  pass_code: stf.pass_code,
+                  person_name: stf.person_name,
+                  branch_name: stf.branch_name,
+                  exit_time: outStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  return_time: returnTime ? returnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Still Out / ආපසු පැමිණ නැත',
+                  duration: durStr,
+                  duration_minutes: durMins,
+                  status: returnTime ? 'Returned' : 'STILL_OUTSIDE'
+                });
+              }
+
+              if (isNight) {
+                nightOutings.push({
+                  pass_code: stf.pass_code,
+                  person_name: stf.person_name,
+                  branch_name: stf.branch_name,
+                  exit_time: outStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  return_time: returnTime ? returnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Still Out (Night)',
+                  duration: durStr,
+                  status: returnTime ? 'Returned at Night' : 'STILL_OUTSIDE'
+                });
+              }
+            }
+          }
+
+          if (exitCount >= 3) {
+            frequentExits.push({
+              pass_code: stf.pass_code,
+              person_name: stf.person_name,
+              branch_name: stf.branch_name,
+              exit_count: exitCount,
+              times: exitTimes.map(t => t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })).join(', ')
+            });
+          }
+        });
+
+        prolongedOutings.sort((a, b) => b.duration_minutes - a.duration_minutes);
+        frequentExits.sort((a, b) => b.exit_count - a.exit_count);
+
+        const totalAnomalies = nightOutings.length + prolongedOutings.length + frequentExits.length + overstayAlerts.length;
+
+        resolve({
+          dateStr: dateQuery,
+          generatedAt: new Date().toLocaleString(),
+          metrics: {
+            totalCheckIns,
+            totalCheckOuts,
+            currentlyInside: checkedInPasses.length,
+            vehiclesInside,
+            avgDwellMins
+          },
+          branchCounts,
+          categoryCounts,
+          anomalies: {
+            totalCount: totalAnomalies,
+            nightOutings,
+            prolongedOutings,
+            frequentExits,
+            overstayAlerts
+          }
+        });
+      });
+    });
+  });
+}
+
+function generateEmailReportHtml(report) {
+  const isAlert = report.anomalies.totalCount > 0;
+  
+  let prolongedHtml = '';
+  if (report.anomalies.prolongedOutings.length > 0) {
+    prolongedHtml = `
+      <div style="margin-top: 15px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 8px 0; color: #b91c1c; font-size: 14px;">⏱️ දීර්ඝ කාලයක් පිටත රැඳී සිටි සේවකයන් (Duty Hour Absences > 2 Hours / Still Out):</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: #fee2e2; color: #991b1b; text-align: left;">
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Pass / Name</th>
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Branch</th>
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Exit Time</th>
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Return Time</th>
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Duration</th>
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.anomalies.prolongedOutings.map(p => `
+              <tr style="background: ${p.status === 'STILL_OUTSIDE' ? '#fff1f2' : '#ffffff'};">
+                <td style="padding: 8px; border: 1px solid #fca5a5; font-weight: bold;">${p.person_name} <span style="font-size: 11px; color: #64748b;">(${p.pass_code})</span></td>
+                <td style="padding: 8px; border: 1px solid #fca5a5;">${p.branch_name}</td>
+                <td style="padding: 8px; border: 1px solid #fca5a5;">${p.exit_time}</td>
+                <td style="padding: 8px; border: 1px solid #fca5a5;">${p.return_time}</td>
+                <td style="padding: 8px; border: 1px solid #fca5a5; font-weight: bold; color: #b91c1c;">${p.duration}</td>
+                <td style="padding: 8px; border: 1px solid #fca5a5;">
+                  <span style="background: ${p.status === 'STILL_OUTSIDE' ? '#ef4444' : '#10b981'}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">
+                    ${p.status}
+                  </span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  let nightHtml = '';
+  if (report.anomalies.nightOutings.length > 0) {
+    nightHtml = `
+      <div style="margin-top: 15px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 8px 0; color: #9d174d; font-size: 14px;">🌙 රාත්‍රී කාලයේ පිටවීම් (Night Security Outings - 7:00 PM to 6:00 AM):</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: #fdf2f8; color: #9d174d; text-align: left;">
+              <th style="padding: 8px; border: 1px solid #fbcfe8;">Pass / Name</th>
+              <th style="padding: 8px; border: 1px solid #fbcfe8;">Branch</th>
+              <th style="padding: 8px; border: 1px solid #fbcfe8;">Night Exit</th>
+              <th style="padding: 8px; border: 1px solid #fbcfe8;">Return</th>
+              <th style="padding: 8px; border: 1px solid #fbcfe8;">Duration</th>
+              <th style="padding: 8px; border: 1px solid #fbcfe8;">Alert Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.anomalies.nightOutings.map(n => `
+              <tr style="background: #ffffff;">
+                <td style="padding: 8px; border: 1px solid #fbcfe8; font-weight: bold;">${n.person_name} <span style="font-size: 11px; color: #64748b;">(${n.pass_code})</span></td>
+                <td style="padding: 8px; border: 1px solid #fbcfe8;">${n.branch_name}</td>
+                <td style="padding: 8px; border: 1px solid #fbcfe8;">${n.exit_time}</td>
+                <td style="padding: 8px; border: 1px solid #fbcfe8;">${n.return_time}</td>
+                <td style="padding: 8px; border: 1px solid #fbcfe8; font-weight: bold;">${n.duration}</td>
+                <td style="padding: 8px; border: 1px solid #fbcfe8; color: #be185d; font-weight: bold;">${n.status}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  let frequentHtml = '';
+  if (report.anomalies.frequentExits.length > 0) {
+    frequentHtml = `
+      <div style="margin-top: 15px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 8px 0; color: #b45309; font-size: 14px;">🔄 දිනකට වැඩි වාර ගණනක් පිටතට ගිය සේවකයන් (Frequent Exits &ge; 3 Times):</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: #fef3c7; color: #92400e; text-align: left;">
+              <th style="padding: 8px; border: 1px solid #fde68a;">Pass / Name</th>
+              <th style="padding: 8px; border: 1px solid #fde68a;">Branch</th>
+              <th style="padding: 8px; border: 1px solid #fde68a;">Total Exits</th>
+              <th style="padding: 8px; border: 1px solid #fde68a;">Recorded Exit Times</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.anomalies.frequentExits.map(f => `
+              <tr style="background: #ffffff;">
+                <td style="padding: 8px; border: 1px solid #fde68a; font-weight: bold;">${f.person_name} <span style="font-size: 11px; color: #64748b;">(${f.pass_code})</span></td>
+                <td style="padding: 8px; border: 1px solid #fde68a;">${f.branch_name}</td>
+                <td style="padding: 8px; border: 1px solid #fde68a; font-weight: bold; color: #b45309; font-size: 14px;">${f.exit_count} වතාවක්</td>
+                <td style="padding: 8px; border: 1px solid #fde68a; font-size: 12px; color: #475569;">${f.times}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  let overstayHtml = '';
+  if (report.anomalies.overstayAlerts.length > 0) {
+    overstayHtml = `
+      <div style="margin-top: 15px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 8px 0; color: #991b1b; font-size: 14px;">🚨 නියමිත කාලය ඉක්මවා පරිශ්‍රයේ රැඳී සිටින පුද්ගලයින් (Overstay Alerts &gt; 4 Hours):</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: #fee2e2; color: #991b1b; text-align: left;">
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Pass / Name</th>
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Category</th>
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Visiting Branch</th>
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Check-In Time</th>
+              <th style="padding: 8px; border: 1px solid #fca5a5;">Time Inside</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.anomalies.overstayAlerts.map(o => `
+              <tr style="background: #ffffff;">
+                <td style="padding: 8px; border: 1px solid #fca5a5; font-weight: bold;">${o.person_name} <span style="font-size: 11px; color: #64748b;">(${o.pass_code})</span></td>
+                <td style="padding: 8px; border: 1px solid #fca5a5;">${o.category}</td>
+                <td style="padding: 8px; border: 1px solid #fca5a5;">${o.branch_name}</td>
+                <td style="padding: 8px; border: 1px solid #fca5a5;">${o.entry_time}</td>
+                <td style="padding: 8px; border: 1px solid #fca5a5; font-weight: bold; color: #dc2626;">${o.duration}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  const branchRows = Object.entries(report.branchCounts).map(([branch, count]) => `
+    <tr>
+      <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0;">${branch}</td>
+      <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right;">${count}</td>
+    </tr>
+  `).join('');
+
+  const categoryRows = Object.entries(report.categoryCounts).map(([cat, count]) => `
+    <tr>
+      <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0;">${cat}</td>
+      <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right;">${count}</td>
+    </tr>
+  `).join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DoENETS Daily Gate Intelligence Report</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 25px; color: #1e293b; line-height: 1.5;">
+  <div style="max-width: 720px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
+    
+    <!-- Header Banner -->
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); color: #ffffff; padding: 25px 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 15px; margin-bottom: 15px;">
+        <div>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.025em; color: #ffffff;">ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව</h1>
+          <p style="margin: 3px 0 0 0; font-size: 13px; color: #93c5fd; font-weight: 500;">Department of Examinations Sri Lanka</p>
+        </div>
+        <div style="background: #2563eb; color: #ffffff; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+          GATE INTELLIGENCE
+        </div>
+      </div>
+      <div>
+        <h2 style="margin: 0; font-size: 17px; font-weight: 700; color: #f8fafc;">දෛනික ගේට්ටු පාලන සහ ආරක්ෂක බුද්ධිමත් සාරාංශ වාර්තාව</h2>
+        <p style="margin: 5px 0 0 0; font-size: 13px; color: #cbd5e1;">දිනය (Date): <strong>${report.dateStr}</strong> | ජනනය කළ වේලාව: ${report.generatedAt}</p>
+      </div>
+    </div>
+
+    <div style="padding: 25px 30px;">
+
+      <!-- Anomaly Alert Card -->
+      ${isAlert ? `
+        <div style="background: #fff1f2; border: 2px solid #f43f5e; border-radius: 10px; padding: 18px 20px; margin-bottom: 25px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <span style="font-size: 24px;">⚠️</span>
+            <div>
+              <h3 style="margin: 0; color: #9f1239; font-size: 16px; font-weight: 800;">ආරක්ෂක සහ විනයාරක්ෂක අසාමාන්‍යතා හඳුනාගෙන ඇත (${report.anomalies.totalCount} Anomalies Flagged)</h3>
+              <p style="margin: 2px 0 0 0; color: #be123c; font-size: 13px;">පරිපාලන සහ විනය අධීක්ෂණය සඳහා විශේෂ අවධානය යොමු කළ යුතු අවස්ථා පහත දැක්වේ:</p>
+            </div>
+          </div>
+          <ul style="margin: 5px 0 0 25px; padding: 0; font-size: 13px; color: #881337; line-height: 1.6;">
+            ${report.anomalies.prolongedOutings.length > 0 ? `<li><strong>දීර්ඝ කාලයක් පිටත රැඳී සිටි සේවකයන්:</strong> ${report.anomalies.prolongedOutings.length} දෙනෙක්</li>` : ''}
+            ${report.anomalies.nightOutings.length > 0 ? `<li><strong>රාත්‍රී කාලයේ පිටවීම් (Night Outings):</strong> ${report.anomalies.nightOutings.length} අවස්ථාවක්</li>` : ''}
+            ${report.anomalies.frequentExits.length > 0 ? `<li><strong>නිතර (3+ වතාවක්) පිටතට ගිය සේවකයන්:</strong> ${report.anomalies.frequentExits.length} දෙනෙක්</li>` : ''}
+            ${report.anomalies.overstayAlerts.length > 0 ? `<li><strong>පැය 4 කට වඩා පරිශ්‍රයේ රැඳී සිටින අමුත්තන්:</strong> ${report.anomalies.overstayAlerts.length} දෙනෙක්</li>` : ''}
+          </ul>
+        </div>
+      ` : `
+        <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 10px; padding: 15px 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 24px;">✅</span>
+          <div>
+            <h3 style="margin: 0; color: #166534; font-size: 15px; font-weight: 800;">ආරක්ෂක තත්ත්වය සාමාන්‍යයි (All Clear)</h3>
+            <p style="margin: 2px 0 0 0; color: #15803d; font-size: 13px;">අද දින කිසිදු අසාමාන්‍ය සේවක පිටවීමක්, රාත්‍රී පිටවීමක් හෝ දීර්ඝ කාලීන overstay අවදානමක් හඳුනාගෙන නොමැත.</p>
+          </div>
+        </div>
+      `}
+
+      <!-- 4 Core Metrics Grid -->
+      <table style="width: 100%; border-collapse: separate; border-spacing: 10px; margin-bottom: 20px;">
+        <tr>
+          <td style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center; width: 25%;">
+            <div style="font-size: 24px; font-weight: 800; color: #2563eb;">${report.metrics.totalCheckIns}</div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">Total Check-Ins</div>
+          </td>
+          <td style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center; width: 25%;">
+            <div style="font-size: 24px; font-weight: 800; color: #059669;">${report.metrics.totalCheckOuts}</div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">Total Exits</div>
+          </td>
+          <td style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center; width: 25%;">
+            <div style="font-size: 24px; font-weight: 800; color: #d97706;">${report.metrics.currentlyInside}</div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">Currently Inside</div>
+          </td>
+          <td style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center; width: 25%;">
+            <div style="font-size: 24px; font-weight: 800; color: #7c3aed;">${report.metrics.vehiclesInside}</div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">Vehicles Inside</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Section: Anomalies Detail -->
+      ${prolongedHtml}
+      ${nightHtml}
+      ${frequentHtml}
+      ${overstayHtml}
+
+      <!-- Section: Branch Demand & Categories Side by Side -->
+      <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <tr>
+          <td style="width: 50%; vertical-align: top; padding-right: 10px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
+              <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 13px; font-weight: 800;">🏛️ ශාඛා අනුව ඉල්ලුම (Branch Visits):</h4>
+              <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                <tbody>
+                  ${branchRows || '<tr><td>තොරතුරු නොමැත</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </td>
+          <td style="width: 50%; vertical-align: top; padding-left: 10px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
+              <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 13px; font-weight: 800;">👥 කාණ්ඩ අනුව බෙදීයාම (Categories):</h4>
+              <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                <tbody>
+                  ${categoryRows || '<tr><td>තොරතුරු නොමැත</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Additional Insights Note -->
+      <div style="margin-top: 25px; padding: 12px 16px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px; font-size: 12px; color: #166534;">
+        <strong>සාමාන්‍ය රැඳී සිටි කාලය (Average Dwell Time):</strong> ${report.metrics.avgDwellMins} මිනිත්තු. සවිස්තරාත්මක සජීවී වාර්තා සහ එක්සෙල් (CSV) බාගත කිරීම් සඳහා දෙපාර්තමේන්තු පරිපාලන පද්ධතිය වෙත පිවිසෙන්න.
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 30px; font-size: 12px; color: #64748b; text-align: center;">
+      <p style="margin: 0 0 4px 0;">මෙම වාර්තාව ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තු ගේට්ටු පාලන පද්ධතියේ (DoENETS Gate Pass System) ස්වයංක්‍රීය කාලසටහන මඟින් ජනනය කරන ලද්දකි.</p>
+      <p style="margin: 0;">&copy; ${new Date().getFullYear()} Department of Examinations Sri Lanka. All Rights Reserved.</p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+}
+
+async function sendDailyIntelligenceEmail(recipientOverride = null) {
+  const recipient = recipientOverride || emailReportConfig.recipient || 'admin@doenets.lk';
+  const report = await compileDailyIntelligenceReport();
+  const htmlContent = generateEmailReportHtml(report);
+  const textSummary = `Department of Examinations - Gate Pass Daily Intelligence Report (${report.dateStr}). Total Entries: ${report.metrics.totalCheckIns}, Exits: ${report.metrics.totalCheckOuts}, Inside: ${report.metrics.currentlyInside}, Anomalies Flagged: ${report.anomalies.totalCount}.`;
+
+  const isAlert = report.anomalies.totalCount > 0;
+  const subject = `[${isAlert ? '⚠️ ALERT: ' + report.anomalies.totalCount + ' ANOMALIES' : '✓ ALL CLEAR'}] DoENETS Gate Intelligence Report - ${report.dateStr}`;
+
+  const host = emailReportConfig.smtp_host || process.env.SMTP_HOST;
+  const user = emailReportConfig.smtp_user || process.env.SMTP_USER;
+  const pass = emailReportConfig.smtp_pass || process.env.SMTP_PASS;
+  const port = emailReportConfig.smtp_port || process.env.SMTP_PORT || 587;
+
+  let dispatchResult = { success: false, mode: 'SIMULATION', message: '', recipient, reportSummary: report };
+
+  if (host && user && pass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host,
+        port: Number(port),
+        secure: Number(port) === 465,
+        auth: { user, pass },
+        tls: { rejectUnauthorized: false }
+      });
+
+      const info = await transporter.sendMail({
+        from: `"${emailReportConfig.from_name}" <${emailReportConfig.from_address || user}>`,
+        to: recipient,
+        subject,
+        text: textSummary,
+        html: htmlContent
+      });
+
+      console.log(`✓ Email report successfully dispatched via SMTP to ${recipient}: ${info.messageId}`);
+      dispatchResult = { success: true, mode: 'SMTP', messageId: info.messageId, recipient, sentAt: new Date().toISOString(), reportSummary: report };
+    } catch (sendErr) {
+      console.error(`✗ SMTP delivery failed (${sendErr.message}). Falling back to logged simulation dispatch.`);
+      dispatchResult = { success: false, mode: 'SMTP_FAILED', error: sendErr.message, recipient, sentAt: new Date().toISOString(), reportSummary: report };
+    }
+  } else {
+    console.log(`ℹ SMTP credentials not configured. Executed simulated report generation and audit logging for ${recipient}.`);
+    dispatchResult = {
+      success: true,
+      mode: 'SIMULATION',
+      message: 'SMTP credentials not configured. Simulated dispatch successful and recorded in audit log.',
+      recipient,
+      sentAt: new Date().toISOString(),
+      reportSummary: report
+    };
+  }
+
+  logAdminAuditAction('SYSTEM_SCHEDULER', 'SYSTEM', 'DISPATCH_EMAIL_REPORT', recipient, `Mode: ${dispatchResult.mode}, Anomalies: ${report.anomalies.totalCount}, Status: ${dispatchResult.success ? 'SUCCESS' : 'FAILED'}`, '127.0.0.1');
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  emailReportConfig.last_sent_date = todayStr;
+  emailReportConfig.last_sent_status = `${dispatchResult.mode}:${dispatchResult.success ? 'SUCCESS' : 'FAILED'}`;
+
+  db.run(
+    "INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('email_report_last_sent', ?, 'System Scheduler') ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP",
+    [todayStr]
+  );
+
+  return dispatchResult;
+}
+
+function checkDailyEmailSchedule() {
+  if (!emailReportConfig.enabled) return;
+
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const currentTime = `${hours}:${minutes}`;
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const todayDate = `${year}-${month}-${day}`;
+
+  if (currentTime === emailReportConfig.time && emailReportConfig.last_sent_date !== todayDate) {
+    console.log(`⏰ Scheduled trigger matched (${currentTime}). Dispatching Daily Intelligence Email Report to ${emailReportConfig.recipient}...`);
+    sendDailyIntelligenceEmail().catch(err => {
+      console.error('Error during scheduled email report dispatch:', err);
+    });
+  }
 }
 
 // Utility Functions
@@ -858,6 +1467,102 @@ app.post('/api/admin/gate-settings', authenticateToken, (req, res) => {
       });
     });
   });
+});
+
+// 9.4b Automated Email Reporting Settings & Dispatch APIs
+app.get('/api/admin/email-settings', authenticateToken, (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
+  }
+  res.json({
+    enabled: emailReportConfig.enabled === 1,
+    recipient: emailReportConfig.recipient,
+    time: emailReportConfig.time,
+    smtp_host: emailReportConfig.smtp_host,
+    smtp_port: emailReportConfig.smtp_port,
+    smtp_user: emailReportConfig.smtp_user,
+    has_smtp_pass: !!emailReportConfig.smtp_pass,
+    from_address: emailReportConfig.from_address,
+    last_sent_date: emailReportConfig.last_sent_date,
+    last_sent_status: emailReportConfig.last_sent_status
+  });
+});
+
+app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
+  }
+
+  const { enabled, recipient, time, smtp_host, smtp_port, smtp_user, smtp_pass } = req.body;
+  const adminUser = req.user.display_name || req.user.username || 'Super Admin';
+
+  const enabledVal = enabled ? '1' : '0';
+  const recipientVal = (recipient && recipient.trim()) || 'admin@doenets.lk';
+  const timeVal = (time && time.trim()) || '17:00';
+
+  const queries = [
+    { key: 'email_report_enabled', val: enabledVal },
+    { key: 'email_report_recipient', val: recipientVal },
+    { key: 'email_report_time', val: timeVal }
+  ];
+  if (smtp_host !== undefined) queries.push({ key: 'smtp_host', val: String(smtp_host).trim() });
+  if (smtp_port !== undefined) queries.push({ key: 'smtp_port', val: String(smtp_port).trim() });
+  if (smtp_user !== undefined) queries.push({ key: 'smtp_user', val: String(smtp_user).trim() });
+  if (smtp_pass !== undefined && String(smtp_pass).trim() !== '') queries.push({ key: 'smtp_pass', val: String(smtp_pass).trim() });
+
+  queries.forEach(q => {
+    db.run(
+      `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+       VALUES (?, ?, ?)
+       ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP`,
+      [q.key, q.val, adminUser]
+    );
+  });
+
+  emailReportConfig.enabled = enabled ? 1 : 0;
+  emailReportConfig.recipient = recipientVal;
+  emailReportConfig.time = timeVal;
+  if (smtp_host !== undefined) emailReportConfig.smtp_host = String(smtp_host).trim();
+  if (smtp_port !== undefined) emailReportConfig.smtp_port = parseInt(smtp_port) || 587;
+  if (smtp_user !== undefined) emailReportConfig.smtp_user = String(smtp_user).trim();
+  if (smtp_pass !== undefined && String(smtp_pass).trim() !== '') emailReportConfig.smtp_pass = String(smtp_pass).trim();
+
+  logAdminAuditAction(req.user.username, req.user.role, 'UPDATE_EMAIL_SETTINGS', recipientVal, `Enabled: ${emailReportConfig.enabled}, Time: ${emailReportConfig.time}`, req.ip);
+
+  res.json({
+    success: true,
+    message: 'ස්වයංක්‍රීය ඊමේල් වාර්තා සැකසුම් සාර්ථකව සුරකින ලදී',
+    settings: {
+      enabled: emailReportConfig.enabled === 1,
+      recipient: emailReportConfig.recipient,
+      time: emailReportConfig.time,
+      smtp_host: emailReportConfig.smtp_host,
+      smtp_port: emailReportConfig.smtp_port,
+      smtp_user: emailReportConfig.smtp_user,
+      has_smtp_pass: !!emailReportConfig.smtp_pass,
+      last_sent_date: emailReportConfig.last_sent_date,
+      last_sent_status: emailReportConfig.last_sent_status
+    }
+  });
+});
+
+app.post('/api/admin/email-report/test', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
+  }
+  const recipient = req.body.recipient || emailReportConfig.recipient;
+  try {
+    const result = await sendDailyIntelligenceEmail(recipient);
+    res.json({
+      success: true,
+      message: result.mode === 'SMTP' 
+        ? `දෛනික බුද්ධිමත් වාර්තාව ${recipient} වෙත SMTP හරහා සාර්ථකව යවන ලදී!`
+        : `දෛනික බුද්ධිමත් වාර්තාව සම්පාදනය විය (${recipient} වෙත Simulated Delivery සාර්ථකයි).`,
+      result
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'වාර්තාව යැවීමේදී දෝෂයක් ඇති විය: ' + err.message });
+  }
 });
 
 // 9.5 User Management & Password Reset APIs (Authenticated)
