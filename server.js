@@ -621,20 +621,38 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
 
   const host = emailReportConfig.smtp_host || process.env.SMTP_HOST;
   const user = emailReportConfig.smtp_user || process.env.SMTP_USER;
-  const pass = emailReportConfig.smtp_pass || process.env.SMTP_PASS;
+  let pass = emailReportConfig.smtp_pass || process.env.SMTP_PASS;
   const port = emailReportConfig.smtp_port || process.env.SMTP_PORT || 587;
+
+  // Clean password: strip spaces (e.g. Gmail 16-character App Passwords often copied with spaces like "abcd efgh ijkl mnop")
+  if (pass) pass = String(pass).replace(/\s+/g, '');
 
   let dispatchResult = { success: false, mode: 'SIMULATION', message: '', recipient, reportSummary: report };
 
   if (host && user && pass) {
     try {
-      const transporter = nodemailer.createTransport({
+      const isGmail = host.toLowerCase().includes('gmail');
+      const isSecure = Number(port) === 465;
+
+      const transportConfig = isGmail ? {
+        service: 'gmail',
+        auth: { user, pass },
+        tls: { rejectUnauthorized: false },
+        connectionTimeout: 12000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000
+      } : {
         host,
         port: Number(port),
-        secure: Number(port) === 465,
+        secure: isSecure,
         auth: { user, pass },
-        tls: { rejectUnauthorized: false }
-      });
+        tls: { rejectUnauthorized: false },
+        connectionTimeout: 12000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000
+      };
+
+      const transporter = nodemailer.createTransport(transportConfig);
 
       const info = await transporter.sendMail({
         from: `"${emailReportConfig.from_name}" <${emailReportConfig.from_address || user}>`,
@@ -647,15 +665,15 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
       console.log(`✓ Email report successfully dispatched via SMTP to ${recipient}: ${info.messageId}`);
       dispatchResult = { success: true, mode: 'SMTP', messageId: info.messageId, recipient, sentAt: new Date().toISOString(), reportSummary: report };
     } catch (sendErr) {
-      console.error(`✗ SMTP delivery failed (${sendErr.message}). Falling back to logged simulation dispatch.`);
+      console.error(`✗ SMTP delivery failed (${sendErr.message}).`);
       dispatchResult = { success: false, mode: 'SMTP_FAILED', error: sendErr.message, recipient, sentAt: new Date().toISOString(), reportSummary: report };
     }
   } else {
-    console.log(`ℹ SMTP credentials not configured. Executed simulated report generation and audit logging for ${recipient}.`);
+    console.log(`ℹ SMTP credentials not configured. Executed simulated report generation for ${recipient}.`);
     dispatchResult = {
       success: true,
       mode: 'SIMULATION',
-      message: 'SMTP credentials not configured. Simulated dispatch successful and recorded in audit log.',
+      message: 'SMTP credentials not configured. Real email was NOT dispatched to inbox; report compiled in Simulation mode.',
       recipient,
       sentAt: new Date().toISOString(),
       reportSummary: report
@@ -1553,16 +1571,44 @@ app.post('/api/admin/email-report/test', authenticateToken, async (req, res) => 
   const recipient = req.body.recipient || emailReportConfig.recipient;
   try {
     const result = await sendDailyIntelligenceEmail(recipient);
+
+    let message = '';
+    if (result.mode === 'SMTP') {
+      message = `දෛනික බුද්ධිමත් වාර්තාව ${recipient} වෙත සැබෑ ඊමේල් පණිවිඩයක් ලෙස (SMTP හරහා) සාර්ථකව යවන ලදී!`;
+    } else if (result.mode === 'SIMULATION') {
+      message = `වාර්තාව සාර්ථකව සම්පාදනය විය. එහෙත් SMTP සේවාදායකයක් (Gmail / Office365) සකසා නොමැති බැවින් එය සැබෑ ඊමේල් ලිපිනයට (Inbox) ලැබුණේ නැත (Simulated Delivery). සැබෑ ඊමේල් ලැබීමට Custom SMTP සැකසුම් ඇතුළත් කරන්න.`;
+    } else {
+      message = `ඊමේල් යැවීමට නොහැකි විය (SMTP Error): ${result.error || 'Connection Failed'}`;
+    }
+
     res.json({
-      success: true,
-      message: result.mode === 'SMTP' 
-        ? `දෛනික බුද්ධිමත් වාර්තාව ${recipient} වෙත SMTP හරහා සාර්ථකව යවන ලදී!`
-        : `දෛනික බුද්ධිමත් වාර්තාව සම්පාදනය විය (${recipient} වෙත Simulated Delivery සාර්ථකයි).`,
+      success: result.mode === 'SMTP' || result.mode === 'SIMULATION',
+      mode: result.mode,
+      message,
       result
     });
   } catch (err) {
     res.status(500).json({ error: 'වාර්තාව යැවීමේදී දෝෂයක් ඇති විය: ' + err.message });
   }
+});
+
+app.get('/api/admin/email-report/preview', async (req, res) => {
+  const token = req.headers['authorization'] ? req.headers['authorization'].split(' ')[1] : req.query.token;
+  if (!token) {
+    return res.status(401).send('<h3 style="font-family:sans-serif;color:#b91c1c;">අවසර නැත (Unauthorized). කරුණාකර පද්ධතියට Log In වන්න.</h3>');
+  }
+
+  jwt.verify(token, JWT_SECRET, async (err, user) => {
+    if (err) return res.status(403).send('<h3 style="font-family:sans-serif;color:#b91c1c;">වලංගු නොවන හෝ කල්ඉකුත් වූ Session එකක්.</h3>');
+    try {
+      const report = await compileDailyIntelligenceReport();
+      const html = generateEmailReportHtml(report);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (e) {
+      res.status(500).send('Error compiling preview: ' + e.message);
+    }
+  });
 });
 
 // 9.5 User Management & Password Reset APIs (Authenticated)

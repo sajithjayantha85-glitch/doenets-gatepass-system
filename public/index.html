@@ -2546,10 +2546,17 @@
                 </div>
               </div>
             </div>
-            <div id="emailReportStatusBadge">
-              <span class="badge" style="background: #e0f2fe; color: #0284c7; font-size: 0.9rem; padding: 0.5rem 0.9rem; font-weight: 800; border-radius: 8px;">
-                <i class="fa-solid fa-clock"></i> Scheduled: Daily at 17:00
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <span id="smtpConnectionBadge">
+                <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;">
+                  <i class="fa-solid fa-triangle-exclamation"></i> Simulation Mode (SMTP නැත)
+                </span>
               </span>
+              <div id="emailReportStatusBadge">
+                <span class="badge" style="background: #e0f2fe; color: #0284c7; font-size: 0.9rem; padding: 0.5rem 0.9rem; font-weight: 800; border-radius: 8px;">
+                  <i class="fa-solid fa-clock"></i> Scheduled: Daily at 17:00
+                </span>
+              </div>
             </div>
           </div>
 
@@ -2573,7 +2580,7 @@
               <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">
                 <i class="fa-solid fa-at" style="color: #2563eb;"></i> ලබන්නාගේ ඊමේල් ලිපිනය (Recipient Email):
               </label>
-              <input type="email" id="txtEmailRecipient" class="form-control" placeholder="e.g. admin@doenets.lk" value="admin@doenets.lk" style="font-weight: 700;">
+              <input type="email" id="txtEmailRecipient" class="form-control" placeholder="e.g. your-name@gmail.com හෝ admin@doenets.lk" value="admin@doenets.lk" style="font-weight: 700;">
             </div>
 
             <!-- Schedule Time -->
@@ -2586,31 +2593,57 @@
           </div>
 
           <!-- Advanced SMTP Settings Accordion / Toggle -->
-          <details style="margin-bottom: 1.25rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem 1.15rem;">
-            <summary style="cursor: pointer; font-weight: 700; color: #334155; font-size: 0.92rem; user-select: none;">
-              <i class="fa-solid fa-sliders" style="color: #2563eb; margin-right: 4px;"></i> අභිරුචි SMTP සේවාදායක සැකසුම් (Custom SMTP Settings - විකල්ප)
+          <details id="detailsSmtpSettings" style="margin-bottom: 1.25rem; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 0.85rem 1.15rem;">
+            <summary style="cursor: pointer; font-weight: 700; color: #1e3a8a; font-size: 0.95rem; user-select: none; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <span><i class="fa-solid fa-server" style="color: #2563eb; margin-right: 6px;"></i> පිටතට ඊමේල් යැවීමේ සේවාදායක සැකසුම් (Outgoing SMTP Mail Server Setup)</span>
+              <span id="smtpMiniIndicator" style="font-size: 0.8rem; font-weight: 600; color: #b45309;">⚠️ සැබෑ ඊමේල් ලැබීමට Gmail / Office365 සකසන්න</span>
             </summary>
-            <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-              <div>
-                <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;">SMTP Host:</label>
-                <input type="text" id="txtSmtpHost" class="form-control" placeholder="e.g. smtp.gmail.com" style="font-size: 0.88rem;">
+
+            <div style="margin-top: 1rem;">
+              <!-- Quick 1-Click Preset Buttons -->
+              <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
+                <div style="font-size: 0.85rem; font-weight: 700; color: #1e40af;">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> ක්ෂණික සැකසුම් (Quick Presets):
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button type="button" class="btn" onclick="applySmtpPreset('gmail')" style="background: #ea4335; color: white; padding: 5px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 6px;">
+                    <i class="fa-brands fa-google"></i> Gmail සැකසුම්
+                  </button>
+                  <button type="button" class="btn" onclick="applySmtpPreset('office365')" style="background: #0078d4; color: white; padding: 5px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 6px;">
+                    <i class="fa-brands fa-microsoft"></i> Office 365 / Outlook
+                  </button>
+                  <button type="button" class="btn" onclick="applySmtpPreset('clear')" style="background: #64748b; color: white; padding: 5px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 6px;">
+                    <i class="fa-solid fa-eraser"></i> Clear
+                  </button>
+                </div>
               </div>
-              <div>
-                <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;">SMTP Port:</label>
-                <input type="number" id="txtSmtpPort" class="form-control" placeholder="587" value="587" style="font-size: 0.88rem;">
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div>
+                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">SMTP Host:</label>
+                  <input type="text" id="txtSmtpHost" class="form-control" placeholder="e.g. smtp.gmail.com" style="font-size: 0.88rem;">
+                </div>
+                <div>
+                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">SMTP Port:</label>
+                  <input type="number" id="txtSmtpPort" class="form-control" placeholder="465 or 587" value="587" style="font-size: 0.88rem;">
+                </div>
+                <div>
+                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">Sender Email (යවන්නාගේ ඊමේල්):</label>
+                  <input type="text" id="txtSmtpUser" class="form-control" placeholder="your-email@gmail.com" style="font-size: 0.88rem;">
+                </div>
+                <div>
+                  <label style="font-size: 0.82rem; font-weight: 700; color: #334155;">App Password / මුරපදය:</label>
+                  <input type="password" id="txtSmtpPass" class="form-control" placeholder="16-digit Google App Password" style="font-size: 0.88rem;">
+                </div>
               </div>
-              <div>
-                <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;">SMTP User / Email:</label>
-                <input type="text" id="txtSmtpUser" class="form-control" placeholder="username or email" style="font-size: 0.88rem;">
-              </div>
-              <div>
-                <label style="font-size: 0.8rem; font-weight: 700; color: #64748b;">SMTP Password / App Key:</label>
-                <input type="password" id="txtSmtpPass" class="form-control" placeholder="මුරපදය වෙනස් නොකරන්නේ නම් හිස්ව තබන්න" style="font-size: 0.88rem;">
+
+              <!-- Gmail Helper Guide -->
+              <div id="smtpHelpGuide" style="margin-top: 0.85rem; padding: 0.75rem 1rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; font-size: 0.84rem; color: #92400e; line-height: 1.5;">
+                <strong>💡 Gmail භාවිත කරන්නේ නම් සැබෑ ඊමේල් ලබාගැනීමට:</strong> Google ගිණුමේ සාමාන්‍ය මුරපදය භාවිත කළ නොහැක. <br>
+                1. ඔබගේ Google Account -> <strong>Security</strong> -> <strong>2-Step Verification</strong> වෙත යන්න. <br>
+                2. එහි පහළ ඇති <strong>App Passwords</strong> තෝරා <code>Gate Pass System</code> නමින් අකුරු 16 ක App Password එකක් සාදාගෙන එය මෙහි Password කොටුවට ඇතුළත් කරන්න.
               </div>
             </div>
-            <p style="font-size: 0.82rem; color: #64748b; margin: 0.75rem 0 0 0;">
-              <i class="fa-solid fa-circle-info" style="color: #0284c7;"></i> සටහන: SMTP සකසා නොමැති අවස්ථාවලදී හෝ නොබැඳි (offline) පරීක්ෂණ වලදී, වාර්තාව සම්පාදනය වී Audit Log එකෙහි simulated delivery ලෙස වාර්තා වේ.
-            </p>
           </details>
 
           <!-- Action Buttons & Last Sent Info -->
@@ -2618,11 +2651,14 @@
             <div style="font-size: 0.88rem; color: #64748b;">
               <span id="lblLastEmailSentInfo"><i class="fa-solid fa-circle-info"></i> වාර්තා තත්ත්වය පූරණය වෙමින් පවතී...</span>
             </div>
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-              <button class="btn" onclick="sendTestEmailReport()" id="btnSendTestEmail" style="background: #4338ca; color: white; padding: 0.65rem 1.35rem; font-weight: 700; border-radius: 8px;">
+            <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+              <button class="btn" type="button" onclick="previewEmailReport()" id="btnPreviewEmailReport" style="background: #0284c7; color: white; padding: 0.65rem 1.25rem; font-weight: 700; border-radius: 8px;" title="View exact HTML email report in browser">
+                <i class="fa-solid fa-eye"></i> වාර්තාව Preview කරන්න
+              </button>
+              <button class="btn" type="button" onclick="sendTestEmailReport()" id="btnSendTestEmail" style="background: #4338ca; color: white; padding: 0.65rem 1.35rem; font-weight: 700; border-radius: 8px;">
                 <i class="fa-solid fa-paper-plane"></i> දැන්ම පරීක්ෂණ වාර්තාවක් යවන්න (Send Test Report Now)
               </button>
-              <button class="btn btn-primary" onclick="saveEmailReportSettings()" id="btnSaveEmailSettings" style="padding: 0.65rem 1.45rem; font-weight: 700; border-radius: 8px;">
+              <button class="btn btn-primary" type="button" onclick="saveEmailReportSettings()" id="btnSaveEmailSettings" style="padding: 0.65rem 1.45rem; font-weight: 700; border-radius: 8px;">
                 <i class="fa-solid fa-floppy-disk"></i> සැකසුම් සුරකින්න (Save Settings)
               </button>
             </div>
@@ -6562,6 +6598,43 @@
       }
     }
 
+    function applySmtpPreset(type) {
+      const hostEl = document.getElementById('txtSmtpHost');
+      const portEl = document.getElementById('txtSmtpPort');
+      const userEl = document.getElementById('txtSmtpUser');
+      const passEl = document.getElementById('txtSmtpPass');
+      const detailsEl = document.getElementById('detailsSmtpSettings');
+      if (detailsEl) detailsEl.open = true;
+
+      if (!hostEl || !portEl) return;
+
+      if (type === 'gmail') {
+        hostEl.value = 'smtp.gmail.com';
+        portEl.value = '465';
+        if (userEl && !userEl.value) userEl.placeholder = 'your-name@gmail.com';
+        if (passEl) passEl.placeholder = '16-digit Google App Password';
+        showSecToast('Gmail සැකසුම් (smtp.gmail.com:465) යොදන ලදී. කරුණාකර ඔබගේ Email සහ App Password ඇතුළත් කර සුරකින්න.', 'info');
+      } else if (type === 'office365') {
+        hostEl.value = 'smtp.office365.com';
+        portEl.value = '587';
+        if (userEl && !userEl.value) userEl.placeholder = 'admin@doenets.lk';
+        if (passEl) passEl.placeholder = 'Office 365 Password / App Key';
+        showSecToast('Office 365 සැකසුම් (smtp.office365.com:587) යොදන ලදී.', 'info');
+      } else if (type === 'clear') {
+        hostEl.value = '';
+        portEl.value = '587';
+        if (userEl) userEl.value = '';
+        if (passEl) passEl.value = '';
+        showSecToast('SMTP සැකසුම් ඉවත් කරන ලදී (Simulation Mode).', 'info');
+      }
+    }
+
+    function previewEmailReport() {
+      if (!token) return alert('කරුණාකර පද්ධතියට Log In වන්න.');
+      const url = '/api/admin/email-report/preview?token=' + encodeURIComponent(token);
+      window.open(url, '_blank');
+    }
+
     async function loadEmailSettings() {
       if (!token) return;
       try {
@@ -6589,6 +6662,19 @@
 
         const txtUser = document.getElementById('txtSmtpUser');
         if (txtUser && data.smtp_user) txtUser.value = data.smtp_user;
+
+        // Dynamic SMTP Connection Badge & Summary Indicator
+        const smtpBadge = document.getElementById('smtpConnectionBadge');
+        const miniInd = document.getElementById('smtpMiniIndicator');
+        const hasSmtpConfigured = data.smtp_host && data.smtp_user;
+
+        if (hasSmtpConfigured) {
+          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-circle-check"></i> Real Email (SMTP Ready)</span>`;
+          if (miniInd) { miniInd.innerText = '✅ SMTP සකසා ඇත (සැබෑ ඊමේල් යැවේ)'; miniInd.style.color = '#15803d'; }
+        } else {
+          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Simulation Mode (SMTP නැත)</span>`;
+          if (miniInd) { miniInd.innerText = '⚠️ සැබෑ ඊමේල් ලැබීමට Gmail / Office365 සකසන්න'; miniInd.style.color = '#b45309'; }
+        }
 
         const badge = document.getElementById('emailReportStatusBadge');
         if (badge) {
@@ -6696,8 +6782,17 @@
           const report = data.result && data.result.reportSummary ? data.result.reportSummary : null;
           const anomaliesCount = report && report.anomalies ? report.anomalies.totalCount : 0;
           
-          showSecToast(`✓ පරීක්ෂණ වාර්තාව සාර්ථකයි! (අසාමාන්‍යතා: ${anomaliesCount})`, 'success');
-          alert(`📧 ${data.message}\n\n[වාර්තා සාරාංශය]\nදිනය: ${report ? report.dateStr : 'Today'}\nමුළු ඇතුළුවීම්: ${report ? report.metrics.totalCheckIns : '-'}\nපරිශ්‍රයේ සිටින පිරිස: ${report ? report.metrics.currentlyInside : '-'}\nහඳුනාගත් ආරක්ෂක අසාමාන්‍යතා (Anomalies): ${anomaliesCount}\nබෙදාහැරීමේ ක්‍රමය: ${data.result.mode}`);
+          if (data.mode === 'SMTP') {
+            showSecToast('✓ සැබෑ ඊමේල් පණිවිඩය සාර්ථකව යවන ලදී!', 'success');
+            alert(`✅ සාර්ථකයි (Real Email Delivered)!\n\nදෛනික බුද්ධිමත් වාර්තාව "${recipient}" වෙත සැබෑ ඊමේල් පණිවිඩයක් ලෙස සාර්ථකව යවන ලදී.\n\nකරුණාකර ඔබගේ Inbox (හෝ Spam) ෆෝල්ඩරය පරීක්ෂා කරන්න.\n\n[වාර්තා සාරාංශය]\nදිනය: ${report ? report.dateStr : 'Today'}\nමුළු ඇතුළුවීම්: ${report ? report.metrics.totalCheckIns : 0}\nපරිශ්‍රයේ සිටින පිරිස: ${report ? report.metrics.currentlyInside : 0}\nආරක්ෂක අසාමාන්‍යතා (Anomalies): ${anomaliesCount}`);
+          } else if (data.mode === 'SIMULATION') {
+            showSecToast('⚠️ වාර්තාව සකස් විය (Simulation Mode)', 'warn');
+            alert(`⚠️ අවධානයට: ඊමේල් පණිවිඩය ඔබගේ Inbox එකට නොපැමිණියේ ඇයි?\n\nහේතුව: පද්ධතිය තුළ වාර්තාව සාර්ථකව ජනනය වූ නමුත්, පිටතට ඊමේල් සම්ප්‍රේෂණය කිරීම සඳහා SMTP Mail Server එකක් (Gmail App Password හෝ දෙපාර්තමේන්තු ඊමේල්) තවමත් සකසා නොමැත. එබැවින් මෙය පද්ධතිය තුළ පමණක් අනුකරණය (Simulation) විය.\n\n💡 සැබෑ ඊමේල් ඔබගේ Inbox එකටම ලබාගැනීමට:\n1. පහත "පිටතට ඊමේල් යැවීමේ සේවාදායක සැකසුම් (SMTP Setup)" කොටස විවෘත කරන්න.\n2. "Gmail සැකසුම්" බොත්තම ඔබා ඔබගේ Gmail ලිපිනය සහ 16-digit App Password එක ලබා දෙන්න.\n3. "සැකසුම් සුරකින්න" ඔබන්න.\n\n(වාර්තාවේ පෙනුම දැනටම බැලීමට "වාර්තාව Preview කරන්න" බොත්තම ඔබන්න)`);
+          } else {
+            showSecToast('❌ SMTP මඟින් ඊමේල් යැවීම අසාර්ථක විය', 'error');
+            alert(`❌ ඊමේල් යැවීමට නොහැකි විය (SMTP Error):\n\n${data.message}\n\nකරුණාකර ඔබගේ SMTP Host, Port, Email සහ Password / App Password නිවැරදි දැයි පරීක්ෂා කරන්න.`);
+          }
+
           await loadEmailSettings();
         } else {
           alert('වාර්තාව යැවීමට නොහැකි විය: ' + (data.error || 'Server error'));
