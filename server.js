@@ -96,17 +96,17 @@ function loadGateSettingsFromDb() {
 // -------------------------------------------------------------
 let emailReportConfig = {
   enabled: 1,
-  recipient: 'admin@doenets.lk',
-  time: '17:00',
+  recipient: process.env.EMAIL_RECIPIENT || 'sajithjayantha85@gmail.com, kasl.jayantha@gmail.com',
+  time: process.env.EMAIL_SCHEDULE_TIME || '17:00',
   resend_api_key: process.env.RESEND_API_KEY || '',
   brevo_api_key: process.env.BREVO_API_KEY || '',
-  brevo_sender_email: 'sajithjayantha85@gmail.com',
+  brevo_sender_email: process.env.BREVO_SENDER_EMAIL || 'sajithjayantha85@gmail.com',
   smtp_host: process.env.SMTP_HOST || '',
   smtp_port: process.env.SMTP_PORT || 587,
   smtp_user: process.env.SMTP_USER || '',
   smtp_pass: process.env.SMTP_PASS || '',
   from_name: 'DoENETS Gate Pass Intelligence',
-  from_address: process.env.EMAIL_FROM || 'gatepass-alerts@doenets.lk',
+  from_address: process.env.EMAIL_FROM || 'sajithjayantha85@gmail.com',
   last_sent_date: null,
   last_sent_status: null,
   last_sent_error: null
