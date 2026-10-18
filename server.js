@@ -999,6 +999,217 @@ app.get('/api/admin/visitors', authenticateToken, (req, res) => {
   });
 });
 
+// 10.2 Executive Analytics & Institutional Intelligence API (Authenticated)
+app.get('/api/admin/analytics', authenticateToken, (req, res) => {
+  const timeframe = req.query.timeframe || 'today'; // 'today', 'week', 'month', 'all'
+  const categoryFilter = req.query.category && req.query.category !== 'ALL' ? req.query.category.trim().toUpperCase() : null;
+
+  let logWhereClauses = [];
+  let logParams = [];
+
+  if (timeframe === 'today') {
+    logWhereClauses.push("DATE(timestamp, 'localtime') = DATE('now', 'localtime')");
+  } else if (timeframe === 'week') {
+    logWhereClauses.push("DATE(timestamp, 'localtime') >= DATE('now', 'localtime', '-7 days')");
+  } else if (timeframe === 'month') {
+    logWhereClauses.push("DATE(timestamp, 'localtime') >= DATE('now', 'localtime', '-30 days')");
+  }
+
+  if (categoryFilter) {
+    logWhereClauses.push("category = ?");
+    logParams.push(categoryFilter);
+  }
+
+  const logWhereSql = logWhereClauses.length > 0 ? `WHERE ${logWhereClauses.join(' AND ')}` : '';
+  const logSql = `SELECT * FROM gate_logs ${logWhereSql} ORDER BY timestamp ASC`;
+
+  db.all(logSql, logParams, (err, logs) => {
+    if (err) {
+      console.error('Error fetching analytics logs:', err);
+      return res.status(500).json({ error: 'Failed to load analytics data' });
+    }
+    logs = logs || [];
+
+    let totalCheckIns = 0;
+    let totalCheckOuts = 0;
+    let branchCounts = {};
+    let categoryCounts = {};
+    let hourlyCounts = {};
+    for (let h = 6; h <= 18; h++) {
+      const hourStr = String(h).padStart(2, '0') + ':00';
+      hourlyCounts[hourStr] = 0;
+    }
+
+    let passVisits = {};
+    let staffPunctuality = { on_time: 0, late: 0, total_logged: 0 };
+
+    logs.forEach(l => {
+      let dateStr = String(l.timestamp || '');
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        dateStr = dateStr.replace(' ', 'T');
+      }
+      const d = new Date(dateStr);
+      const hour = isNaN(d.getTime()) ? 8 : d.getHours();
+
+      if (l.action_type === 'CHECK_IN') {
+        totalCheckIns++;
+        const hourKey = String(hour).padStart(2, '0') + ':00';
+        if (hourlyCounts[hourKey] !== undefined) {
+          hourlyCounts[hourKey]++;
+        } else {
+          hourlyCounts[hourKey] = 1;
+        }
+
+        if (l.category === 'STAFF') {
+          staffPunctuality.total_logged++;
+          const mins = hour * 60 + d.getMinutes();
+          if (mins <= 8 * 60 + 30) {
+            staffPunctuality.on_time++;
+          } else {
+            staffPunctuality.late++;
+          }
+        }
+
+        if (!passVisits[l.pass_code]) passVisits[l.pass_code] = [];
+        passVisits[l.pass_code].push({ in: d, out: null });
+
+      } else if (l.action_type === 'CHECK_OUT') {
+        totalCheckOuts++;
+        if (passVisits[l.pass_code] && passVisits[l.pass_code].length > 0) {
+          const lastVisit = passVisits[l.pass_code][passVisits[l.pass_code].length - 1];
+          if (lastVisit && !lastVisit.out) {
+            lastVisit.out = d;
+          }
+        }
+      }
+
+      const b = l.branch_name || 'General Administration';
+      branchCounts[b] = (branchCounts[b] || 0) + 1;
+
+      const c = l.category || 'VISITOR';
+      categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+    });
+
+    // Compute average dwell time
+    let totalDwellMinutes = 0;
+    let completedVisitCount = 0;
+    Object.values(passVisits).forEach(visits => {
+      visits.forEach(v => {
+        if (v.in && v.out && !isNaN(v.in.getTime()) && !isNaN(v.out.getTime())) {
+          const diffMs = v.out.getTime() - v.in.getTime();
+          if (diffMs > 0 && diffMs < 24 * 3600 * 1000) {
+            totalDwellMinutes += Math.round(diffMs / 60000);
+            completedVisitCount++;
+          }
+        }
+      });
+    });
+
+    const avgDwellMins = completedVisitCount > 0 ? Math.round(totalDwellMinutes / completedVisitCount) : 0;
+
+    // Determine Peak Hour
+    let peakHour = 'No entries';
+    let peakCount = 0;
+    Object.entries(hourlyCounts).forEach(([h, cnt]) => {
+      if (cnt > peakCount) {
+        peakCount = cnt;
+        const startH = parseInt(h);
+        const ampm = startH >= 12 ? 'PM' : 'AM';
+        const displayH = startH > 12 ? (startH - 12) : (startH === 0 ? 12 : startH);
+        const nextH = startH + 1;
+        const nextAmpm = nextH >= 12 ? 'PM' : 'AM';
+        const nextDisplayH = nextH > 12 ? (nextH - 12) : nextH;
+        peakHour = `${displayH}:00 ${ampm} - ${nextDisplayH}:00 ${nextAmpm} (${cnt} entries)`;
+      }
+    });
+
+    // Fetch passes currently inside & overstay alerts
+    let passWhere = ["status = 'CHECKED_IN'"];
+    let passParams = [];
+    if (categoryFilter) {
+      passWhere.push("category = ?");
+      passParams.push(categoryFilter);
+    }
+    const passSql = `SELECT * FROM passes WHERE ${passWhere.join(' AND ')} ORDER BY created_at DESC`;
+
+    db.all(passSql, passParams, (pErr, checkedInPasses) => {
+      checkedInPasses = checkedInPasses || [];
+      const now = Date.now();
+      let vehiclesInside = 0;
+      let overstayList = [];
+
+      checkedInPasses.forEach(p => {
+        if (p.vehicle_number && p.vehicle_number.trim() && p.vehicle_number.toUpperCase() !== 'NONE') {
+          vehiclesInside++;
+        }
+
+        // Calculate hours inside
+        let entryTime = null;
+        if (passVisits[p.pass_code] && passVisits[p.pass_code].length > 0) {
+          const lastVisit = passVisits[p.pass_code][passVisits[p.pass_code].length - 1];
+          if (lastVisit && lastVisit.in && !isNaN(lastVisit.in.getTime())) {
+            entryTime = lastVisit.in;
+          }
+        }
+        if (!entryTime) {
+          let str = String(p.created_at || '');
+          if (!str.endsWith('Z') && !str.includes('+')) str = str.replace(' ', 'T');
+          entryTime = new Date(str);
+        }
+
+        const elapsedMs = now - (entryTime.getTime() || now);
+        const elapsedMins = Math.max(0, Math.round(elapsedMs / 60000));
+        const hoursInside = (elapsedMins / 60).toFixed(1);
+
+        if (elapsedMins >= 240) { // Over 4 hours
+          overstayList.push({
+            pass_code: p.pass_code,
+            person_name: p.person_name,
+            employee_number: p.employee_number || null,
+            nic_number: p.nic_number,
+            category: p.category,
+            branch_name: p.branch_name,
+            vehicle_number: p.vehicle_number || '-',
+            entry_time: entryTime.toISOString(),
+            elapsed_minutes: elapsedMins,
+            hours_display: `${hoursInside} hrs`
+          });
+        }
+      });
+
+      // Total registered staff
+      db.get("SELECT COUNT(*) as count FROM passes WHERE category = 'STAFF'", [], (stfErr, stfRow) => {
+        const totalRegisteredStaff = stfRow ? (stfRow.count || 0) : 0;
+        const staffCurrentlyInside = checkedInPasses.filter(p => p.category === 'STAFF').length;
+
+        res.json({
+          timeframe,
+          category: categoryFilter || 'ALL',
+          summary: {
+            total_entries: totalCheckIns,
+            total_exits: totalCheckOuts,
+            currently_inside: checkedInPasses.length,
+            avg_dwell_minutes: avgDwellMins,
+            peak_hour: peakHour,
+            vehicles_inside: vehiclesInside,
+            overstay_count: overstayList.length
+          },
+          staff_analytics: {
+            total_registered: totalRegisteredStaff,
+            currently_inside: staffCurrentlyInside,
+            punctuality: staffPunctuality
+          },
+          hourly_traffic: hourlyCounts,
+          branch_demand: branchCounts,
+          category_distribution: categoryCounts,
+          overstay_list: overstayList,
+          currently_inside_list: checkedInPasses.slice(0, 50)
+        });
+      });
+    });
+  });
+});
+
 // 11. Full System Database Backup Export API (Authenticated Super Admin)
 app.get('/api/admin/backup/export', authenticateToken, (req, res) => {
   if (req.user.role !== 'SUPER_ADMIN') {

@@ -1908,6 +1908,9 @@
         <button type="button" class="subtab-btn active" onclick="switchAdminSubTab('subtab-overview')">
           <i class="fa-solid fa-chart-pie"></i> <span>Live Overview & Activity</span>
         </button>
+        <button type="button" class="subtab-btn" onclick="switchAdminSubTab('subtab-analytics')">
+          <i class="fa-solid fa-chart-line"></i> <span>Analytics & Intelligence</span>
+        </button>
         <button type="button" class="subtab-btn" onclick="switchAdminSubTab('subtab-visitors')">
           <i class="fa-solid fa-clipboard-user"></i> <span>Daily Visitors Directory</span>
         </button>
@@ -2024,6 +2027,246 @@
             </table>
           </div>
         </div>
+      </div>
+
+      <!-- SUB-TAB: Executive Analytics & Institutional Intelligence Hub -->
+      <div id="subtab-analytics" class="admin-subtab-pane">
+        
+        <!-- Header & Filter Bar -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+            <div>
+              <h2 style="font-size: 1.45rem; color: var(--primary-dark); margin: 0 0 0.25rem 0; font-weight: 800;">
+                <i class="fa-solid fa-chart-line" style="color: #2563eb;"></i> Executive Analytics & Institutional Intelligence
+              </h2>
+              <p style="color: #64748b; font-size: 0.95rem; margin: 0;">
+                දෙපාර්තමේන්තු පරිශ්‍රයේ දෛනික පැමිණීම්, කාර්යබහුල වේලාවන්, ශාඛා ඉල්ලුම සහ සේවක පැමිණීම් සවිස්තරාත්මක විශ්ලේෂණය
+              </p>
+            </div>
+
+            <!-- Controls: Category & Timeframe Filters -->
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+              <div>
+                <label style="font-size: 0.8rem; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">
+                  <i class="fa-solid fa-layer-group" style="color: #2563eb;"></i> කාණ්ඩය (Category):
+                </label>
+                <select id="anFilterCategory" class="form-control" style="padding: 0.5rem 0.85rem; font-weight: 700; min-width: 170px;" onchange="loadAdminAnalytics()">
+                  <option value="ALL">සියලු දෙනා (All Combined)</option>
+                  <option value="STAFF">අභ්‍යන්තර සේවකයින් (Staff Only)</option>
+                  <option value="VISITOR">මහජන අමුත්තන් (Visitors Only)</option>
+                  <option value="CONFIDENTIAL">රහස්‍ය අංශය (Confidential)</option>
+                  <option value="EVALUATION">ඇගයීම් මණ්ඩල (Evaluation)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size: 0.8rem; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">
+                  <i class="fa-solid fa-calendar" style="color: #2563eb;"></i> කාල පරාසය (Timeframe):
+                </label>
+                <select id="anFilterTimeframe" class="form-control" style="padding: 0.5rem 0.85rem; font-weight: 700; min-width: 160px;" onchange="loadAdminAnalytics()">
+                  <option value="today">අද දින (Today)</option>
+                  <option value="week">පසුගිය දින 7 (Last 7 Days)</option>
+                  <option value="month">පසුගිය දින 30 (Last 30 Days)</option>
+                  <option value="all">සමස්ත ඉතිහාසය (All Time)</option>
+                </select>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; margin-top: 18px;">
+                <button class="btn btn-primary" onclick="loadAdminAnalytics()" style="padding: 0.55rem 1rem; font-size: 0.92rem;" title="Refresh Data">
+                  <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                </button>
+                <button class="btn btn-success" onclick="exportAnalyticsCSV()" style="padding: 0.55rem 1rem; font-size: 0.92rem; background: #059669;" title="Export Analytics to Excel / CSV">
+                  <i class="fa-solid fa-file-csv"></i> Export CSV
+                </button>
+                <button class="btn" onclick="printAnalyticsReport()" style="padding: 0.55rem 1rem; font-size: 0.92rem; background: #334155; color: white;" title="Print Executive Summary">
+                  <i class="fa-solid fa-print"></i> Print Report
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6 Main Executive Analytics Metric Cards -->
+        <div class="metrics-grid" style="margin-bottom: 1.5rem;">
+          <div class="metric-card" style="border-left: 6px solid #2563eb;">
+            <div>
+              <div class="metric-val" id="anTotalEntries" style="color: #2563eb;">0</div>
+              <div class="metric-label">Total Gate Check-Ins (මුළු ඇතුළුවීම්)</div>
+            </div>
+            <div class="metric-icon" style="color: #2563eb;"><i class="fa-solid fa-right-to-bracket"></i></div>
+          </div>
+
+          <div class="metric-card" style="border-left: 6px solid #059669;">
+            <div>
+              <div class="metric-val" id="anCurrentlyInside" style="color: #059669;">0</div>
+              <div class="metric-label">Currently Inside Campus (පරිශ්‍රය තුළ)</div>
+            </div>
+            <div class="metric-icon" style="color: #059669;"><i class="fa-solid fa-building-user"></i></div>
+          </div>
+
+          <div class="metric-card" style="border-left: 6px solid #0891b2;">
+            <div>
+              <div class="metric-val" id="anAvgDwell" style="color: #0891b2;">-</div>
+              <div class="metric-label">Avg. Dwell Time (සාමාන්‍ය රැඳී සිටි කාලය)</div>
+            </div>
+            <div class="metric-icon" style="color: #0891b2;"><i class="fa-solid fa-clock-rotate-left"></i></div>
+          </div>
+
+          <div class="metric-card" style="border-left: 6px solid #d97706;">
+            <div>
+              <div class="metric-val" id="anPeakHour" style="color: #d97706; font-size: 1.35rem; font-weight: 800;">-</div>
+              <div class="metric-label">Peak Entry Hour (කාර්යබහුලම පැය)</div>
+            </div>
+            <div class="metric-icon" style="color: #d97706;"><i class="fa-solid fa-chart-simple"></i></div>
+          </div>
+
+          <div class="metric-card" style="border-left: 6px solid #8b5cf6;">
+            <div>
+              <div class="metric-val" id="anVehiclesInside" style="color: #8b5cf6;">0</div>
+              <div class="metric-label">Vehicles Inside Campus (වාහන සංඛ්‍යාව)</div>
+            </div>
+            <div class="metric-icon" style="color: #8b5cf6;"><i class="fa-solid fa-car-side"></i></div>
+          </div>
+
+          <div class="metric-card" style="border-left: 6px solid #ef4444;">
+            <div>
+              <div class="metric-val" id="anOverstayCount" style="color: #ef4444;">0</div>
+              <div class="metric-label">Extended Stays &gt; 4 hrs (දීර්ඝ රැඳීසිටීම්)</div>
+            </div>
+            <div class="metric-icon" style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          </div>
+        </div>
+
+        <!-- Special Staff Attendance & Punctuality Intelligence Banner (Auto-shows for ALL & STAFF) -->
+        <div id="anStaffCard" class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.15rem;">
+                <i class="fa-solid fa-id-badge"></i>
+              </div>
+              <div>
+                <h3 style="margin: 0; font-size: 1.2rem; color: #1e3a8a; font-weight: 800;">
+                  Internal Staff Attendance & Punctuality Overview (අභ්‍යන්තර කාර්ය මණ්ඩල පැමිණීම)
+                </h3>
+                <p style="margin: 0; color: #64748b; font-size: 0.88rem;">
+                  සේවක අංකය සහ RFID භාවිතයෙන් වාර්තා වන නිල පැමිණීම්, නියමිත වේලාව සහ පමාවීම් නිරීක්ෂණය
+                </p>
+              </div>
+            </div>
+            <span class="badge" style="background: #dbeafe; color: #1e40af; font-size: 0.9rem; padding: 0.4rem 0.85rem; font-weight: 800;">
+              <i class="fa-solid fa-check-double"></i> Live Staff Tracking
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem;">
+            <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
+              <div style="font-size: 0.85rem; color: #64748b; font-weight: 700;">Total Registered Staff (ලියාපදිංචි සේවකයින්)</div>
+              <div id="anStaffTotal" style="font-size: 1.6rem; font-weight: 900; color: #1e293b; margin-top: 0.2rem;">0</div>
+            </div>
+
+            <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
+              <div style="font-size: 0.85rem; color: #64748b; font-weight: 700;">Staff Currently on Duty (රාජකාරියේ නියුතු)</div>
+              <div id="anStaffInside" style="font-size: 1.6rem; font-weight: 900; color: #059669; margin-top: 0.2rem;">0</div>
+            </div>
+
+            <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
+              <div style="font-size: 0.85rem; color: #059669; font-weight: 700;">On-Time (8:30 ට පෙර පැමිණි)</div>
+              <div id="anStaffOnTime" style="font-size: 1.6rem; font-weight: 900; color: #059669; margin-top: 0.2rem;">0</div>
+            </div>
+
+            <div style="background: white; border-radius: 10px; padding: 1rem; border: 1px solid #cbd5e1;">
+              <div style="font-size: 0.85rem; color: #d97706; font-weight: 700;">Late Arrivals (8:30 න් පසු පැමිණි)</div>
+              <div id="anStaffLate" style="font-size: 1.6rem; font-weight: 900; color: #d97706; margin-top: 0.2rem;">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2 Visual Analytic Charts (2-Column Grid) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+          
+          <!-- Chart 1: Hourly Peak Traffic Distribution Bar Graph -->
+          <div class="card" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; font-weight: 800;">
+                <i class="fa-solid fa-chart-column" style="color: #2563eb;"></i> Hourly Traffic Distribution (පැය අනුව තදබදය)
+              </h3>
+              <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Check-Ins per Hour</span>
+            </div>
+            <div id="anHourlyChartContainer" style="min-height: 240px; display: flex; align-items: flex-end; gap: 8px; padding-top: 25px; border-bottom: 2px solid #cbd5e1;">
+              <!-- Dynamic Bars rendered by JS -->
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.78rem; color: #64748b; font-weight: 700;">
+              <span>06:00 AM</span>
+              <span>10:00 AM (Peak)</span>
+              <span>02:00 PM</span>
+              <span>06:00 PM</span>
+            </div>
+          </div>
+
+          <!-- Chart 2: Branch Demand & Workload Progress Bars -->
+          <div class="card" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; font-weight: 800;">
+                <i class="fa-solid fa-building-columns" style="color: #059669;"></i> Branch Workload & Demand (ශාඛා අනුව ඉල්ලුම)
+              </h3>
+              <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Visits Percentage</span>
+            </div>
+            <div id="anBranchDemandContainer" style="display: flex; flex-direction: column; gap: 0.85rem; min-height: 240px;">
+              <!-- Dynamic Branch Rows rendered by JS -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Category Breakdown Bar -->
+        <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+            <h3 style="margin: 0; font-size: 1.15rem; color: #1e3a8a; font-weight: 800;">
+              <i class="fa-solid fa-pie-chart" style="color: #8b5cf6;"></i> Category Share Distribution (කාණ්ඩ අනුව අනුපාතය)
+            </h3>
+            <span id="anCategoryTotalBadge" class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">0 Total</span>
+          </div>
+          <div id="anCategoryBarContainer" style="display: flex; height: 26px; border-radius: 999px; overflow: hidden; background: #e2e8f0; margin-bottom: 0.85rem;">
+            <!-- Dynamic Category segments rendered by JS -->
+          </div>
+          <div id="anCategoryLegendContainer" style="display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.88rem; font-weight: 700;">
+            <!-- Dynamic Legend items rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Overstay & Extended Stays Table Alert Section -->
+        <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 1.25rem;"></i>
+              <h3 style="margin: 0; font-size: 1.2rem; color: #991b1b; font-weight: 800;">
+                Extended Stays & Overstay Security Audit (පැය 4 කට වඩා පරිශ්‍රයේ රැඳී සිටින පුද්ගලයින්)
+              </h3>
+            </div>
+            <span id="anOverstayBadge" class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 800; font-size: 0.9rem;">
+              0 Persons Overstayed
+            </span>
+          </div>
+
+          <div class="table-container">
+            <table id="anOverstayTable">
+              <thead>
+                <tr>
+                  <th>Pass Code</th>
+                  <th>Person Name</th>
+                  <th>Employee / NIC No</th>
+                  <th>Category</th>
+                  <th>Visiting Branch</th>
+                  <th>Vehicle No</th>
+                  <th>Check-In Time</th>
+                  <th>Duration Inside</th>
+                </tr>
+              </thead>
+              <tbody><!-- Dynamic Rows --></tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
       <!-- SUB-TAB 2: Daily Visitors Directory & Real-Time Log -->
@@ -5039,6 +5282,353 @@
       printWindow.document.close();
     }
 
+    // ==========================================
+    // EXECUTIVE ANALYTICS & INTELLIGENCE MODULE
+    // ==========================================
+    let currentAnalyticsData = null;
+
+    async function loadAdminAnalytics() {
+      if (!token) return;
+      
+      const timeframe = document.getElementById('anFilterTimeframe') ? document.getElementById('anFilterTimeframe').value : 'today';
+      const category = document.getElementById('anFilterCategory') ? document.getElementById('anFilterCategory').value : 'ALL';
+
+      // Visual loading state
+      const totalEntriesEl = document.getElementById('anTotalEntries');
+      if (totalEntriesEl) totalEntriesEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+
+      try {
+        const res = await fetch(`/api/admin/analytics?timeframe=${encodeURIComponent(timeframe)}&category=${encodeURIComponent(category)}`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load analytics data');
+
+        currentAnalyticsData = data;
+
+        // 1. Update KPI Summary Cards
+        document.getElementById('anTotalEntries').innerText = data.summary.total_entries || 0;
+        document.getElementById('anCurrentlyInside').innerText = data.summary.currently_inside || 0;
+        
+        const dwellMins = data.summary.avg_dwell_minutes || 0;
+        if (dwellMins >= 60) {
+          const h = Math.floor(dwellMins / 60);
+          const m = dwellMins % 60;
+          document.getElementById('anAvgDwell').innerText = `${h}h ${m}m avg`;
+        } else {
+          document.getElementById('anAvgDwell').innerText = `${dwellMins} mins avg`;
+        }
+
+        document.getElementById('anPeakHour').innerText = data.summary.peak_hour || 'No entries';
+        document.getElementById('anVehiclesInside').innerText = data.summary.vehicles_inside || 0;
+        document.getElementById('anOverstayCount').innerText = data.summary.overstay_count || 0;
+
+        // 2. Staff Attendance & Punctuality
+        const staffCard = document.getElementById('anStaffCard');
+        if (staffCard) {
+          if (category === 'VISITOR' || category === 'CONFIDENTIAL' || category === 'EVALUATION') {
+            staffCard.style.display = 'none';
+          } else {
+            staffCard.style.display = 'block';
+            document.getElementById('anStaffTotal').innerText = data.staff_analytics.total_registered || 0;
+            document.getElementById('anStaffInside').innerText = data.staff_analytics.currently_inside || 0;
+            document.getElementById('anStaffOnTime').innerText = data.staff_analytics.punctuality.on_time || 0;
+            document.getElementById('anStaffLate').innerText = data.staff_analytics.punctuality.late || 0;
+          }
+        }
+
+        // 3. Render Hourly Peak Traffic Chart
+        renderHourlyChart(data.hourly_traffic);
+
+        // 4. Render Branch Workload Demand
+        renderBranchDemand(data.branch_demand, data.summary.total_entries);
+
+        // 5. Render Category Share Distribution
+        renderCategoryShare(data.category_distribution, data.summary.total_entries);
+
+        // 6. Render Overstay / Extended Stays Table
+        renderOverstayTable(data.overstay_list);
+
+      } catch (err) {
+        console.error('Analytics load error:', err);
+        showSecToast('Error loading analytics: ' + err.message, 'error');
+      }
+    }
+
+    function renderHourlyChart(hourlyCounts) {
+      const container = document.getElementById('anHourlyChartContainer');
+      if (!container) return;
+
+      const hours = Object.keys(hourlyCounts || {});
+      const maxCount = Math.max(1, ...Object.values(hourlyCounts || {}));
+
+      container.innerHTML = hours.map(h => {
+        const count = hourlyCounts[h] || 0;
+        const heightPct = Math.max(6, Math.round((count / maxCount) * 100));
+        const isPeak = count > 0 && count === maxCount;
+        const barColor = isPeak ? '#d97706' : (count > 0 ? '#2563eb' : '#e2e8f0');
+
+        return `
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; position: relative;" title="${h} - ${count} Check-Ins">
+            <span style="font-size: 0.72rem; font-weight: 800; color: ${count > 0 ? '#1e293b' : '#94a3b8'}; margin-bottom: 4px;">
+              ${count > 0 ? count : ''}
+            </span>
+            <div style="width: 100%; max-width: 28px; height: ${heightPct}%; background: ${barColor}; border-radius: 6px 6px 0 0; transition: height 0.4s ease; box-shadow: ${isPeak ? '0 0 10px rgba(217,119,6,0.35)' : 'none'};"></div>
+            <span style="font-size: 0.72rem; color: #64748b; font-weight: 700; margin-top: 6px; transform: rotate(-45deg); white-space: nowrap;">
+              ${h.split(':')[0]}h
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderBranchDemand(branchCounts, total) {
+      const container = document.getElementById('anBranchDemandContainer');
+      if (!container) return;
+
+      const branches = Object.keys(branchCounts || {});
+      if (branches.length === 0) {
+        container.innerHTML = '<p style="color: #64748b; text-align: center; margin: auto;">No branch visits recorded during this period.</p>';
+        return;
+      }
+
+      // Sort by count descending
+      branches.sort((a, b) => branchCounts[b] - branchCounts[a]);
+      const grandTotal = total > 0 ? total : Object.values(branchCounts).reduce((a, b) => a + b, 0);
+
+      const colors = ['#2563eb', '#059669', '#d97706', '#8b5cf6', '#ec4899', '#0891b2', '#475569'];
+
+      container.innerHTML = branches.slice(0, 7).map((b, idx) => {
+        const count = branchCounts[b];
+        const pct = grandTotal > 0 ? Math.round((count / grandTotal) * 100) : 0;
+        const color = colors[idx % colors.length];
+
+        return `
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.88rem; font-weight: 700; margin-bottom: 4px;">
+              <span style="color: #1e293b; max-width: 75%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <i class="fa-solid fa-circle" style="font-size: 0.55rem; color: ${color}; margin-right: 5px;"></i>${b}
+              </span>
+              <span style="color: ${color}; font-weight: 800;">${count} (${pct}%)</span>
+            </div>
+            <div style="height: 10px; background: #f1f5f9; border-radius: 999px; overflow: hidden;">
+              <div style="width: ${pct}%; height: 100%; background: ${color}; border-radius: 999px; transition: width 0.4s ease;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderCategoryShare(catCounts, total) {
+      const barContainer = document.getElementById('anCategoryBarContainer');
+      const legendContainer = document.getElementById('anCategoryLegendContainer');
+      const totalBadge = document.getElementById('anCategoryTotalBadge');
+      if (!barContainer || !legendContainer) return;
+
+      const catMeta = {
+        'STAFF': { label: 'Internal Staff (අභ්‍යන්තර කාර්ය මණ්ඩලය)', color: '#059669' },
+        'VISITOR': { label: 'Public Visitors (මහජන අමුත්තන්)', color: '#2563eb' },
+        'CONFIDENTIAL': { label: 'Confidential (රහස්‍ය අංශය)', color: '#8b5cf6' },
+        'EVALUATION': { label: 'Evaluation (ඇගයීම් මණ්ඩල)', color: '#ec4899' }
+      };
+
+      const grandTotal = total > 0 ? total : Object.values(catCounts || {}).reduce((a, b) => a + b, 0);
+      if (totalBadge) totalBadge.innerText = `${grandTotal} Total Check-Ins`;
+
+      if (grandTotal === 0) {
+        barContainer.innerHTML = '<div style="width: 100%; background: #e2e8f0; text-align: center; font-size: 0.78rem; color: #94a3b8; line-height: 26px;">No entries</div>';
+        legendContainer.innerHTML = '';
+        return;
+      }
+
+      let barHtml = '';
+      let legendHtml = '';
+
+      Object.entries(catMeta).forEach(([catKey, meta]) => {
+        const count = catCounts[catKey] || 0;
+        if (count > 0) {
+          const pct = Math.round((count / grandTotal) * 100);
+          barHtml += `<div style="width: ${pct}%; background: ${meta.color}; height: 100%;" title="${meta.label}: ${count} (${pct}%)"></div>`;
+          legendHtml += `
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="width: 12px; height: 12px; border-radius: 3px; background: ${meta.color}; display: inline-block;"></span>
+              <span style="color: #334155;">${meta.label}: <strong>${count} (${pct}%)</strong></span>
+            </div>
+          `;
+        }
+      });
+
+      barContainer.innerHTML = barHtml;
+      legendContainer.innerHTML = legendHtml;
+    }
+
+    function renderOverstayTable(overstayList) {
+      const tbody = document.querySelector('#anOverstayTable tbody');
+      const badge = document.getElementById('anOverstayBadge');
+      if (badge) {
+        const count = overstayList ? overstayList.length : 0;
+        badge.innerText = `${count} Persons Overstayed (> 4 hrs)`;
+        badge.style.background = count > 0 ? '#fee2e2' : '#dcfce7';
+        badge.style.color = count > 0 ? '#991b1b' : '#15803d';
+      }
+
+      if (!tbody) return;
+
+      if (!overstayList || overstayList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 1.5rem; color: #059669; font-weight: 700;">
+              <i class="fa-solid fa-circle-check" style="font-size: 1.25rem;"></i><br>
+              දැනට පැය 4කට වඩා අනවශ්‍ය ලෙස රැඳී සිටින පුද්ගලයින් කිසිවෙකු නොමැත. (No overstayed visitors detected)
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = overstayList.map(o => `
+        <tr>
+          <td><strong style="color: var(--primary);">${o.pass_code}</strong></td>
+          <td><strong>${o.person_name}</strong></td>
+          <td><span style="font-family: monospace; font-weight: 700;">${o.employee_number || o.nic_number}</span></td>
+          <td><span class="badge ${o.category === 'STAFF' ? 'badge-checkedin' : 'badge-pending'}">${o.category}</span></td>
+          <td>${o.branch_name}</td>
+          <td><span style="color: #d97706; font-weight: 800;">${o.vehicle_number}</span></td>
+          <td>${new Date(o.entry_time).toLocaleTimeString()}</td>
+          <td>
+            <span class="badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; font-weight: 900;">
+              <i class="fa-solid fa-clock"></i> ${o.hours_display}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function exportAnalyticsCSV() {
+      if (!currentAnalyticsData) {
+        alert('Please load analytics data first before exporting.');
+        return;
+      }
+      const summary = currentAnalyticsData.summary;
+      const staff = currentAnalyticsData.staff_analytics;
+      const branches = currentAnalyticsData.branch_demand;
+
+      let csv = 'DEPARTMENT OF EXAMINATIONS SRI LANKA - GATE PASS EXECUTIVE ANALYTICS REPORT\r\n';
+      csv += `Generated At,${new Date().toLocaleString()}\r\n`;
+      csv += `Timeframe,${currentAnalyticsData.timeframe}\r\n`;
+      csv += `Category Filter,${currentAnalyticsData.category}\r\n\r\n`;
+
+      csv += 'KEY PERFORMANCE METRICS\r\n';
+      csv += `Total Check-Ins,${summary.total_entries}\r\n`;
+      csv += `Total Check-Outs,${summary.total_exits}\r\n`;
+      csv += `Currently Inside Campus,${summary.currently_inside}\r\n`;
+      csv += `Average Dwell Time (Minutes),${summary.avg_dwell_minutes}\r\n`;
+      csv += `Peak Entry Hour,${summary.peak_hour}\r\n`;
+      csv += `Campus Vehicles,${summary.vehicles_inside}\r\n`;
+      csv += `Overstay Alerts (> 4 hrs),${summary.overstay_count}\r\n\r\n`;
+
+      csv += 'STAFF ATTENDANCE METRICS\r\n';
+      csv += `Total Registered Staff,${staff.total_registered}\r\n`;
+      csv += `Staff Currently on Duty,${staff.currently_inside}\r\n`;
+      csv += `On-Time Arrivals (Before 8:30 AM),${staff.punctuality.on_time}\r\n`;
+      csv += `Late Arrivals (After 8:30 AM),${staff.punctuality.late}\r\n\r\n`;
+
+      csv += 'BRANCH WORKLOAD BREAKDOWN\r\n';
+      csv += 'Branch Name,Visit Count\r\n';
+      Object.entries(branches).forEach(([b, cnt]) => {
+        csv += `"${b.replace(/"/g, '""')}",${cnt}\r\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `DoENets_Gate_Analytics_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function printAnalyticsReport() {
+      if (!currentAnalyticsData) {
+        alert('Please load analytics data first before printing.');
+        return;
+      }
+      const summary = currentAnalyticsData.summary;
+      const staff = currentAnalyticsData.staff_analytics;
+      const branches = currentAnalyticsData.branch_demand;
+
+      const printWindow = window.open('', '_blank');
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Executive Analytics Report - DoENets Gate Pass</title>
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 25px; color: #1e293b; line-height: 1.5; }
+            h1 { color: #1e3a8a; margin: 0 0 5px 0; font-size: 22px; }
+            h2 { color: #0f172a; font-size: 16px; border-bottom: 2px solid #2563eb; padding-bottom: 4px; margin-top: 20px; }
+            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 15px 0; }
+            .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; }
+            .val { font-size: 24px; font-weight: 800; color: #1e3a8a; }
+            .lbl { font-size: 12px; color: #64748b; font-weight: 700; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+            th { background: #f1f5f9; font-weight: 800; }
+          </style>
+        </head>
+        <body>
+          <div style="border-bottom: 3px solid #1e3a8a; padding-bottom: 10px; margin-bottom: 15px;">
+            <h1>Department of Examinations, Sri Lanka</h1>
+            <div style="font-size: 14px; font-weight: bold; color: #2563eb;">Executive Gate Security & Entry Analytics Summary</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Timeframe: ${currentAnalyticsData.timeframe.toUpperCase()} | Generated: ${new Date().toLocaleString()}</div>
+          </div>
+
+          <div class="grid">
+            <div class="card"><div class="lbl">Total Gate Check-Ins</div><div class="val">${summary.total_entries}</div></div>
+            <div class="card"><div class="lbl">Currently Inside Campus</div><div class="val" style="color: #059669;">${summary.currently_inside}</div></div>
+            <div class="card"><div class="lbl">Average Dwell Time</div><div class="val" style="color: #0891b2;">${summary.avg_dwell_minutes} mins</div></div>
+            <div class="card"><div class="lbl">Peak Entry Hour</div><div class="val" style="font-size: 16px; color: #d97706;">${summary.peak_hour}</div></div>
+            <div class="card"><div class="lbl">Campus Vehicles Inside</div><div class="val">${summary.vehicles_inside}</div></div>
+            <div class="card"><div class="lbl">Extended Stays (> 4 hrs)</div><div class="val" style="color: #ef4444;">${summary.overstay_count}</div></div>
+          </div>
+
+          <h2>Internal Staff Attendance Summary</h2>
+          <div class="grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="card"><div class="lbl">Registered Staff</div><div class="val">${staff.total_registered}</div></div>
+            <div class="card"><div class="lbl">Staff on Duty Today</div><div class="val" style="color: #059669;">${staff.currently_inside}</div></div>
+            <div class="card"><div class="lbl">On-Time Arrivals (< 8:30)</div><div class="val" style="color: #059669;">${staff.punctuality.on_time}</div></div>
+            <div class="card"><div class="lbl">Late Arrivals (> 8:30)</div><div class="val" style="color: #d97706;">${staff.punctuality.late}</div></div>
+          </div>
+
+          <h2>Branch Workload & Demand</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Branch Name</th>
+                <th>Check-In Visits</th>
+                <th>Share %</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(branches).map(([b, cnt]) => `
+                <tr>
+                  <td><strong>${b}</strong></td>
+                  <td>${cnt}</td>
+                  <td>${summary.total_entries > 0 ? Math.round((cnt / summary.total_entries) * 100) : 0}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <script>window.onload = function() { window.print(); }<\/script>
+        </body>
+        </html>
+      `;
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+    }
+
     // Switch Sub-Tabs in Dashboard & Card Config
     function switchAdminSubTab(subTabId) {
       document.querySelectorAll('.admin-subtab-pane').forEach(el => el.classList.remove('active'));
@@ -5051,6 +5641,7 @@
       if (btn) btn.classList.add('active');
 
       if (subTabId === 'subtab-overview') loadAdminDashboard();
+      else if (subTabId === 'subtab-analytics') loadAdminAnalytics();
       else if (subTabId === 'subtab-visitors') loadDailyVisitors();
       else if (subTabId === 'subtab-cards') loadFormOptions();
       else if (subTabId === 'subtab-users') loadAdminUsers();
