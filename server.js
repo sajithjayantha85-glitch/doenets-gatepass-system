@@ -345,14 +345,14 @@ function compileDailyIntelligenceReport(targetDateStr = null) {
   });
 }
 
-function generateEmailReportHtml(report) {
+function generateEmailReportHtml(report, isForEmail = false) {
   const isAlert = report.anomalies.totalCount > 0;
   
   let prolongedHtml = '';
   if (report.anomalies.prolongedOutings.length > 0) {
     prolongedHtml = `
       <div style="margin-top: 15px; margin-bottom: 20px;">
-        <h4 style="margin: 0 0 8px 0; color: #b91c1c; font-size: 14px;">⏱️ දීර්ඝ කාලයක් පිටත රැඳී සිටි සේවකයන් (Duty Hour Absences > 2 Hours / Still Out):</h4>
+        <h4 style="margin: 0 0 8px 0; color: #b91c1c; font-size: 14px;">⏱️ Duty Hour Absences &gt; 2 Hours / Still Out:</h4>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <thead>
             <tr style="background: #fee2e2; color: #991b1b; text-align: left;">
@@ -389,7 +389,7 @@ function generateEmailReportHtml(report) {
   if (report.anomalies.nightOutings.length > 0) {
     nightHtml = `
       <div style="margin-top: 15px; margin-bottom: 20px;">
-        <h4 style="margin: 0 0 8px 0; color: #9d174d; font-size: 14px;">🌙 රාත්‍රී කාලයේ පිටවීම් (Night Security Outings - 7:00 PM to 6:00 AM):</h4>
+        <h4 style="margin: 0 0 8px 0; color: #9d174d; font-size: 14px;">🌙 Night Security Outings (7:00 PM - 6:00 AM):</h4>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <thead>
             <tr style="background: #fdf2f8; color: #9d174d; text-align: left;">
@@ -422,7 +422,7 @@ function generateEmailReportHtml(report) {
   if (report.anomalies.frequentExits.length > 0) {
     frequentHtml = `
       <div style="margin-top: 15px; margin-bottom: 20px;">
-        <h4 style="margin: 0 0 8px 0; color: #b45309; font-size: 14px;">🔄 දිනකට වැඩි වාර ගණනක් පිටතට ගිය සේවකයන් (Frequent Exits &ge; 3 Times):</h4>
+        <h4 style="margin: 0 0 8px 0; color: #b45309; font-size: 14px;">🔄 Frequent Exits (&ge; 3 Times):</h4>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <thead>
             <tr style="background: #fef3c7; color: #92400e; text-align: left;">
@@ -437,7 +437,7 @@ function generateEmailReportHtml(report) {
               <tr style="background: #ffffff;">
                 <td style="padding: 8px; border: 1px solid #fde68a; font-weight: bold;">${f.person_name} <span style="font-size: 11px; color: #64748b;">(${f.pass_code})</span></td>
                 <td style="padding: 8px; border: 1px solid #fde68a;">${f.branch_name}</td>
-                <td style="padding: 8px; border: 1px solid #fde68a; font-weight: bold; color: #b45309; font-size: 14px;">${f.exit_count} වතාවක්</td>
+                <td style="padding: 8px; border: 1px solid #fde68a; font-weight: bold; color: #b45309; font-size: 14px;">${f.exit_count} Exits</td>
                 <td style="padding: 8px; border: 1px solid #fde68a; font-size: 12px; color: #475569;">${f.times}</td>
               </tr>
             `).join('')}
@@ -451,7 +451,7 @@ function generateEmailReportHtml(report) {
   if (report.anomalies.overstayAlerts.length > 0) {
     overstayHtml = `
       <div style="margin-top: 15px; margin-bottom: 20px;">
-        <h4 style="margin: 0 0 8px 0; color: #991b1b; font-size: 14px;">🚨 නියමිත කාලය ඉක්මවා පරිශ්‍රයේ රැඳී සිටින පුද්ගලයින් (Overstay Alerts &gt; 4 Hours):</h4>
+        <h4 style="margin: 0 0 8px 0; color: #991b1b; font-size: 14px;">🚨 Overstay Alerts (&gt; 4 Hours):</h4>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <thead>
             <tr style="background: #fee2e2; color: #991b1b; text-align: left;">
@@ -509,20 +509,22 @@ function generateEmailReportHtml(report) {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 25px; color: #1e293b; line-height: 1.5;">
   
-  <!-- PDF / Print Action Bar (Hidden in Email & when Printing) -->
+  ${!isForEmail ? `
+  <!-- PDF / Print Action Bar (Only shown in Browser Preview, NOT in emails) -->
   <div class="no-print" style="max-width: 720px; margin: 0 auto 15px auto; display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 12px 20px; border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.06);">
     <div style="font-size: 13px; font-weight: 700; color: #1e3a8a;">
       📄 DoENETS Daily Intelligence Report Preview
     </div>
     <div style="display: flex; gap: 10px;">
       <button onclick="window.print()" style="background: #2563eb; color: #ffffff; border: none; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-        🖨️ PDF එකක් ලෙස Save / Print කරන්න
+        🖨️ Print / Save as PDF
       </button>
       <button onclick="window.close()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
-        වසන්න (Close)
+        Close
       </button>
     </div>
   </div>
+  ` : ''}
 
   <div class="report-card" style="max-width: 720px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
     
@@ -530,16 +532,16 @@ function generateEmailReportHtml(report) {
     <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); color: #ffffff; padding: 25px 30px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 15px; margin-bottom: 15px;">
         <div>
-          <h1 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.025em; color: #ffffff;">ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව</h1>
-          <p style="margin: 3px 0 0 0; font-size: 13px; color: #93c5fd; font-weight: 500;">Department of Examinations Sri Lanka</p>
+          <h1 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.025em; color: #ffffff;">Department of Examinations Sri Lanka</h1>
+          <p style="margin: 3px 0 0 0; font-size: 13px; color: #93c5fd; font-weight: 500;">ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තුව - Gate Pass Management System</p>
         </div>
         <div style="background: #2563eb; color: #ffffff; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
           GATE INTELLIGENCE
         </div>
       </div>
       <div>
-        <h2 style="margin: 0; font-size: 17px; font-weight: 700; color: #f8fafc;">දෛනික ගේට්ටු පාලන සහ ආරක්ෂක බුද්ධිමත් සාරාංශ වාර්තාව</h2>
-        <p style="margin: 5px 0 0 0; font-size: 13px; color: #cbd5e1;">දිනය (Date): <strong>${report.dateStr}</strong> | ජනනය කළ වේලාව: ${report.generatedAt}</p>
+        <h2 style="margin: 0; font-size: 17px; font-weight: 700; color: #f8fafc;">Daily Gate Activity & Security Summary Report</h2>
+        <p style="margin: 5px 0 0 0; font-size: 13px; color: #cbd5e1;">Date: <strong>${report.dateStr}</strong> | Generated At: ${report.generatedAt}</p>
       </div>
     </div>
 
@@ -551,23 +553,23 @@ function generateEmailReportHtml(report) {
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
             <span style="font-size: 24px;">⚠️</span>
             <div>
-              <h3 style="margin: 0; color: #9f1239; font-size: 16px; font-weight: 800;">ආරක්ෂක සහ විනයාරක්ෂක අසාමාන්‍යතා හඳුනාගෙන ඇත (${report.anomalies.totalCount} Anomalies Flagged)</h3>
-              <p style="margin: 2px 0 0 0; color: #be123c; font-size: 13px;">පරිපාලන සහ විනය අධීක්ෂණය සඳහා විශේෂ අවධානය යොමු කළ යුතු අවස්ථා පහත දැක්වේ:</p>
+              <h3 style="margin: 0; color: #9f1239; font-size: 16px; font-weight: 800;">Security & Disciplinary Anomalies (${report.anomalies.totalCount} Flagged)</h3>
+              <p style="margin: 2px 0 0 0; color: #be123c; font-size: 13px;">Cases requiring administrative oversight and disciplinary review:</p>
             </div>
           </div>
           <ul style="margin: 5px 0 0 25px; padding: 0; font-size: 13px; color: #881337; line-height: 1.6;">
-            ${report.anomalies.prolongedOutings.length > 0 ? `<li><strong>දීර්ඝ කාලයක් පිටත රැඳී සිටි සේවකයන්:</strong> ${report.anomalies.prolongedOutings.length} දෙනෙක්</li>` : ''}
-            ${report.anomalies.nightOutings.length > 0 ? `<li><strong>රාත්‍රී කාලයේ පිටවීම් (Night Outings):</strong> ${report.anomalies.nightOutings.length} අවස්ථාවක්</li>` : ''}
-            ${report.anomalies.frequentExits.length > 0 ? `<li><strong>නිතර (3+ වතාවක්) පිටතට ගිය සේවකයන්:</strong> ${report.anomalies.frequentExits.length} දෙනෙක්</li>` : ''}
-            ${report.anomalies.overstayAlerts.length > 0 ? `<li><strong>පැය 4 කට වඩා පරිශ්‍රයේ රැඳී සිටින අමුත්තන්:</strong> ${report.anomalies.overstayAlerts.length} දෙනෙක්</li>` : ''}
+            ${report.anomalies.prolongedOutings.length > 0 ? `<li><strong>Prolonged Outings (&gt; 2h):</strong> ${report.anomalies.prolongedOutings.length} staff members</li>` : ''}
+            ${report.anomalies.nightOutings.length > 0 ? `<li><strong>Night Outings (7 PM - 6 AM):</strong> ${report.anomalies.nightOutings.length} incidents</li>` : ''}
+            ${report.anomalies.frequentExits.length > 0 ? `<li><strong>Frequent Exits (&ge; 3 times):</strong> ${report.anomalies.frequentExits.length} staff members</li>` : ''}
+            ${report.anomalies.overstayAlerts.length > 0 ? `<li><strong>Extended Stays / Overstay (&gt; 4h):</strong> ${report.anomalies.overstayAlerts.length} visitors/officers</li>` : ''}
           </ul>
         </div>
       ` : `
         <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 10px; padding: 15px 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 12px;">
           <span style="font-size: 24px;">✅</span>
           <div>
-            <h3 style="margin: 0; color: #166534; font-size: 15px; font-weight: 800;">ආරක්ෂක තත්ත්වය සාමාන්‍යයි (All Clear)</h3>
-            <p style="margin: 2px 0 0 0; color: #15803d; font-size: 13px;">අද දින කිසිදු අසාමාන්‍ය සේවක පිටවීමක්, රාත්‍රී පිටවීමක් හෝ දීර්ඝ කාලීන overstay අවදානමක් හඳුනාගෙන නොමැත.</p>
+            <h3 style="margin: 0; color: #166534; font-size: 15px; font-weight: 800;">Status: All Clear</h3>
+            <p style="margin: 2px 0 0 0; color: #15803d; font-size: 13px;">No abnormal outings, night departures, or extended overstay alerts recorded today.</p>
           </div>
         </div>
       `}
@@ -605,20 +607,20 @@ function generateEmailReportHtml(report) {
         <tr>
           <td style="width: 50%; vertical-align: top; padding-right: 10px;">
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
-              <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 13px; font-weight: 800;">🏛️ ශාඛා අනුව ඉල්ලුම (Branch Visits):</h4>
+              <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 13px; font-weight: 800;">🏛️ Branch Visits:</h4>
               <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
                 <tbody>
-                  ${branchRows || '<tr><td>තොරතුරු නොමැත</td></tr>'}
+                  ${branchRows || '<tr><td>No data</td></tr>'}
                 </tbody>
               </table>
             </div>
           </td>
           <td style="width: 50%; vertical-align: top; padding-left: 10px;">
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
-              <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 13px; font-weight: 800;">👥 කාණ්ඩ අනුව බෙදීයාම (Categories):</h4>
+              <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 13px; font-weight: 800;">👥 Visitor Categories:</h4>
               <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
                 <tbody>
-                  ${categoryRows || '<tr><td>තොරතුරු නොමැත</td></tr>'}
+                  ${categoryRows || '<tr><td>No data</td></tr>'}
                 </tbody>
               </table>
             </div>
@@ -628,14 +630,21 @@ function generateEmailReportHtml(report) {
 
       <!-- Additional Insights Note -->
       <div style="margin-top: 25px; padding: 12px 16px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px; font-size: 12px; color: #166534;">
-        <strong>සාමාන්‍ය රැඳී සිටි කාලය (Average Dwell Time):</strong> ${report.metrics.avgDwellMins} මිනිත්තු. සවිස්තරාත්මක සජීවී වාර්තා සහ එක්සෙල් (CSV) බාගත කිරීම් සඳහා දෙපාර්තමේන්තු පරිපාලන පද්ධතිය වෙත පිවිසෙන්න.
+        <strong>Average Dwell Time:</strong> ${report.metrics.avgDwellMins} minutes. Access live portal for full Excel exports and analytics.
       </div>
+
+      <!-- PDF Save Tip in Email -->
+      ${isForEmail ? `
+      <div style="margin-top: 20px; padding: 12px 16px; background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 6px; font-size: 11px; color: #475569; text-align: center;">
+        💡 <strong>To Save as PDF:</strong> Use your email client's <strong>Print</strong> menu (or press <strong>Ctrl+P / Cmd+P</strong>) and select <strong>"Save as PDF"</strong>.
+      </div>
+      ` : ''}
 
     </div>
 
     <!-- Footer -->
     <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 30px; font-size: 12px; color: #64748b; text-align: center;">
-      <p style="margin: 0 0 4px 0;">මෙම වාර්තාව ශ්‍රී ලංකා විභාග දෙපාර්තමේන්තු ගේට්ටු පාලන පද්ධතියේ (DoENETS Gate Pass System) ස්වයංක්‍රීය කාලසටහන මඟින් ජනනය කරන ලද්දකි.</p>
+      <p style="margin: 0 0 4px 0;">Generated automatically by Department of Examinations (DoENETS Gate Pass System).</p>
       <p style="margin: 0;">&copy; ${new Date().getFullYear()} Department of Examinations Sri Lanka. All Rights Reserved.</p>
     </div>
 
@@ -769,7 +778,7 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
   const recipient = recipientStr;
 
   const report = await compileDailyIntelligenceReport();
-  const htmlContent = generateEmailReportHtml(report);
+  const htmlContent = generateEmailReportHtml(report, true);
   const textSummary = `Department of Examinations - Gate Pass Daily Intelligence Report (${report.dateStr}). Total Entries: ${report.metrics.totalCheckIns}, Exits: ${report.metrics.totalCheckOuts}, Inside: ${report.metrics.currentlyInside}, Anomalies Flagged: ${report.anomalies.totalCount}.`;
 
   const isAlert = report.anomalies.totalCount > 0;
