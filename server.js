@@ -99,6 +99,7 @@ let emailReportConfig = {
   recipient: 'admin@doenets.lk',
   time: '17:00',
   resend_api_key: process.env.RESEND_API_KEY || '',
+  brevo_api_key: process.env.BREVO_API_KEY || '',
   smtp_host: process.env.SMTP_HOST || '',
   smtp_port: process.env.SMTP_PORT || 587,
   smtp_user: process.env.SMTP_USER || '',
@@ -111,7 +112,7 @@ let emailReportConfig = {
 };
 
 function loadEmailSettingsFromDb() {
-  db.all("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'email_report_%' OR setting_key LIKE 'smtp_%' OR setting_key = 'resend_api_key'", [], (err, rows) => {
+  db.all("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'email_report_%' OR setting_key LIKE 'smtp_%' OR setting_key IN ('resend_api_key', 'brevo_api_key')", [], (err, rows) => {
     if (!err && rows && rows.length > 0) {
       rows.forEach(r => {
         if (r.setting_key === 'email_report_enabled') emailReportConfig.enabled = (r.setting_value === '1' || r.setting_value === 'true' || r.setting_value === 1) ? 1 : 0;
@@ -121,6 +122,7 @@ function loadEmailSettingsFromDb() {
         if (r.setting_key === 'email_report_last_status') emailReportConfig.last_sent_status = r.setting_value;
         if (r.setting_key === 'email_report_last_error') emailReportConfig.last_sent_error = r.setting_value;
         if (r.setting_key === 'resend_api_key') emailReportConfig.resend_api_key = r.setting_value;
+        if (r.setting_key === 'brevo_api_key') emailReportConfig.brevo_api_key = r.setting_value;
         if (r.setting_key === 'smtp_host') emailReportConfig.smtp_host = r.setting_value;
         if (r.setting_key === 'smtp_port') emailReportConfig.smtp_port = parseInt(r.setting_value) || 587;
         if (r.setting_key === 'smtp_user') emailReportConfig.smtp_user = r.setting_value;
@@ -672,8 +674,71 @@ function sendViaResendHttps(apiKey, fromAddress, toAddress, subject, htmlContent
   });
 }
 
+function sendViaBrevoHttps(apiKey, fromEmail, fromName, toAddresses, subject, htmlContent) {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    const recipients = Array.isArray(toAddresses) ? toAddresses : [toAddresses];
+    const payload = JSON.stringify({
+      sender: {
+        name: fromName || 'DoENETS Gate Intelligence',
+        email: fromEmail || 'gatepass-alerts@doenets.lk'
+      },
+      to: recipients.map(e => ({ email: e })),
+      subject,
+      htmlContent
+    });
+
+    const options = {
+      hostname: 'api.brevo.com',
+      port: 443,
+      path: '/v3/smtp/email',
+      method: 'POST',
+      headers: {
+        'api-key': apiKey.trim(),
+        'Content-Type': 'application/json',
+        'accept': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 15000
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(parsed);
+          } else {
+            let errorMsg = parsed.message || `Brevo Error ${res.statusCode}: ${data}`;
+            reject(new Error(errorMsg));
+          }
+        } catch (e) {
+          reject(new Error(`Brevo Response Error: ${data}`));
+        }
+      });
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Brevo API request timed out (15s).'));
+    });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
 async function sendDailyIntelligenceEmail(recipientOverride = null) {
-  const recipient = recipientOverride || emailReportConfig.recipient || 'admin@doenets.lk';
+  const recipientRaw = recipientOverride || emailReportConfig.recipient || 'admin@doenets.lk';
+  const recipientList = String(recipientRaw)
+    .split(/[,;]+/)
+    .map(s => s.trim())
+    .filter(s => s.includes('@'));
+  const recipients = recipientList.length > 0 ? recipientList : [recipientRaw];
+  const recipientStr = recipients.join(', ');
+
   const report = await compileDailyIntelligenceReport();
   const htmlContent = generateEmailReportHtml(report);
   const textSummary = `Department of Examinations - Gate Pass Daily Intelligence Report (${report.dateStr}). Total Entries: ${report.metrics.totalCheckIns}, Exits: ${report.metrics.totalCheckOuts}, Inside: ${report.metrics.currentlyInside}, Anomalies Flagged: ${report.anomalies.totalCount}.`;
@@ -681,6 +746,7 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
   const isAlert = report.anomalies.totalCount > 0;
   const subject = `[${isAlert ? '⚠️ ALERT: ' + report.anomalies.totalCount + ' ANOMALIES' : '✓ ALL CLEAR'}] DoENETS Gate Intelligence Report - ${report.dateStr}`;
 
+  const brevoKey = emailReportConfig.brevo_api_key || process.env.BREVO_API_KEY;
   const resendKey = emailReportConfig.resend_api_key || process.env.RESEND_API_KEY;
   const host = emailReportConfig.smtp_host || process.env.SMTP_HOST;
   const user = emailReportConfig.smtp_user || process.env.SMTP_USER;
@@ -689,20 +755,32 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
 
   if (pass) pass = String(pass).replace(/\s+/g, '');
 
-  let dispatchResult = { success: false, mode: 'SIMULATION', message: '', recipient, reportSummary: report };
+  let dispatchResult = { success: false, mode: 'SIMULATION', message: '', recipient: recipientStr, reportSummary: report };
 
-  // Priority 1: Resend HTTPS API (Recommended for Render Cloud - Port 443 is never blocked)
-  if (resendKey && resendKey.trim() !== '') {
+  // Priority 1: Brevo HTTPS API (Can send to ANY external email address - No custom domain required)
+  if (brevoKey && brevoKey.trim() !== '') {
     try {
-      const info = await sendViaResendHttps(resendKey, emailReportConfig.from_address, recipient, subject, htmlContent);
-      console.log(`✓ Email report successfully dispatched via Resend HTTPS API to ${recipient}: ${info.id}`);
-      dispatchResult = { success: true, mode: 'RESEND_API', messageId: info.id, recipient, sentAt: new Date().toISOString(), reportSummary: report };
-    } catch (resendErr) {
-      console.error(`✗ Resend API delivery failed: ${resendErr.message}`);
-      dispatchResult = { success: false, mode: 'RESEND_FAILED', error: resendErr.message, recipient, sentAt: new Date().toISOString(), reportSummary: report };
+      const senderEmail = (user && user.includes('@')) ? user : (emailReportConfig.from_address || 'gatepass-alerts@doenets.lk');
+      const info = await sendViaBrevoHttps(brevoKey, senderEmail, emailReportConfig.from_name, recipients, subject, htmlContent);
+      console.log(`✓ Email report successfully dispatched via Brevo HTTPS API to ${recipientStr}: ${info.messageId}`);
+      dispatchResult = { success: true, mode: 'BREVO_API', messageId: info.messageId, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
+    } catch (brevoErr) {
+      console.error(`✗ Brevo API delivery failed: ${brevoErr.message}`);
+      dispatchResult = { success: false, mode: 'BREVO_FAILED', error: brevoErr.message, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
     }
   }
-  // Priority 2: Direct SMTP (Works on Localhost and cloud instances with open SMTP ports)
+  // Priority 2: Resend HTTPS API (Recommended for Render Cloud with verified domain or self-test)
+  else if (resendKey && resendKey.trim() !== '') {
+    try {
+      const info = await sendViaResendHttps(resendKey, emailReportConfig.from_address, recipients, subject, htmlContent);
+      console.log(`✓ Email report successfully dispatched via Resend HTTPS API to ${recipientStr}: ${info.id}`);
+      dispatchResult = { success: true, mode: 'RESEND_API', messageId: info.id, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
+    } catch (resendErr) {
+      console.error(`✗ Resend API delivery failed: ${resendErr.message}`);
+      dispatchResult = { success: false, mode: 'RESEND_FAILED', error: resendErr.message, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
+    }
+  }
+  // Priority 3: Direct SMTP (Works on Localhost and cloud instances with open SMTP ports)
   else if (host && user && pass) {
     try {
       const isGmail = host.toLowerCase().includes('gmail');
@@ -730,25 +808,25 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
 
       const info = await transporter.sendMail({
         from: `"${emailReportConfig.from_name}" <${emailReportConfig.from_address || user}>`,
-        to: recipient,
+        to: recipients.join(', '),
         subject,
         text: textSummary,
         html: htmlContent
       });
 
-      console.log(`✓ Email report successfully dispatched via SMTP to ${recipient}: ${info.messageId}`);
-      dispatchResult = { success: true, mode: 'SMTP', messageId: info.messageId, recipient, sentAt: new Date().toISOString(), reportSummary: report };
+      console.log(`✓ Email report successfully dispatched via SMTP to ${recipientStr}: ${info.messageId}`);
+      dispatchResult = { success: true, mode: 'SMTP', messageId: info.messageId, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
     } catch (sendErr) {
       console.error(`✗ SMTP delivery failed (${sendErr.message}).`);
-      dispatchResult = { success: false, mode: 'SMTP_FAILED', error: sendErr.message, recipient, sentAt: new Date().toISOString(), reportSummary: report };
+      dispatchResult = { success: false, mode: 'SMTP_FAILED', error: sendErr.message, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
     }
   } else {
-    console.log(`ℹ SMTP credentials not configured. Executed simulated report generation for ${recipient}.`);
+    console.log(`ℹ SMTP credentials not configured. Executed simulated report generation for ${recipientStr}.`);
     dispatchResult = {
       success: true,
       mode: 'SIMULATION',
       message: 'SMTP credentials not configured. Real email was NOT dispatched to inbox; report compiled in Simulation mode.',
-      recipient,
+      recipient: recipientStr,
       sentAt: new Date().toISOString(),
       reportSummary: report
     };
@@ -1584,6 +1662,7 @@ app.get('/api/admin/email-settings', authenticateToken, (req, res) => {
     smtp_user: emailReportConfig.smtp_user,
     has_smtp_pass: !!emailReportConfig.smtp_pass,
     has_resend_key: !!emailReportConfig.resend_api_key,
+    has_brevo_key: !!emailReportConfig.brevo_api_key,
     from_address: emailReportConfig.from_address,
     last_sent_date: emailReportConfig.last_sent_date,
     last_sent_status: emailReportConfig.last_sent_status,
@@ -1596,7 +1675,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
     return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
   }
 
-  const { enabled, recipient, time, smtp_host, smtp_port, smtp_user, smtp_pass, resend_api_key } = req.body;
+  const { enabled, recipient, time, smtp_host, smtp_port, smtp_user, smtp_pass, resend_api_key, brevo_api_key } = req.body;
   const adminUser = req.user.display_name || req.user.username || 'Super Admin';
 
   const enabledVal = enabled ? '1' : '0';
@@ -1609,6 +1688,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
     { key: 'email_report_time', val: timeVal }
   ];
   if (resend_api_key !== undefined && String(resend_api_key).trim() !== '') queries.push({ key: 'resend_api_key', val: String(resend_api_key).trim() });
+  if (brevo_api_key !== undefined && String(brevo_api_key).trim() !== '') queries.push({ key: 'brevo_api_key', val: String(brevo_api_key).trim() });
   if (smtp_host !== undefined) queries.push({ key: 'smtp_host', val: String(smtp_host).trim() });
   if (smtp_port !== undefined) queries.push({ key: 'smtp_port', val: String(smtp_port).trim() });
   if (smtp_user !== undefined) queries.push({ key: 'smtp_user', val: String(smtp_user).trim() });
@@ -1627,6 +1707,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
   emailReportConfig.recipient = recipientVal;
   emailReportConfig.time = timeVal;
   if (resend_api_key !== undefined && String(resend_api_key).trim() !== '') emailReportConfig.resend_api_key = String(resend_api_key).trim();
+  if (brevo_api_key !== undefined && String(brevo_api_key).trim() !== '') emailReportConfig.brevo_api_key = String(brevo_api_key).trim();
   if (smtp_host !== undefined) emailReportConfig.smtp_host = String(smtp_host).trim();
   if (smtp_port !== undefined) emailReportConfig.smtp_port = parseInt(smtp_port) || 587;
   if (smtp_user !== undefined) emailReportConfig.smtp_user = String(smtp_user).trim();
@@ -1642,6 +1723,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
       recipient: emailReportConfig.recipient,
       time: emailReportConfig.time,
       has_resend_key: !!emailReportConfig.resend_api_key,
+      has_brevo_key: !!emailReportConfig.brevo_api_key,
       smtp_host: emailReportConfig.smtp_host,
       smtp_port: emailReportConfig.smtp_port,
       smtp_user: emailReportConfig.smtp_user,
@@ -1661,20 +1743,24 @@ app.post('/api/admin/email-report/test', authenticateToken, async (req, res) => 
     const result = await sendDailyIntelligenceEmail(recipient);
 
     let message = '';
-    if (result.mode === 'RESEND_API') {
-      message = `දෛනික බුද්ධිමත් වාර්තාව ${recipient} වෙත Resend HTTPS API (Port 443) හරහා සාර්ථකව යවන ලදී!`;
+    if (result.mode === 'BREVO_API') {
+      message = `දෛනික බුද්ධිමත් වාර්තාව ${result.recipient} වෙත Brevo HTTPS API (Port 443) හරහා සාර්ථකව යවන ලදී!`;
+    } else if (result.mode === 'BREVO_FAILED') {
+      message = `Brevo API මඟින් ඊමේල් යැවීම අසාර්ථක විය: ${result.error || 'API Error'}`;
+    } else if (result.mode === 'RESEND_API') {
+      message = `දෛනික බුද්ධිමත් වාර්තාව ${result.recipient} වෙත Resend HTTPS API (Port 443) හරහා සාර්ථකව යවන ලදී!`;
     } else if (result.mode === 'RESEND_FAILED') {
       message = `Resend API මඟින් ඊමේල් යැවීම අසාර්ථක විය: ${result.error || 'API Error'}`;
     } else if (result.mode === 'SMTP') {
-      message = `දෛනික බුද්ධිමත් වාර්තාව ${recipient} වෙත සැබෑ ඊමේල් පණිවිඩයක් ලෙස (SMTP හරහා) සාර්ථකව යවන ලදී!`;
+      message = `දෛනික බුද්ධිමත් වාර්තාව ${result.recipient} වෙත සැබෑ ඊමේල් පණිවිඩයක් ලෙස (SMTP හරහා) සාර්ථකව යවන ලදී!`;
     } else if (result.mode === 'SIMULATION') {
-      message = `වාර්තාව සාර්ථකව සම්පාදනය විය. එහෙත් ඊමේල් සේවාදායකයක් (Resend API හෝ Gmail / Office365) සකසා නොමැති බැවින් එය සැබෑ ඊමේල් ලිපිනයට (Inbox) ලැබුණේ නැත (Simulated Delivery).`;
+      message = `වාර්තාව සාර්ථකව සම්පාදනය විය. එහෙත් ඊමේල් සේවාදායකයක් (Brevo / Resend API හෝ Gmail / Office365) සකසා නොමැති බැවින් එය සැබෑ ඊමේල් ලිපිනයට (Inbox) ලැබුණේ නැත (Simulated Delivery).`;
     } else {
       message = `ඊමේල් යැවීමට නොහැකි විය (SMTP Error): ${result.error || 'Connection Failed'}`;
     }
 
     res.json({
-      success: result.mode === 'SMTP' || result.mode === 'RESEND_API' || result.mode === 'SIMULATION',
+      success: result.mode === 'SMTP' || result.mode === 'RESEND_API' || result.mode === 'BREVO_API' || result.mode === 'SIMULATION',
       mode: result.mode,
       message,
       result
