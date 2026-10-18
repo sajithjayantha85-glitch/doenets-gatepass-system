@@ -496,10 +496,35 @@ function generateEmailReportHtml(report) {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>DoENETS Daily Gate Intelligence Report</title>
+  <title>DoENETS Daily Gate Intelligence Report - ${report.dateStr}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @media print {
+      body { background-color: #ffffff !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      .report-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; max-width: 100% !important; border-radius: 0 !important; }
+      @page { size: A4; margin: 15mm; }
+    }
+  </style>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 25px; color: #1e293b; line-height: 1.5;">
-  <div style="max-width: 720px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
+  
+  <!-- PDF / Print Action Bar (Hidden in Email & when Printing) -->
+  <div class="no-print" style="max-width: 720px; margin: 0 auto 15px auto; display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 12px 20px; border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.06);">
+    <div style="font-size: 13px; font-weight: 700; color: #1e3a8a;">
+      📄 DoENETS Daily Intelligence Report Preview
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button onclick="window.print()" style="background: #2563eb; color: #ffffff; border: none; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+        🖨️ PDF එකක් ලෙස Save / Print කරන්න
+      </button>
+      <button onclick="window.close()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+        වසන්න (Close)
+      </button>
+    </div>
+  </div>
+
+  <div class="report-card" style="max-width: 720px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
     
     <!-- Header Banner -->
     <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); color: #ffffff; padding: 25px 30px;">
@@ -1851,7 +1876,10 @@ app.get('/api/admin/email-report/preview', async (req, res) => {
     if (err) return res.status(403).send('<h3 style="font-family:sans-serif;color:#b91c1c;">වලංගු නොවන හෝ කල්ඉකුත් වූ Session එකක්.</h3>');
     try {
       const report = await compileDailyIntelligenceReport();
-      const html = generateEmailReportHtml(report);
+      let html = generateEmailReportHtml(report);
+      if (req.query.auto_print === '1') {
+        html = html.replace('</body>', '<script>window.addEventListener("load", () => { setTimeout(() => window.print(), 400); });</script></body>');
+      }
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(html);
     } catch (e) {

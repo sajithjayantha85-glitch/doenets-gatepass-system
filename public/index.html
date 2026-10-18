@@ -2706,6 +2706,9 @@
               <button class="btn" type="button" onclick="previewEmailReport()" id="btnPreviewEmailReport" style="background: #0284c7; color: white; padding: 0.65rem 1.25rem; font-weight: 700; border-radius: 8px;" title="View exact HTML email report in browser">
                 <i class="fa-solid fa-eye"></i> වාර්තාව Preview කරන්න
               </button>
+              <button class="btn" type="button" onclick="downloadEmailReportPdf()" id="btnDownloadReportPdf" style="background: #059669; color: white; padding: 0.65rem 1.25rem; font-weight: 700; border-radius: 8px;" title="Download or Print PDF directly">
+                <i class="fa-solid fa-file-pdf"></i> PDF වාර්තාව (Download)
+              </button>
               <button class="btn" type="button" onclick="sendTestEmailReport()" id="btnSendTestEmail" style="background: #4338ca; color: white; padding: 0.65rem 1.35rem; font-weight: 700; border-radius: 8px;">
                 <i class="fa-solid fa-paper-plane"></i> දැන්ම පරීක්ෂණ වාර්තාවක් යවන්න (Send Test Report Now)
               </button>
@@ -6684,6 +6687,15 @@
       if (!token) return alert('කරුණාකර පද්ධතියට Log In වන්න.');
       const url = '/api/admin/email-report/preview?token=' + encodeURIComponent(token);
       window.open(url, '_blank');
+    }
+
+    function downloadEmailReportPdf() {
+      if (!token) return alert('කරුණාකර පද්ධතියට Log In වන්න.');
+      const url = '/api/admin/email-report/preview?token=' + encodeURIComponent(token) + '&auto_print=1';
+      const w = window.open(url, '_blank');
+      if (w) {
+        w.focus();
+      }
     }
 
     async function loadEmailSettings() {
