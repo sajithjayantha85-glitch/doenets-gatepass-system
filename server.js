@@ -1022,7 +1022,7 @@ app.post('/api/login', (req, res) => {
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role, branch_name: user.branch_name, display_name: user.display_name },
       JWT_SECRET,
-      { expiresIn: '12h' }
+      { expiresIn: '30d' }
     );
 
     res.json({
@@ -1036,6 +1036,20 @@ app.post('/api/login', (req, res) => {
         display_name: user.display_name
       }
     });
+  });
+});
+
+// 1.0 Verify Active Session Token
+app.get('/api/auth/verify', authenticateToken, (req, res) => {
+  res.json({
+    valid: true,
+    user: {
+      id: req.user.id,
+      username: req.user.username,
+      role: req.user.role,
+      branch_name: req.user.branch_name,
+      display_name: req.user.display_name
+    }
   });
 });
 
@@ -2061,7 +2075,7 @@ app.delete('/api/admin/purposes/:id', authenticateToken, (req, res) => {
 });
 
 // 9.4 Gate Security Console Policy Control APIs (Admin Controlled)
-app.get('/api/gate/settings', authenticateToken, (req, res) => {
+app.get('/api/gate/settings', (req, res) => {
   res.json({
     allow_staff_auto_log: gateSettings.allow_staff_auto_log === 1,
     allow_visitor_express: gateSettings.allow_visitor_express === 1,
@@ -2071,7 +2085,7 @@ app.get('/api/gate/settings', authenticateToken, (req, res) => {
 });
 
 app.post('/api/admin/gate-settings', authenticateToken, (req, res) => {
-  if (req.user.role !== 'SUPER_ADMIN') {
+  if (!['SUPER_ADMIN', 'ADMIN'].includes(req.user.role)) {
     return res.status(403).json({ error: 'Super Admin privileges required / ගේට්ටු ප්‍රතිපත්ති වෙනස් කිරීමට සුපිරි පාලක බලතල අවශ්‍යයි' });
   }
 

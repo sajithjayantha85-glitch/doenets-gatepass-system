@@ -4063,10 +4063,39 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       updateUserUI();
+      applyGateSettingsToUI();
       loadFormOptions();
       fetchGateSettings();
+      checkAuthSession();
       switchTab('visitor-register');
     });
+
+    function handleSessionExpired(msg) {
+      token = '';
+      currentUser = null;
+      localStorage.removeItem('gatepass_token');
+      localStorage.removeItem('gatepass_user');
+      updateUserUI();
+      if (msg) {
+        alert(msg);
+      }
+      switchTab('login-tab');
+    }
+
+    async function checkAuthSession() {
+      const activeToken = token || localStorage.getItem('gatepass_token');
+      if (!activeToken) return;
+      try {
+        const res = await fetch('/api/auth/verify', {
+          headers: { 'Authorization': 'Bearer ' + activeToken }
+        });
+        if (!res.ok) {
+          handleSessionExpired('ඔබගේ පිවිසුම් කාලය (Session) කල් ඉකුත්වී ඇත. කරුණාකර නැවත Login වන්න.\n(Your session has expired. Please log in again.)');
+        }
+      } catch (err) {
+        console.warn('Session verification error:', err);
+      }
+    }
 
     function updateUserUI() {
       const navSec = document.getElementById('navSecurity');
@@ -4123,16 +4152,16 @@
     async function fetchGateSettings() {
       try {
         const activeToken = token || localStorage.getItem('gatepass_token');
-        if (!activeToken) return;
-        const res = await fetch('/api/gate/settings', {
-          headers: { 'Authorization': 'Bearer ' + activeToken }
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        currentGateSettings = data;
+        const headers = activeToken ? { 'Authorization': 'Bearer ' + activeToken } : {};
+        const res = await fetch('/api/gate/settings', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          currentGateSettings = data;
+        }
         applyGateSettingsToUI();
       } catch (err) {
         console.error('Failed to load gate policies:', err);
+        applyGateSettingsToUI();
       }
     }
 
@@ -4243,7 +4272,8 @@
       try {
         const activeToken = token || localStorage.getItem('gatepass_token');
         if (!activeToken) {
-          alert('Authentication required. Please login as Admin.');
+          alert('පරිපාලක ලෙස Login වීම අවශ්‍ය වේ. (Authentication required. Please login as Admin.)');
+          handleSessionExpired();
           return false;
         }
 
@@ -4261,6 +4291,10 @@
 
         const data = await res.json();
         if (!res.ok) {
+          if (res.status === 401 || (res.status === 403 && (data.error && (data.error.includes('expired') || data.error.includes('session') || data.error.includes('privileges'))))) {
+            handleSessionExpired('ඔබගේ පිවිසුම් කාලය (Session) කල් ඉකුත්වී ඇත හෝ පරිපාලක අවසර නැත. කරුණාකර නැවත Login වන්න.\n(Your session has expired. Please log in again.)');
+            return false;
+          }
           alert(data.error || 'Failed to update gate policies');
           return false;
         }
@@ -4301,6 +4335,12 @@
       }
 
       if (tabId === 'admin-dashboard') {
+        const activeToken = token || localStorage.getItem('gatepass_token');
+        if (!activeToken) {
+          alert('පරිපාලක ලෙස Login වීම අවශ්‍ය වේ. (Please login as Admin.)');
+          switchTab('login-tab');
+          return;
+        }
         loadAdminDashboard();
         loadDailyVisitors();
         loadAdminUsers();
@@ -6229,7 +6269,12 @@
           headers: { 'Authorization': 'Bearer ' + token }
         });
         const data = await res.json();
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (res.status === 401 || (res.status === 403 && data.error && (data.error.includes('expired') || data.error.includes('session')))) {
+            handleSessionExpired('ඔබගේ පිවිසුම් කාලය (Session) කල් ඉකුත්වී ඇත. කරුණාකර නැවත Login වන්න.\n(Your session has expired. Please log in again.)');
+          }
+          return;
+        }
 
         document.getElementById('metricTotal').innerText = data.stats.total_inside;
         if (document.getElementById('metricTodayVisitors')) {
