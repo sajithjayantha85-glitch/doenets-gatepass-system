@@ -358,6 +358,26 @@ async function initDatabase() {
       )
     `);
 
+    // 7. System & Gate Policies Table
+    await runAsync(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        setting_key TEXT PRIMARY KEY,
+        setting_value TEXT NOT NULL,
+        updated_by TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Seed default Gate Policies if not present
+    const staffAutoSetting = await getAsync("SELECT * FROM system_settings WHERE setting_key = 'allow_staff_auto_log'");
+    if (!staffAutoSetting) {
+      await runAsync("INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('allow_staff_auto_log', '1', 'System Default')");
+    }
+    const visitorExpressSetting = await getAsync("SELECT * FROM system_settings WHERE setting_key = 'allow_visitor_express'");
+    if (!visitorExpressSetting) {
+      await runAsync("INSERT INTO system_settings (setting_key, setting_value, updated_by) VALUES ('allow_visitor_express', '0', 'System Default')");
+    }
+
     // 30-Day Public Visitor Pass Auto-Purge Cleanup (Keeps Database Light)
     await runAsync("DELETE FROM passes WHERE category = 'VISITOR' AND created_at < datetime('now', '-30 days')");
 

@@ -1293,6 +1293,49 @@
       50% { box-shadow: 0 0 0 8px rgba(250, 204, 21, 0.2), 0 8px 20px rgba(0,0,0,0.18); }
       100% { box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.8), 0 8px 20px rgba(0,0,0,0.18); }
     }
+
+    /* Admin Gate Policy Toggle Switch Styles */
+    .admin-switch {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .admin-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .admin-switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: .3s;
+      border-radius: 34px;
+    }
+    .admin-switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .admin-switch input:checked + .admin-switch-slider {
+      background-color: #2563eb;
+    }
+    .admin-switch input:focus + .admin-switch-slider {
+      box-shadow: 0 0 1px #2563eb;
+    }
+    .admin-switch input:checked + .admin-switch-slider:before {
+      transform: translateX(24px);
+    }
   </style>
 </head>
 <body>
@@ -1578,6 +1621,9 @@
             <button id="secNavDashboardBtn" class="btn" onclick="switchTab('admin-dashboard')" style="display: none; background: #e2e8f0; color: #1e293b; padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px;">
               <i class="fa-solid fa-chart-line"></i> Dashboard
             </button>
+            <button id="btnSecGatePolicyAdmin" class="btn" onclick="openAdminGatePolicyModal()" style="display: none; background: #fef3c7; border: 1.5px solid #f59e0b; color: #92400e; padding: 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 800; border-radius: 8px;">
+              <i class="fa-solid fa-sliders"></i> Gate Policies (Admin)
+            </button>
             <div id="secUserBadge" style="background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af; padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 800; border-radius: 20px; display: inline-flex; align-items: center; gap: 0.4rem;">
               <i class="fa-solid fa-user-shield"></i> <span id="secUserDisplayName">Security Officer</span>
             </div>
@@ -1599,17 +1645,19 @@
             <button class="btn btn-primary" id="btnUsbMode" style="background: var(--primary-dark); font-size: 1.05rem; padding: 0.85rem 1.25rem;" onclick="focusUsbScanner()">
               <i class="fa-solid fa-barcode"></i> USB Mode
             </button>
-            <label style="display: inline-flex; align-items: center; gap: 0.55rem; background: #ecfdf5; border: 1.5px solid #a7f3d0; padding: 0.65rem 0.95rem; border-radius: 12px; cursor: pointer; user-select: none;" title="අභ්‍යන්තර සේවකයින් සඳහා මුරකරුගේ අතින් සත්‍යාපනය කිරීමකින් තොරව ස්වයංක්‍රීයව දත්ත සටහන් කිරීම">
+            <label id="lblStaffAutoLog" onclick="handleAutoLogLabelClick('STAFF', event)" style="display: inline-flex; align-items: center; gap: 0.55rem; background: #ecfdf5; border: 1.5px solid #a7f3d0; padding: 0.65rem 0.95rem; border-radius: 12px; cursor: pointer; user-select: none; transition: all 0.2s ease;" title="අභ්‍යන්තර සේවකයින් සඳහා මුරකරුගේ අතින් සත්‍යාපනය කිරීමකින් තොරව ස්වයංක්‍රීයව දත්ත සටහන් කිරීම">
               <input type="checkbox" id="chkStaffAutoLog" checked style="width: 19px; height: 19px; cursor: pointer; accent-color: #059669;">
               <span style="font-size: 0.92rem; font-weight: 800; color: #065f46;">
                 <i class="fa-solid fa-bolt" style="color: #059669;"></i> සේවක Auto-Log
               </span>
+              <span id="badgeStaffAutoLogStatus" style="font-size: 0.72rem; font-weight: 800; padding: 2px 7px; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px;"></span>
             </label>
-            <label style="display: inline-flex; align-items: center; gap: 0.55rem; background: #eff6ff; border: 1.5px solid #bfdbfe; padding: 0.65rem 0.95rem; border-radius: 12px; cursor: pointer; user-select: none;" title="ස්කෑන් කළ සැණින් අමුත්තන් ඇතුළුවීම ස්වයංක්‍රීයව සටහන් කර ඊළඟ ස්කෑන් කිරීමට සූදානම් කිරීම">
+            <label id="lblVisitorAutoLog" onclick="handleAutoLogLabelClick('VISITOR', event)" style="display: inline-flex; align-items: center; gap: 0.55rem; background: #eff6ff; border: 1.5px solid #bfdbfe; padding: 0.65rem 0.95rem; border-radius: 12px; cursor: pointer; user-select: none; transition: all 0.2s ease;" title="ස්කෑන් කළ සැණින් අමුත්තන් ඇතුළුවීම ස්වයංක්‍රීයව සටහන් කර ඊළඟ ස්කෑන් කිරීමට සූදානම් කිරීම">
               <input type="checkbox" id="chkVisitorAutoLog" style="width: 19px; height: 19px; cursor: pointer; accent-color: #2563eb;">
               <span style="font-size: 0.92rem; font-weight: 800; color: #1e40af;">
                 <i class="fa-solid fa-bolt" style="color: #2563eb;"></i> අමුත්තන් Express Verify
               </span>
+              <span id="badgeVisitorAutoLogStatus" style="font-size: 0.72rem; font-weight: 800; padding: 2px 7px; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px;"></span>
             </label>
           </div>
 
@@ -2501,6 +2549,73 @@
 
       <!-- SUB-TAB 2: Dynamic Card Options & Branch Config Portal -->
       <div id="subtab-cards" class="admin-subtab-pane">
+        <!-- DEDICATED GATE SECURITY POLICIES CONTROL CARD (Admin Authorization) -->
+        <div class="card" style="margin-bottom: 2rem; border: 2.5px solid #2563eb; background: #ffffff; border-radius: 16px; box-shadow: 0 4px 18px rgba(37,99,235,0.08);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1.25rem;">
+            <div>
+              <div class="card-title" style="margin: 0; font-size: 1.35rem; color: #1e3a8a; display: flex; align-items: center; gap: 0.65rem;">
+                <i class="fa-solid fa-shield-halved" style="color: #2563eb;"></i> Gate Security Control Console Policies (මුරපොළ ස්වයංක්‍රීය සත්‍යාපන අවසර)
+              </div>
+              <p style="margin: 5px 0 0 0; color: #64748b; font-size: 0.95rem;">
+                ප්‍රධාන ගේට්ටු මුරපොළේ (Gate Console) ක්‍රියාත්මක වන <strong>සේවක Auto-Log</strong> සහ <strong>අමුත්තන් Express Verify</strong> පහසුකම් සඳහා පරිපාලක අවසර පාලනය (Admin Authorization).
+              </p>
+            </div>
+            <div id="gatePolicyLastUpdated" style="font-size: 0.85rem; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 8px; font-weight: 700;">
+              <i class="fa-solid fa-clock-rotate-left"></i> Loading policy status...
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+            <!-- Policy 1: Staff Auto Log -->
+            <div style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+                  <h4 style="margin: 0; color: #166534; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-bolt" style="color: #15803d;"></i> සේවක Auto-Log අවසරය
+                  </h4>
+                  <label class="admin-switch">
+                    <input type="checkbox" id="adminChkAllowStaffAuto">
+                    <span class="admin-switch-slider"></span>
+                  </label>
+                </div>
+                <p style="margin: 0; font-size: 0.92rem; color: #14532d; line-height: 1.45;">
+                  අභ්‍යන්තර සේවකයින් කාඩ්පත තැබූ සැණින් මුරකරුගේ අතින් සත්‍යාපනයකින් තොරව ස්වයංක්‍රීයව Check-In / Check-Out වීමට ගේට්ටු මුරපොළට අවසර ලබාදීම.
+                </p>
+              </div>
+              <div style="margin-top: 1rem; font-size: 0.82rem; font-weight: 800; color: #15803d;">
+                <i class="fa-solid fa-circle-info"></i> මෙම අවසරය ක්‍රියාත්මක නම් පමණක් මුරපොළේ සේවක Auto-Log චෙක්බොක්ස් එක භාවිතා කළ හැක.
+              </div>
+            </div>
+
+            <!-- Policy 2: Visitor Express Verify -->
+            <div style="background: #eff6ff; border: 2px solid #93c5fd; border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+                  <h4 style="margin: 0; color: #1e40af; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-bolt" style="color: #2563eb;"></i> අමුත්තන් Express Verify අවසරය
+                  </h4>
+                  <label class="admin-switch">
+                    <input type="checkbox" id="adminChkAllowVisitorExpress">
+                    <span class="admin-switch-slider"></span>
+                  </label>
+                </div>
+                <p style="margin: 0; font-size: 0.92rem; color: #1e3a8a; line-height: 1.45;">
+                  උත්සව හෝ විභාග සමයේ අධික තදබදයක් ඇති අවස්ථාවලදී (Rush hours) අමුත්තන්ගේ QR කේත ස්කෑන් කළ සැණින් ක්ෂණිකව ඇතුළුවීම තහවුරු කිරීමට ගේට්ටු මුරපොළට අවසර ලබාදීම.
+                </p>
+              </div>
+              <div style="margin-top: 1rem; font-size: 0.82rem; font-weight: 800; color: #1e40af;">
+                <i class="fa-solid fa-shield"></i> අක්‍රිය කර තැබීමෙන් අමුත්තන්ගේ විස්තර පරීක්ෂා කර මුරකරු අතින් තහවුරු කිරීම අනිවාර්ය වේ.
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1.5px solid #f1f5f9; padding-top: 1rem;">
+            <button type="button" class="btn btn-primary" onclick="saveAdminGatePolicies()" style="padding: 0.75rem 1.75rem; font-size: 1rem; font-weight: 800; border-radius: 10px;">
+              <i class="fa-solid fa-floppy-disk"></i> ප්‍රතිපත්ති සුරකින්න (Save Gate Policies)
+            </button>
+          </div>
+        </div>
+
         <div class="card" style="margin-bottom: 2.5rem; border: 3px solid var(--primary-light);">
           <div class="card-title">
             <i class="fa-solid fa-sliders" style="color: var(--primary);"></i> Dynamic Card Options & Branch Config Portal (අංශ සහ කරුණු කාඩ්පත් පාලනය)
@@ -2820,6 +2935,67 @@
     </div>
   </div>
 
+  <!-- Gate Security Console Policy Settings Modal (Admin) -->
+  <div id="adminGatePolicyModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: white; width: 92%; max-width: 560px; border-radius: 18px; padding: 2rem; box-shadow: 0 12px 35px rgba(0,0,0,0.3); border: 2.5px solid #2563eb;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.85rem;">
+        <div>
+          <h3 style="margin: 0; font-size: 1.3rem; color: #1e3a8a; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-shield-halved" style="color: #2563eb;"></i> Gate Policy Settings (Admin)
+          </h3>
+          <small style="color: #64748b; font-weight: 600;">මුරපොළ ස්වයංක්‍රීය සත්‍යාපන අවසර කළමනාකරණය</small>
+        </div>
+        <button type="button" onclick="closeAdminGatePolicyModal()" style="background: none; border: none; font-size: 1.6rem; cursor: pointer; color: #64748b;">&times;</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 1.5rem;">
+        <!-- Policy 1: Staff Auto Log -->
+        <div style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 1.1rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+            <strong style="color: #166534; font-size: 1.05rem;">
+              <i class="fa-solid fa-bolt" style="color: #15803d;"></i> සේවක Auto-Log අවසරය
+            </strong>
+            <label class="admin-switch">
+              <input type="checkbox" id="modalChkAllowStaffAuto">
+              <span class="admin-switch-slider"></span>
+            </label>
+          </div>
+          <p style="margin: 0; font-size: 0.88rem; color: #14532d; line-height: 1.4;">
+            අභ්‍යන්තර සේවකයින් කාඩ්පත තැබූ සැණින් මුරකරුගේ අතින් තහවුරු කිරීමකින් තොරව ස්වයංක්‍රීයව ඇතුළුවීම/පිටවීම සටහන් කිරීමට අවසර ලබාදීම.
+          </p>
+        </div>
+
+        <!-- Policy 2: Visitor Express Verify -->
+        <div style="background: #eff6ff; border: 2px solid #93c5fd; border-radius: 12px; padding: 1.1rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+            <strong style="color: #1e40af; font-size: 1.05rem;">
+              <i class="fa-solid fa-bolt" style="color: #2563eb;"></i> අමුත්තන් Express Verify අවසරය
+            </strong>
+            <label class="admin-switch">
+              <input type="checkbox" id="modalChkAllowVisitorExpress">
+              <span class="admin-switch-slider"></span>
+            </label>
+          </div>
+          <p style="margin: 0; font-size: 0.88rem; color: #1e3a8a; line-height: 1.4;">
+            අධික තදබදයක් ඇති අවස්ථාවලදී අමුත්තන්ගේ QR කේත ස්කෑන් කළ සැණින් ක්ෂණිකව සත්‍යාපනය කර ඇතුළුවීම තහවුරු කිරීමට අවසර ලබාදීම.
+          </p>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid #f1f5f9; padding-top: 1rem;">
+        <span id="modalGatePolicyUpdated" style="font-size: 0.82rem; color: #64748b; font-weight: 700;"></span>
+        <div style="display: flex; gap: 0.65rem;">
+          <button type="button" class="btn" onclick="closeAdminGatePolicyModal()" style="background: #f1f5f9; color: #475569; font-weight: 700; padding: 0.75rem 1.25rem;">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" onclick="saveModalGatePolicies()" style="padding: 0.75rem 1.5rem; font-weight: 800; border-radius: 8px;">
+            <i class="fa-solid fa-floppy-disk"></i> Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="footer">
     <p>© 2026 Department of Examinations, Sri Lanka</p>
@@ -2838,10 +3014,12 @@
     let token = localStorage.getItem('gatepass_token') || '';
     let loadedBranches = [];
     let loadedPurposes = [];
+    let currentGateSettings = { allow_staff_auto_log: true, allow_visitor_express: false, updated_by: 'System Default' };
 
     document.addEventListener('DOMContentLoaded', () => {
       updateUserUI();
       loadFormOptions();
+      fetchGateSettings();
       switchTab('visitor-register');
     });
 
@@ -2880,6 +3058,7 @@
     function updateSecurityHeaderBadge() {
       const secUserDisplayName = document.getElementById('secUserDisplayName');
       const secNavDashboardBtn = document.getElementById('secNavDashboardBtn');
+      const btnSecGatePolicyAdmin = document.getElementById('btnSecGatePolicyAdmin');
       if (currentUser) {
         if (secUserDisplayName) secUserDisplayName.innerText = currentUser.display_name || currentUser.username;
         if (secNavDashboardBtn) {
@@ -2889,7 +3068,180 @@
             secNavDashboardBtn.style.display = 'none';
           }
         }
+        if (btnSecGatePolicyAdmin) {
+          btnSecGatePolicyAdmin.style.display = (currentUser.role === 'SUPER_ADMIN') ? 'inline-flex' : 'none';
+        }
       }
+    }
+
+    // Gate Security Console Policies (Admin Authorized)
+    async function fetchGateSettings() {
+      try {
+        const activeToken = token || localStorage.getItem('gatepass_token');
+        if (!activeToken) return;
+        const res = await fetch('/api/gate/settings', {
+          headers: { 'Authorization': 'Bearer ' + activeToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        currentGateSettings = data;
+        applyGateSettingsToUI();
+      } catch (err) {
+        console.error('Failed to load gate policies:', err);
+      }
+    }
+
+    function applyGateSettingsToUI() {
+      // 1. Staff Auto-Log Checkbox in Gate Console
+      const chkStaff = document.getElementById('chkStaffAutoLog');
+      const lblStaff = document.getElementById('lblStaffAutoLog');
+      const badgeStaff = document.getElementById('badgeStaffAutoLogStatus');
+      if (chkStaff && lblStaff && badgeStaff) {
+        if (currentGateSettings.allow_staff_auto_log) {
+          chkStaff.disabled = false;
+          lblStaff.style.opacity = '1';
+          lblStaff.style.cursor = 'pointer';
+          lblStaff.title = 'අභ්‍යන්තර සේවකයින් සඳහා ස්වයංක්‍රීයව දත්ත සටහන් කිරීම (Admin Authorized)';
+          badgeStaff.style.background = '#dcfce7';
+          badgeStaff.style.color = '#15803d';
+          badgeStaff.innerHTML = '<i class="fa-solid fa-circle-check"></i> ඇඩ්මින් අවසර ඇත';
+        } else {
+          chkStaff.checked = false;
+          chkStaff.disabled = true;
+          lblStaff.style.opacity = '0.65';
+          lblStaff.style.cursor = 'not-allowed';
+          lblStaff.title = 'පරිපාලක (Admin) විසින් සේවක Auto-Log අක්‍රිය කර ඇත (Locked)';
+          badgeStaff.style.background = '#fee2e2';
+          badgeStaff.style.color = '#991b1b';
+          badgeStaff.innerHTML = '<i class="fa-solid fa-lock"></i> ඇඩ්මින් අක්‍රිය කර ඇත';
+        }
+      }
+
+      // 2. Visitor Express Verify Checkbox in Gate Console
+      const chkVisitor = document.getElementById('chkVisitorAutoLog');
+      const lblVisitor = document.getElementById('lblVisitorAutoLog');
+      const badgeVisitor = document.getElementById('badgeVisitorAutoLogStatus');
+      if (chkVisitor && lblVisitor && badgeVisitor) {
+        if (currentGateSettings.allow_visitor_express) {
+          chkVisitor.disabled = false;
+          lblVisitor.style.opacity = '1';
+          lblVisitor.style.cursor = 'pointer';
+          lblVisitor.title = 'ස්කෑන් කළ සැණින් අමුත්තන් ඇතුළුවීම ස්වයංක්‍රීයව සටහන් කිරීම (Admin Authorized)';
+          badgeVisitor.style.background = '#dbeafe';
+          badgeVisitor.style.color = '#1e40af';
+          badgeVisitor.innerHTML = '<i class="fa-solid fa-circle-check"></i> ඇඩ්මින් අවසර ඇත';
+        } else {
+          chkVisitor.checked = false;
+          chkVisitor.disabled = true;
+          lblVisitor.style.opacity = '0.65';
+          lblVisitor.style.cursor = 'not-allowed';
+          lblVisitor.title = 'පරිපාලක (Admin) විසින් අමුත්තන් Express Verify අක්‍රිය කර ඇත (Locked)';
+          badgeVisitor.style.background = '#fee2e2';
+          badgeVisitor.style.color = '#991b1b';
+          badgeVisitor.innerHTML = '<i class="fa-solid fa-lock"></i> ඇඩ්මින් අක්‍රිය කර ඇත';
+        }
+      }
+
+      // 3. Admin Dashboard Switches
+      const adminStaff = document.getElementById('adminChkAllowStaffAuto');
+      const adminVisitor = document.getElementById('adminChkAllowVisitorExpress');
+      if (adminStaff) adminStaff.checked = Boolean(currentGateSettings.allow_staff_auto_log);
+      if (adminVisitor) adminVisitor.checked = Boolean(currentGateSettings.allow_visitor_express);
+
+      const policyUpdated = document.getElementById('gatePolicyLastUpdated');
+      if (policyUpdated) {
+        policyUpdated.innerHTML = `<i class="fa-solid fa-shield-check"></i> අවසන් යාවත්කාලීන කිරීම: <strong>${currentGateSettings.updated_by || 'Admin'}</strong> (${currentGateSettings.updated_at ? new Date(currentGateSettings.updated_at).toLocaleString() : 'System Default'})`;
+      }
+
+      // 4. Modal Switches
+      const modalStaff = document.getElementById('modalChkAllowStaffAuto');
+      const modalVisitor = document.getElementById('modalChkAllowVisitorExpress');
+      if (modalStaff) modalStaff.checked = Boolean(currentGateSettings.allow_staff_auto_log);
+      if (modalVisitor) modalVisitor.checked = Boolean(currentGateSettings.allow_visitor_express);
+
+      const modalUpdated = document.getElementById('modalGatePolicyUpdated');
+      if (modalUpdated) {
+        modalUpdated.innerText = `Updated by: ${currentGateSettings.updated_by || 'Admin'}`;
+      }
+    }
+
+    function handleAutoLogLabelClick(type, event) {
+      if (type === 'STAFF' && !currentGateSettings.allow_staff_auto_log) {
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        showSecToast('🚫 සේවක Auto-Log පහසුකම පරිපාලක (Admin) විසින් අක්‍රිය කර ඇත. ක්‍රියාත්මක කිරීමට Admin අවසරය අවශ්‍යයි.', 'error');
+      } else if (type === 'VISITOR' && !currentGateSettings.allow_visitor_express) {
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        showSecToast('🚫 අමුත්තන් Express Verify පහසුකම පරිපාලක (Admin) විසින් අක්‍රිය කර ඇත. ක්‍රියාත්මක කිරීමට Admin අවසරය අවශ්‍යයි.', 'error');
+      }
+    }
+
+    async function saveAdminGatePolicies() {
+      const staff = document.getElementById('adminChkAllowStaffAuto') ? document.getElementById('adminChkAllowStaffAuto').checked : false;
+      const visitor = document.getElementById('adminChkAllowVisitorExpress') ? document.getElementById('adminChkAllowVisitorExpress').checked : false;
+      await submitGatePolicies(staff, visitor);
+    }
+
+    async function saveModalGatePolicies() {
+      const staff = document.getElementById('modalChkAllowStaffAuto') ? document.getElementById('modalChkAllowStaffAuto').checked : false;
+      const visitor = document.getElementById('modalChkAllowVisitorExpress') ? document.getElementById('modalChkAllowVisitorExpress').checked : false;
+      const success = await submitGatePolicies(staff, visitor);
+      if (success) closeAdminGatePolicyModal();
+    }
+
+    async function submitGatePolicies(allowStaff, allowVisitor) {
+      try {
+        const activeToken = token || localStorage.getItem('gatepass_token');
+        if (!activeToken) {
+          alert('Authentication required. Please login as Admin.');
+          return false;
+        }
+
+        const res = await fetch('/api/admin/gate-settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + activeToken
+          },
+          body: JSON.stringify({
+            allow_staff_auto_log: allowStaff,
+            allow_visitor_express: allowVisitor
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Failed to update gate policies');
+          return false;
+        }
+
+        currentGateSettings = data.settings;
+        applyGateSettingsToUI();
+        showSecToast('✓ ගේට්ටු ආරක්ෂක ප්‍රතිපත්ති සාර්ථකව යාවත්කාලීන විය!', 'success');
+        alert('✓ ගේට්ටු ආරක්ෂක ප්‍රතිපත්ති සාර්ථකව යාවත්කාලීන විය!\n\n• සේවක Auto-Log: ' + (allowStaff ? 'අවසර ලබාදී ඇත (Enabled)' : 'අක්‍රියයි (Disabled)') + '\n• අමුත්තන් Express Verify: ' + (allowVisitor ? 'අවසර ලබාදී ඇත (Enabled)' : 'අක්‍රියයි (Disabled)'));
+        return true;
+      } catch (err) {
+        alert('Error saving gate policies: ' + err.message);
+        return false;
+      }
+    }
+
+    function openAdminGatePolicyModal() {
+      const modal = document.getElementById('adminGatePolicyModal');
+      if (modal) {
+        applyGateSettingsToUI();
+        modal.style.display = 'flex';
+      }
+    }
+
+    function closeAdminGatePolicyModal() {
+      const modal = document.getElementById('adminGatePolicyModal');
+      if (modal) modal.style.display = 'none';
     }
 
     function switchTab(tabId) {
@@ -2909,11 +3261,13 @@
         loadAdminUsers();
         loadAuditLogs();
         loadFormOptions();
+        fetchGateSettings();
       }
       if (tabId === 'confidential-portal' || tabId === 'evaluation-portal' || tabId === 'hr-portal') loadBranchPasses();
       if (tabId === 'security-scan') {
         document.body.classList.add('security-mode-active');
         updateSecurityHeaderBadge();
+        fetchGateSettings();
         setTimeout(() => {
           const usbInput = document.getElementById('usbInput');
           if (usbInput) {

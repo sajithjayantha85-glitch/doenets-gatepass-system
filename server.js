@@ -18,6 +18,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Initialize SQLite / Turso DB & Preload Memory Cache
 initDatabase();
 setTimeout(preloadPassCache, 1200);
+setTimeout(loadGateSettingsFromDb, 1500);
 
 // HTTP Security Headers Middleware (OWASP Security Hardening)
 app.use((req, res, next) => {
@@ -57,6 +58,31 @@ function preloadPassCache() {
         cachePass(r);
       }
       console.log(`✓ Preloaded ${rows.length} active passes into ultra-fast in-memory cache.`);
+    }
+  });
+}
+
+// Gate Security Console Policies (Managed by Admin)
+let gateSettings = {
+  allow_staff_auto_log: 1, // 1 = Admin Allowed, 0 = Admin Locked
+  allow_visitor_express: 0, // 1 = Admin Allowed, 0 = Admin Locked
+  updated_by: 'System Default',
+  updated_at: new Date().toISOString()
+};
+
+function loadGateSettingsFromDb() {
+  db.all('SELECT setting_key, setting_value, updated_by, updated_at FROM system_settings', [], (err, rows) => {
+    if (!err && rows && rows.length > 0) {
+      rows.forEach(r => {
+        if (r.setting_key === 'allow_staff_auto_log') {
+          gateSettings.allow_staff_auto_log = (r.setting_value === '1' || r.setting_value === 'true' || r.setting_value === 1) ? 1 : 0;
+        } else if (r.setting_key === 'allow_visitor_express') {
+          gateSettings.allow_visitor_express = (r.setting_value === '1' || r.setting_value === 'true' || r.setting_value === 1) ? 1 : 0;
+        }
+        if (r.updated_by) gateSettings.updated_by = r.updated_by;
+        if (r.updated_at) gateSettings.updated_at = r.updated_at;
+      });
+      console.log(`✓ Gate Policies active: Staff Auto-Log: ${gateSettings.allow_staff_auto_log === 1 ? 'ENABLED' : 'DISABLED'}, Visitor Express: ${gateSettings.allow_visitor_express === 1 ? 'ENABLED' : 'DISABLED'}`);
     }
   });
 }
@@ -334,8 +360,12 @@ app.post('/api/security/scan', authenticateToken, (req, res) => {
   const partialCode = `%${searchCode}%`;
 
   const processPassScan = (pass) => {
-    const isStaffAuto = (pass.category === 'STAFF' && auto_staff);
-    const isVisitorAuto = (pass.category !== 'STAFF' && auto_visitor);
+    // Strictly enforce Admin authorization policies:
+    const effectiveAutoStaff = (gateSettings.allow_staff_auto_log === 1) && Boolean(auto_staff);
+    const effectiveAutoVisitor = (gateSettings.allow_visitor_express === 1) && Boolean(auto_visitor);
+
+    const isStaffAuto = (pass.category === 'STAFF' && effectiveAutoStaff);
+    const isVisitorAuto = (pass.category !== 'STAFF' && effectiveAutoVisitor);
 
     // Fast Auto-Log for Staff or Express-Enabled Visitors/Special Passes
     if (isStaffAuto || isVisitorAuto) {
@@ -754,6 +784,70 @@ app.delete('/api/admin/purposes/:id', authenticateToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Error deleting purpose option' });
     logAdminAuditAction(req.user.username, req.user.role, 'DELETE_PURPOSE', String(req.params.id), 'Visit purpose choice card deleted', req.ip);
     res.json({ message: 'Purpose option deleted successfully' });
+  });
+});
+
+// 9.4 Gate Security Console Policy Control APIs (Admin Controlled)
+app.get('/api/gate/settings', authenticateToken, (req, res) => {
+  res.json({
+    allow_staff_auto_log: gateSettings.allow_staff_auto_log === 1,
+    allow_visitor_express: gateSettings.allow_visitor_express === 1,
+    updated_by: gateSettings.updated_by,
+    updated_at: gateSettings.updated_at
+  });
+});
+
+app.post('/api/admin/gate-settings', authenticateToken, (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Super Admin privileges required / ගේට්ටු ප්‍රතිපත්ති වෙනස් කිරීමට සුපිරි පාලක බලතල අවශ්‍යයි' });
+  }
+
+  const { allow_staff_auto_log, allow_visitor_express } = req.body;
+  const staffVal = allow_staff_auto_log ? '1' : '0';
+  const visitorVal = allow_visitor_express ? '1' : '0';
+  const adminUser = req.user.display_name || req.user.username || 'Super Admin';
+
+  const sqlStaff = `
+    INSERT INTO system_settings (setting_key, setting_value, updated_by, updated_at)
+    VALUES ('allow_staff_auto_log', ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP
+  `;
+  const sqlVisitor = `
+    INSERT INTO system_settings (setting_key, setting_value, updated_by, updated_at)
+    VALUES ('allow_visitor_express', ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP
+  `;
+
+  db.run(sqlStaff, [staffVal, adminUser], (err1) => {
+    if (err1) return res.status(500).json({ error: 'Failed to update Staff Auto-Log policy' });
+    db.run(sqlVisitor, [visitorVal, adminUser], (err2) => {
+      if (err2) return res.status(500).json({ error: 'Failed to update Visitor Express policy' });
+
+      gateSettings.allow_staff_auto_log = allow_staff_auto_log ? 1 : 0;
+      gateSettings.allow_visitor_express = allow_visitor_express ? 1 : 0;
+      gateSettings.updated_by = adminUser;
+      gateSettings.updated_at = new Date().toISOString();
+
+      logAdminAuditAction(
+        req.user.username,
+        req.user.role,
+        'UPDATE_GATE_POLICIES',
+        'GATE_SECURITY_CONSOLE',
+        `Staff Auto-Log: ${gateSettings.allow_staff_auto_log === 1 ? 'ENABLED' : 'DISABLED'}, Visitor Express: ${gateSettings.allow_visitor_express === 1 ? 'ENABLED' : 'DISABLED'}`,
+        req.ip
+      );
+
+      res.json({
+        success: true,
+        message: 'Gate Security Policies updated successfully / ගේට්ටු ආරක්ෂක ප්‍රතිපත්ති සාර්ථකව යාවත්කාලීන විය',
+        settings: {
+          allow_staff_auto_log: gateSettings.allow_staff_auto_log === 1,
+          allow_visitor_express: gateSettings.allow_visitor_express === 1,
+          updated_by: gateSettings.updated_by,
+          updated_at: gateSettings.updated_at
+        }
+      });
+    });
   });
 });
 
