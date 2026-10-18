@@ -393,6 +393,122 @@
       margin-left: auto;
     }
 
+    /* 3 DISTINCT LIGHT PASTEL TINT CARDS FOR VISITOR REGISTRATION */
+    /* 1. Personal Details Panel - Light Sky Blue */
+    .step-section.step-personal {
+      background: #f0f7ff;
+      border: 2px solid #bae6fd;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.06);
+    }
+    .step-section.step-personal:hover {
+      border-color: #7dd3fc;
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.1);
+    }
+    .step-section.step-personal .step-section-header {
+      border-bottom: 1.5px solid #dbeafe;
+    }
+    .step-section.step-personal .step-section-num {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      box-shadow: 0 3px 8px rgba(2, 132, 199, 0.35);
+    }
+    .step-section.step-personal .step-section-title {
+      color: #0369a1;
+    }
+    .step-section.step-personal .form-control {
+      background-color: #ffffff;
+      border: 1.5px solid #cbd5e1;
+    }
+    .step-section.step-personal .form-control:focus {
+      border-color: #0284c7;
+      box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.18);
+    }
+
+    /* 2. Select Branch Panel - Light Emerald / Mint Green */
+    .step-section.step-branch {
+      background: #f0fdf4;
+      border: 2px solid #bbf7d0;
+      box-shadow: 0 4px 16px rgba(5, 150, 105, 0.06);
+    }
+    .step-section.step-branch:hover {
+      border-color: #86efac;
+      box-shadow: 0 6px 20px rgba(5, 150, 105, 0.1);
+    }
+    .step-section.step-branch .step-section-header {
+      border-bottom: 1.5px solid #dcfce7;
+    }
+    .step-section.step-branch .step-section-num {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      box-shadow: 0 3px 8px rgba(5, 150, 105, 0.35);
+    }
+    .step-section.step-branch .step-section-title {
+      color: #065f46;
+    }
+    .step-section.step-branch .choice-card {
+      background: #ffffff;
+      border: 1.5px solid #bbf7d0;
+    }
+    .step-section.step-branch .choice-card:hover {
+      border-color: #059669;
+      background: #ffffff;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.15);
+    }
+    .step-section.step-branch .choice-card.selected {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border-color: #059669;
+      border-width: 2px;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.2);
+    }
+    .step-section.step-branch .choice-card.selected .check-badge {
+      background: #059669;
+    }
+
+    /* 3. Purpose of Visit Panel - Light Warm Amber / Golden Honey */
+    .step-section.step-purpose {
+      background: #fffbeb;
+      border: 2px solid #fde68a;
+      box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+    }
+    .step-section.step-purpose:hover {
+      border-color: #fcd34d;
+      box-shadow: 0 6px 20px rgba(217, 119, 6, 0.1);
+    }
+    .step-section.step-purpose .step-section-header {
+      border-bottom: 1.5px solid #fef3c7;
+    }
+    .step-section.step-purpose .step-section-num {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      box-shadow: 0 3px 8px rgba(217, 119, 6, 0.35);
+    }
+    .step-section.step-purpose .step-section-title {
+      color: #92400e;
+    }
+    .step-section.step-purpose .choice-card {
+      background: #ffffff;
+      border: 1.5px solid #fde68a;
+    }
+    .step-section.step-purpose .choice-card:hover {
+      border-color: #d97706;
+      background: #ffffff;
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.15);
+    }
+    .step-section.step-purpose .choice-card.selected {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-color: #d97706;
+      border-width: 2px;
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.2);
+    }
+    .step-section.step-purpose .choice-card.selected .check-badge {
+      background: #d97706;
+    }
+    .step-section.step-purpose #customPurposeBox .form-control {
+      background-color: #ffffff;
+      border: 1.5px solid #fcd34d;
+    }
+    .step-section.step-purpose #customPurposeBox .form-control:focus {
+      border-color: #d97706;
+      box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.18);
+    }
+
     /* INPUT WITH ICON WRAPPER */
     .input-icon-group {
       position: relative;
@@ -1449,8 +1565,8 @@
           <input type="hidden" id="vBranch" required>
           <input type="hidden" id="vPurpose" required>
 
-          <!-- STEP 1: Personal Details Panel -->
-          <div class="step-section">
+          <!-- STEP 1: Personal Details Panel (Light Sky Blue) -->
+          <div class="step-section step-personal">
             <div class="step-section-header">
               <div class="step-section-num">1</div>
               <span class="step-section-title">Personal Details</span>
@@ -1504,8 +1620,8 @@
             </div>
           </div>
 
-          <!-- STEP 2: Department Branch Selection Panel -->
-          <div class="step-section" id="step2Anchor">
+          <!-- STEP 2: Department Branch Selection Panel (Light Mint Green) -->
+          <div class="step-section step-branch" id="step2Anchor">
             <div class="step-section-header">
               <div class="step-section-num">2</div>
               <span class="step-section-title">Select Branch</span>
@@ -1525,8 +1641,8 @@
             </div>
           </div>
 
-          <!-- STEP 3: Visit Purpose Selection Panel -->
-          <div class="step-section" id="step3Anchor" style="display: none;">
+          <!-- STEP 3: Visit Purpose Selection Panel (Light Golden Amber) -->
+          <div class="step-section step-purpose" id="step3Anchor" style="display: none;">
             <div class="step-section-header">
               <div class="step-section-num">3</div>
               <span class="step-section-title">Purpose of Visit</span>
