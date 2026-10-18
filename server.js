@@ -98,6 +98,7 @@ let emailReportConfig = {
   enabled: 1,
   recipient: 'admin@doenets.lk',
   time: '17:00',
+  resend_api_key: process.env.RESEND_API_KEY || '',
   smtp_host: process.env.SMTP_HOST || '',
   smtp_port: process.env.SMTP_PORT || 587,
   smtp_user: process.env.SMTP_USER || '',
@@ -109,13 +110,14 @@ let emailReportConfig = {
 };
 
 function loadEmailSettingsFromDb() {
-  db.all("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'email_report_%' OR setting_key LIKE 'smtp_%'", [], (err, rows) => {
+  db.all("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'email_report_%' OR setting_key LIKE 'smtp_%' OR setting_key = 'resend_api_key'", [], (err, rows) => {
     if (!err && rows && rows.length > 0) {
       rows.forEach(r => {
         if (r.setting_key === 'email_report_enabled') emailReportConfig.enabled = (r.setting_value === '1' || r.setting_value === 'true' || r.setting_value === 1) ? 1 : 0;
         if (r.setting_key === 'email_report_recipient') emailReportConfig.recipient = r.setting_value;
         if (r.setting_key === 'email_report_time') emailReportConfig.time = r.setting_value;
         if (r.setting_key === 'email_report_last_sent') emailReportConfig.last_sent_date = r.setting_value;
+        if (r.setting_key === 'resend_api_key') emailReportConfig.resend_api_key = r.setting_value;
         if (r.setting_key === 'smtp_host') emailReportConfig.smtp_host = r.setting_value;
         if (r.setting_key === 'smtp_port') emailReportConfig.smtp_port = parseInt(r.setting_value) || 587;
         if (r.setting_key === 'smtp_user') emailReportConfig.smtp_user = r.setting_value;
@@ -610,6 +612,57 @@ function generateEmailReportHtml(report) {
 </html>`;
 }
 
+function sendViaResendHttps(apiKey, fromAddress, toAddress, subject, htmlContent) {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    const from = (fromAddress && fromAddress.includes('@resend.dev')) ? fromAddress : 'DoENETS Gate Intelligence <onboarding@resend.dev>';
+    const payload = JSON.stringify({
+      from,
+      to: [toAddress],
+      subject,
+      html: htmlContent
+    });
+
+    const options = {
+      hostname: 'api.resend.com',
+      port: 443,
+      path: '/emails',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 15000
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(parsed);
+          } else {
+            reject(new Error(parsed.message || `Resend Error ${res.statusCode}: ${data}`));
+          }
+        } catch (e) {
+          reject(new Error(`Resend Response Error: ${data}`));
+        }
+      });
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Resend API request timed out (15s).'));
+    });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
 async function sendDailyIntelligenceEmail(recipientOverride = null) {
   const recipient = recipientOverride || emailReportConfig.recipient || 'admin@doenets.lk';
   const report = await compileDailyIntelligenceReport();
@@ -619,17 +672,29 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
   const isAlert = report.anomalies.totalCount > 0;
   const subject = `[${isAlert ? '⚠️ ALERT: ' + report.anomalies.totalCount + ' ANOMALIES' : '✓ ALL CLEAR'}] DoENETS Gate Intelligence Report - ${report.dateStr}`;
 
+  const resendKey = emailReportConfig.resend_api_key || process.env.RESEND_API_KEY;
   const host = emailReportConfig.smtp_host || process.env.SMTP_HOST;
   const user = emailReportConfig.smtp_user || process.env.SMTP_USER;
   let pass = emailReportConfig.smtp_pass || process.env.SMTP_PASS;
   const port = emailReportConfig.smtp_port || process.env.SMTP_PORT || 587;
 
-  // Clean password: strip spaces (e.g. Gmail 16-character App Passwords often copied with spaces like "abcd efgh ijkl mnop")
   if (pass) pass = String(pass).replace(/\s+/g, '');
 
   let dispatchResult = { success: false, mode: 'SIMULATION', message: '', recipient, reportSummary: report };
 
-  if (host && user && pass) {
+  // Priority 1: Resend HTTPS API (Recommended for Render Cloud - Port 443 is never blocked)
+  if (resendKey && resendKey.trim() !== '') {
+    try {
+      const info = await sendViaResendHttps(resendKey, emailReportConfig.from_address, recipient, subject, htmlContent);
+      console.log(`✓ Email report successfully dispatched via Resend HTTPS API to ${recipient}: ${info.id}`);
+      dispatchResult = { success: true, mode: 'RESEND_API', messageId: info.id, recipient, sentAt: new Date().toISOString(), reportSummary: report };
+    } catch (resendErr) {
+      console.error(`✗ Resend API delivery failed: ${resendErr.message}`);
+      dispatchResult = { success: false, mode: 'RESEND_FAILED', error: resendErr.message, recipient, sentAt: new Date().toISOString(), reportSummary: report };
+    }
+  }
+  // Priority 2: Direct SMTP (Works on Localhost and cloud instances with open SMTP ports)
+  else if (host && user && pass) {
     try {
       const isGmail = host.toLowerCase().includes('gmail');
       const isSecure = Number(port) === 465;
@@ -1500,6 +1565,7 @@ app.get('/api/admin/email-settings', authenticateToken, (req, res) => {
     smtp_port: emailReportConfig.smtp_port,
     smtp_user: emailReportConfig.smtp_user,
     has_smtp_pass: !!emailReportConfig.smtp_pass,
+    has_resend_key: !!emailReportConfig.resend_api_key,
     from_address: emailReportConfig.from_address,
     last_sent_date: emailReportConfig.last_sent_date,
     last_sent_status: emailReportConfig.last_sent_status
@@ -1511,7 +1577,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
     return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
   }
 
-  const { enabled, recipient, time, smtp_host, smtp_port, smtp_user, smtp_pass } = req.body;
+  const { enabled, recipient, time, smtp_host, smtp_port, smtp_user, smtp_pass, resend_api_key } = req.body;
   const adminUser = req.user.display_name || req.user.username || 'Super Admin';
 
   const enabledVal = enabled ? '1' : '0';
@@ -1523,6 +1589,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
     { key: 'email_report_recipient', val: recipientVal },
     { key: 'email_report_time', val: timeVal }
   ];
+  if (resend_api_key !== undefined && String(resend_api_key).trim() !== '') queries.push({ key: 'resend_api_key', val: String(resend_api_key).trim() });
   if (smtp_host !== undefined) queries.push({ key: 'smtp_host', val: String(smtp_host).trim() });
   if (smtp_port !== undefined) queries.push({ key: 'smtp_port', val: String(smtp_port).trim() });
   if (smtp_user !== undefined) queries.push({ key: 'smtp_user', val: String(smtp_user).trim() });
@@ -1540,6 +1607,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
   emailReportConfig.enabled = enabled ? 1 : 0;
   emailReportConfig.recipient = recipientVal;
   emailReportConfig.time = timeVal;
+  if (resend_api_key !== undefined && String(resend_api_key).trim() !== '') emailReportConfig.resend_api_key = String(resend_api_key).trim();
   if (smtp_host !== undefined) emailReportConfig.smtp_host = String(smtp_host).trim();
   if (smtp_port !== undefined) emailReportConfig.smtp_port = parseInt(smtp_port) || 587;
   if (smtp_user !== undefined) emailReportConfig.smtp_user = String(smtp_user).trim();
@@ -1554,6 +1622,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
       enabled: emailReportConfig.enabled === 1,
       recipient: emailReportConfig.recipient,
       time: emailReportConfig.time,
+      has_resend_key: !!emailReportConfig.resend_api_key,
       smtp_host: emailReportConfig.smtp_host,
       smtp_port: emailReportConfig.smtp_port,
       smtp_user: emailReportConfig.smtp_user,
@@ -1573,16 +1642,20 @@ app.post('/api/admin/email-report/test', authenticateToken, async (req, res) => 
     const result = await sendDailyIntelligenceEmail(recipient);
 
     let message = '';
-    if (result.mode === 'SMTP') {
+    if (result.mode === 'RESEND_API') {
+      message = `දෛනික බුද්ධිමත් වාර්තාව ${recipient} වෙත Resend HTTPS API (Port 443) හරහා සාර්ථකව යවන ලදී!`;
+    } else if (result.mode === 'RESEND_FAILED') {
+      message = `Resend API මඟින් ඊමේල් යැවීම අසාර්ථක විය: ${result.error || 'API Error'}`;
+    } else if (result.mode === 'SMTP') {
       message = `දෛනික බුද්ධිමත් වාර්තාව ${recipient} වෙත සැබෑ ඊමේල් පණිවිඩයක් ලෙස (SMTP හරහා) සාර්ථකව යවන ලදී!`;
     } else if (result.mode === 'SIMULATION') {
-      message = `වාර්තාව සාර්ථකව සම්පාදනය විය. එහෙත් SMTP සේවාදායකයක් (Gmail / Office365) සකසා නොමැති බැවින් එය සැබෑ ඊමේල් ලිපිනයට (Inbox) ලැබුණේ නැත (Simulated Delivery). සැබෑ ඊමේල් ලැබීමට Custom SMTP සැකසුම් ඇතුළත් කරන්න.`;
+      message = `වාර්තාව සාර්ථකව සම්පාදනය විය. එහෙත් ඊමේල් සේවාදායකයක් (Resend API හෝ Gmail / Office365) සකසා නොමැති බැවින් එය සැබෑ ඊමේල් ලිපිනයට (Inbox) ලැබුණේ නැත (Simulated Delivery).`;
     } else {
       message = `ඊමේල් යැවීමට නොහැකි විය (SMTP Error): ${result.error || 'Connection Failed'}`;
     }
 
     res.json({
-      success: result.mode === 'SMTP' || result.mode === 'SIMULATION',
+      success: result.mode === 'SMTP' || result.mode === 'RESEND_API' || result.mode === 'SIMULATION',
       mode: result.mode,
       message,
       result

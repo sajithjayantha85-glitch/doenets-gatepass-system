@@ -2600,6 +2600,29 @@
             </summary>
 
             <div style="margin-top: 1rem;">
+              <!-- Option A: Cloud HTTPS API (100% Guaranteed for Render Cloud - Port 443) -->
+              <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.88rem; font-weight: 800; color: #166534;">
+                    <i class="fa-solid fa-cloud-arrow-up" style="color: #16a34a;"></i> ක්‍රමය 1: Render Cloud සඳහා HTTPS API ක්‍රමය (Port 443 - 100% නොමිලේ):
+                  </span>
+                  <a href="https://resend.com" target="_blank" style="font-size: 0.8rem; font-weight: 700; color: #15803d; text-decoration: underline;">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> resend.com වෙතින් නොමිලේ API Key එකක් ගන්න
+                  </a>
+                </div>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                  <input type="password" id="txtResendApiKey" class="form-control" placeholder="re_123456789... (Render Cloud හි Port Blocks මඟහැරීමට මෙය යොදන්න)" style="font-size: 0.88rem;">
+                </div>
+                <p style="margin: 0.45rem 0 0 0; font-size: 0.8rem; color: #166534; line-height: 1.45;">
+                  * <strong>Render Cloud Free Tier</strong> මඟින් සාමාන්‍ය SMTP Ports (465/587) අවහිර කරන බැවින්, Render හි සැබෑ ඊමේල් ලැබීමට Resend API Key එකක් භාවිත කිරීම වඩාත් විශ්වාසදායකය.
+                </p>
+              </div>
+
+              <!-- Option B: Direct SMTP (Gmail / Office 365) -->
+              <div style="font-size: 0.88rem; font-weight: 800; color: #1e40af; margin-bottom: 0.65rem;">
+                <i class="fa-solid fa-network-wired"></i> ක්‍රමය 2: සෘජු SMTP සේවාදායක සැකසුම් (Local PC හෝ Office 365 සඳහා):
+              </div>
+
               <!-- Quick 1-Click Preset Buttons -->
               <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem;">
                 <div style="font-size: 0.85rem; font-weight: 700; color: #1e40af;">
@@ -6663,17 +6686,36 @@
         const txtUser = document.getElementById('txtSmtpUser');
         if (txtUser && data.smtp_user) txtUser.value = data.smtp_user;
 
+        const txtPass = document.getElementById('txtSmtpPass');
+        if (txtPass && data.has_smtp_pass) {
+          txtPass.placeholder = '•••••••• (App Password සුරකින ලදී)';
+        }
+
+        const txtResend = document.getElementById('txtResendApiKey');
+        if (txtResend) {
+          if (data.has_resend_key) {
+            txtResend.value = '';
+            txtResend.placeholder = '•••••••• (Resend API Key සුරකින ලදී - සක්‍රීයයි)';
+          } else {
+            txtResend.placeholder = 're_123456789... (Render Cloud හි Port Blocks මඟහැරීමට මෙය යොදන්න)';
+          }
+        }
+
         // Dynamic SMTP Connection Badge & Summary Indicator
         const smtpBadge = document.getElementById('smtpConnectionBadge');
         const miniInd = document.getElementById('smtpMiniIndicator');
-        const hasSmtpConfigured = data.smtp_host && data.smtp_user;
+        const hasSmtpConfigured = data.smtp_host && data.smtp_user && data.has_smtp_pass;
+        const hasResendConfigured = Boolean(data.has_resend_key);
 
-        if (hasSmtpConfigured) {
-          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-circle-check"></i> Real Email (SMTP Ready)</span>`;
-          if (miniInd) { miniInd.innerText = '✅ SMTP සකසා ඇත (සැබෑ ඊමේල් යැවේ)'; miniInd.style.color = '#15803d'; }
+        if (hasResendConfigured) {
+          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-cloud-bolt"></i> Real Email (Resend HTTPS Cloud Active)</span>`;
+          if (miniInd) { miniInd.innerText = '✅ Resend HTTPS Cloud සක්‍රීයයි (Render හෝ Local ඕනෑම තැනක සැබෑ ඊමේල් යැවේ)'; miniInd.style.color = '#15803d'; }
+        } else if (hasSmtpConfigured) {
+          if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-circle-check"></i> Real Email (Gmail / Local SMTP Ready)</span>`;
+          if (miniInd) { miniInd.innerText = '✅ Gmail SMTP සකසා ඇත (Localhost හි සැබෑ ඊමේල් යැවේ; Render හි නම් Resend යොදන්න)'; miniInd.style.color = '#0369a1'; }
         } else {
           if (smtpBadge) smtpBadge.innerHTML = `<span class="badge" style="background: #fef3c7; color: #92400e; font-size: 0.85rem; padding: 0.45rem 0.8rem; font-weight: 700; border-radius: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Simulation Mode (SMTP නැත)</span>`;
-          if (miniInd) { miniInd.innerText = '⚠️ සැබෑ ඊමේල් ලැබීමට Gmail / Office365 සකසන්න'; miniInd.style.color = '#b45309'; }
+          if (miniInd) { miniInd.innerText = '⚠️ සැබෑ ඊමේල් ලැබීමට Resend API Key හෝ Gmail App Password සකසන්න'; miniInd.style.color = '#b45309'; }
         }
 
         const badge = document.getElementById('emailReportStatusBadge');
@@ -6711,6 +6753,7 @@
         const enabled = document.getElementById('chkEmailReportActive') ? document.getElementById('chkEmailReportActive').checked : true;
         const recipient = document.getElementById('txtEmailRecipient') ? document.getElementById('txtEmailRecipient').value.trim() : 'admin@doenets.lk';
         const time = document.getElementById('txtEmailTime') ? document.getElementById('txtEmailTime').value.trim() : '17:00';
+        const resend_api_key = document.getElementById('txtResendApiKey') ? document.getElementById('txtResendApiKey').value.trim() : '';
         const smtp_host = document.getElementById('txtSmtpHost') ? document.getElementById('txtSmtpHost').value.trim() : '';
         const smtp_port = document.getElementById('txtSmtpPort') ? document.getElementById('txtSmtpPort').value.trim() : '587';
         const smtp_user = document.getElementById('txtSmtpUser') ? document.getElementById('txtSmtpUser').value.trim() : '';
@@ -6732,6 +6775,7 @@
             enabled,
             recipient,
             time,
+            resend_api_key,
             smtp_host,
             smtp_port,
             smtp_user,
@@ -6782,15 +6826,21 @@
           const report = data.result && data.result.reportSummary ? data.result.reportSummary : null;
           const anomaliesCount = report && report.anomalies ? report.anomalies.totalCount : 0;
           
-          if (data.mode === 'SMTP') {
+          if (data.mode === 'RESEND_API') {
+            showSecToast('✓ Resend HTTPS හරහා සැබෑ ඊමේල් පණිවිඩය සාර්ථකව යවන ලදී!', 'success');
+            alert(`✅ සාර්ථකයි (Real Email Delivered via Resend HTTPS API)!\n\nදෛනික බුද්ධිමත් වාර්තාව "${recipient}" වෙත Resend API (Port 443) හරහා සැබෑ ඊමේල් පණිවිඩයක් ලෙස සාර්ථකව යවන ලදී.\n\nකරුණාකර ඔබගේ Inbox (හෝ Spam) ෆෝල්ඩරය පරීක්ෂා කරන්න.\n\n[වාර්තා සාරාංශය]\nදිනය: ${report ? report.dateStr : 'Today'}\nමුළු ඇතුළුවීම්: ${report ? report.metrics.totalCheckIns : 0}\nපරිශ්‍රයේ සිටින පිරිස: ${report ? report.metrics.currentlyInside : 0}\nආරක්ෂක අසාමාන්‍යතා (Anomalies): ${anomaliesCount}`);
+          } else if (data.mode === 'SMTP') {
             showSecToast('✓ සැබෑ ඊමේල් පණිවිඩය සාර්ථකව යවන ලදී!', 'success');
-            alert(`✅ සාර්ථකයි (Real Email Delivered)!\n\nදෛනික බුද්ධිමත් වාර්තාව "${recipient}" වෙත සැබෑ ඊමේල් පණිවිඩයක් ලෙස සාර්ථකව යවන ලදී.\n\nකරුණාකර ඔබගේ Inbox (හෝ Spam) ෆෝල්ඩරය පරීක්ෂා කරන්න.\n\n[වාර්තා සාරාංශය]\nදිනය: ${report ? report.dateStr : 'Today'}\nමුළු ඇතුළුවීම්: ${report ? report.metrics.totalCheckIns : 0}\nපරිශ්‍රයේ සිටින පිරිස: ${report ? report.metrics.currentlyInside : 0}\nආරක්ෂක අසාමාන්‍යතා (Anomalies): ${anomaliesCount}`);
+            alert(`✅ සාර්ථකයි (Real Email Delivered via SMTP)!\n\nදෛනික බුද්ධිමත් වාර්තාව "${recipient}" වෙත සැබෑ ඊමේල් පණිවිඩයක් ලෙස සාර්ථකව යවන ලදී.\n\nකරුණාකර ඔබගේ Inbox (හෝ Spam) ෆෝල්ඩරය පරීක්ෂා කරන්න.\n\n[වාර්තා සාරාංශය]\nදිනය: ${report ? report.dateStr : 'Today'}\nමුළු ඇතුළුවීම්: ${report ? report.metrics.totalCheckIns : 0}\nපරිශ්‍රයේ සිටින පිරිස: ${report ? report.metrics.currentlyInside : 0}\nආරක්ෂක අසාමාන්‍යතා (Anomalies): ${anomaliesCount}`);
           } else if (data.mode === 'SIMULATION') {
             showSecToast('⚠️ වාර්තාව සකස් විය (Simulation Mode)', 'warn');
-            alert(`⚠️ අවධානයට: ඊමේල් පණිවිඩය ඔබගේ Inbox එකට නොපැමිණියේ ඇයි?\n\nහේතුව: පද්ධතිය තුළ වාර්තාව සාර්ථකව ජනනය වූ නමුත්, පිටතට ඊමේල් සම්ප්‍රේෂණය කිරීම සඳහා SMTP Mail Server එකක් (Gmail App Password හෝ දෙපාර්තමේන්තු ඊමේල්) තවමත් සකසා නොමැත. එබැවින් මෙය පද්ධතිය තුළ පමණක් අනුකරණය (Simulation) විය.\n\n💡 සැබෑ ඊමේල් ඔබගේ Inbox එකටම ලබාගැනීමට:\n1. පහත "පිටතට ඊමේල් යැවීමේ සේවාදායක සැකසුම් (SMTP Setup)" කොටස විවෘත කරන්න.\n2. "Gmail සැකසුම්" බොත්තම ඔබා ඔබගේ Gmail ලිපිනය සහ 16-digit App Password එක ලබා දෙන්න.\n3. "සැකසුම් සුරකින්න" ඔබන්න.\n\n(වාර්තාවේ පෙනුම දැනටම බැලීමට "වාර්තාව Preview කරන්න" බොත්තම ඔබන්න)`);
+            alert(`⚠️ අවධානයට: ඊමේල් පණිවිඩය ඔබගේ Inbox එකට නොපැමිණියේ ඇයි?\n\nහේතුව: පද්ධතිය තුළ වාර්තාව සාර්ථකව ජනනය වූ නමුත්, පිටතට ඊමේල් සම්ප්‍රේෂණය කිරීම සඳහා Mail Service එකක් (Resend API Key හෝ Gmail App Password) තවමත් සකසා නොමැත. එබැවින් මෙය පද්ධතිය තුළ පමණක් අනුකරණය (Simulation) විය.\n\n💡 සැබෑ ඊමේල් Inbox එකටම ලබාගැනීමට:\n• Render Cloud හි නම්: "ක්‍රමය 1" හි Resend API Key එකක් ඇතුළත් කරන්න (Port blocks මඟහැර 100% ක්‍රියා කරයි).\n• Local PC හි නම්: "ක්‍රමය 2" හි Gmail App Password එක ඇතුළත් කරන්න.\n\n(වාර්තාවේ සැබෑ පෙනුම දැනටම නැරඹීමට "වාර්තාව Preview කරන්න" බොත්තම ඔබන්න)`);
+          } else if (data.mode === 'RESEND_FAILED') {
+            showSecToast('❌ Resend API මඟින් ඊමේල් යැවීම අසාර්ථක විය', 'error');
+            alert(`❌ Resend API Error:\n\n${data.message}\n\nකරුණාකර ඔබ ඇතුළත් කළ Resend API Key එක නිවැරදි දැයි පරීක්ෂා කරන්න.`);
           } else {
-            showSecToast('❌ SMTP මඟින් ඊමේල් යැවීම අසාර්ථක විය', 'error');
-            alert(`❌ ඊමේල් යැවීමට නොහැකි විය (SMTP Error):\n\n${data.message}\n\nකරුණාකර ඔබගේ SMTP Host, Port, Email සහ Password / App Password නිවැරදි දැයි පරීක්ෂා කරන්න.`);
+            showSecToast('❌ ඊමේල් යැවීම අසාර්ථක විය', 'error');
+            alert(`❌ ඊමේල් යැවීමට නොහැකි විය (SMTP Error):\n\n${data.message}\n\n💡 Render Cloud හි නම්:\nRender Free Tier මඟින් SMTP Ports (465/587) සම්පූර්ණයෙන්ම අවහිර කර ඇත. එබැවින් Render හි සිටින විට "ක්‍රමය 1: Resend HTTPS API" (Port 443) භාවිත කරන්න.\n\n💡 Local PC (localhost:5000) හි නම්:\nGoogle ගිණුමේ සාමාන්‍ය මුරපදය වෙනුවට අකුරු 16 ක Google App Password එකක් භාවිත කර ඇති බවට තහවුරු කරගන්න.`);
           }
 
           await loadEmailSettings();
