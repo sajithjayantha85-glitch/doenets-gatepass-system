@@ -738,6 +738,7 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
     .filter(s => s.includes('@'));
   const recipients = recipientList.length > 0 ? recipientList : [recipientRaw];
   const recipientStr = recipients.join(', ');
+  const recipient = recipientStr;
 
   const report = await compileDailyIntelligenceReport();
   const htmlContent = generateEmailReportHtml(report);
