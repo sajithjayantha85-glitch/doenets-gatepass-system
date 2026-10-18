@@ -2617,7 +2617,16 @@
                       <i class="fa-solid fa-arrow-up-right-from-square"></i> brevo.com වෙතින් නොමිලේ API Key එකක් ගන්න
                     </a>
                   </div>
-                  <input type="password" id="txtBrevoApiKey" class="form-control" placeholder="xkeysib-... (Domain එකක් නැතත් වෙනත් ඕනෑම ඊමේල් ලිපිනයකට යැවිය හැක)" style="font-size: 0.85rem;">
+                  <input type="password" id="txtBrevoApiKey" class="form-control" placeholder="xkeysib-... (Domain එකක් නැතත් වෙනත් ඕනෑම ඊමේල් ලිපිනයකට යැවිය හැක)" style="font-size: 0.85rem; margin-bottom: 0.5rem;">
+                  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.5rem 0.65rem; margin-bottom: 0.4rem;">
+                    <label style="font-size: 0.78rem; font-weight: 700; color: #166534; display: block; margin-bottom: 0.2rem;">
+                      <i class="fa-solid fa-at"></i> Brevo හි ලියාපදිංචි ඔබගේ ඊමේල් ලිපිනය (Verified Sender Email):
+                    </label>
+                    <input type="email" id="txtBrevoSenderEmail" class="form-control" placeholder="sajithjayantha85@gmail.com" value="sajithjayantha85@gmail.com" style="font-size: 0.85rem;">
+                    <p style="margin: 0.25rem 0 0 0; font-size: 0.73rem; color: #475569;">
+                      💡 Brevo නොමිලේ සැලසුමේදී ඊමේල් යැවිය හැක්කේ ඔබ Brevo හි ලියාපදිංචි කර ඇති ඔබගේම ඊමේල් ලිපිනය යවන්නා (Sender) ලෙස තැබුවහොත් පමණි. (ලබන්නා ලෙස වෙනත් ඕනෑම ලිපිනයක් ලබාදිය හැක).
+                    </p>
+                  </div>
                   <p style="margin: 0.35rem 0 0 0; font-size: 0.78rem; color: #166534;">
                     * Brevo හිදී ඔබගේ ඊමේල් ලිපිනය Verify කරගත් පසු, <strong>ලෝකයේ ඕනෑම ඊමේල් ලිපිනයකට</strong> දිනකට ඊමේල් 300ක් සම්පූර්ණයෙන්ම නොමිලේ යැවිය හැක.
                   </p>
@@ -6730,6 +6739,11 @@
           }
         }
 
+        const txtBrevoSender = document.getElementById('txtBrevoSenderEmail');
+        if (txtBrevoSender && data.brevo_sender_email) {
+          txtBrevoSender.value = data.brevo_sender_email;
+        }
+
         // Dynamic SMTP Connection Badge & Summary Indicator
         const smtpBadge = document.getElementById('smtpConnectionBadge');
         const miniInd = document.getElementById('smtpMiniIndicator');
@@ -6793,6 +6807,7 @@
         const recipient = document.getElementById('txtEmailRecipient') ? document.getElementById('txtEmailRecipient').value.trim() : 'admin@doenets.lk';
         const time = document.getElementById('txtEmailTime') ? document.getElementById('txtEmailTime').value.trim() : '17:00';
         const brevo_api_key = document.getElementById('txtBrevoApiKey') ? document.getElementById('txtBrevoApiKey').value.trim() : '';
+        const brevo_sender_email = document.getElementById('txtBrevoSenderEmail') ? document.getElementById('txtBrevoSenderEmail').value.trim() : '';
         const resend_api_key = document.getElementById('txtResendApiKey') ? document.getElementById('txtResendApiKey').value.trim() : '';
         const smtp_host = document.getElementById('txtSmtpHost') ? document.getElementById('txtSmtpHost').value.trim() : '';
         const smtp_port = document.getElementById('txtSmtpPort') ? document.getElementById('txtSmtpPort').value.trim() : '587';
@@ -6816,6 +6831,7 @@
             recipient,
             time,
             brevo_api_key,
+            brevo_sender_email,
             resend_api_key,
             smtp_host,
             smtp_port,

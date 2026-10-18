@@ -100,6 +100,7 @@ let emailReportConfig = {
   time: '17:00',
   resend_api_key: process.env.RESEND_API_KEY || '',
   brevo_api_key: process.env.BREVO_API_KEY || '',
+  brevo_sender_email: 'sajithjayantha85@gmail.com',
   smtp_host: process.env.SMTP_HOST || '',
   smtp_port: process.env.SMTP_PORT || 587,
   smtp_user: process.env.SMTP_USER || '',
@@ -112,7 +113,7 @@ let emailReportConfig = {
 };
 
 function loadEmailSettingsFromDb() {
-  db.all("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'email_report_%' OR setting_key LIKE 'smtp_%' OR setting_key IN ('resend_api_key', 'brevo_api_key')", [], (err, rows) => {
+  db.all("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'email_report_%' OR setting_key LIKE 'smtp_%' OR setting_key IN ('resend_api_key', 'brevo_api_key', 'brevo_sender_email')", [], (err, rows) => {
     if (!err && rows && rows.length > 0) {
       rows.forEach(r => {
         if (r.setting_key === 'email_report_enabled') emailReportConfig.enabled = (r.setting_value === '1' || r.setting_value === 'true' || r.setting_value === 1) ? 1 : 0;
@@ -123,6 +124,7 @@ function loadEmailSettingsFromDb() {
         if (r.setting_key === 'email_report_last_error') emailReportConfig.last_sent_error = r.setting_value;
         if (r.setting_key === 'resend_api_key') emailReportConfig.resend_api_key = r.setting_value;
         if (r.setting_key === 'brevo_api_key') emailReportConfig.brevo_api_key = r.setting_value;
+        if (r.setting_key === 'brevo_sender_email') emailReportConfig.brevo_sender_email = r.setting_value;
         if (r.setting_key === 'smtp_host') emailReportConfig.smtp_host = r.setting_value;
         if (r.setting_key === 'smtp_port') emailReportConfig.smtp_port = parseInt(r.setting_value) || 587;
         if (r.setting_key === 'smtp_user') emailReportConfig.smtp_user = r.setting_value;
@@ -682,7 +684,7 @@ function sendViaBrevoHttps(apiKey, fromEmail, fromName, toAddresses, subject, ht
     const payload = JSON.stringify({
       sender: {
         name: fromName || 'DoENETS Gate Intelligence',
-        email: fromEmail || 'gatepass-alerts@doenets.lk'
+        email: (fromEmail && fromEmail.includes('@')) ? fromEmail.trim() : 'sajithjayantha85@gmail.com'
       },
       to: recipients.map(e => ({ email: e })),
       subject,
@@ -762,7 +764,9 @@ async function sendDailyIntelligenceEmail(recipientOverride = null) {
   // Priority 1: Brevo HTTPS API (Can send to ANY external email address - No custom domain required)
   if (brevoKey && brevoKey.trim() !== '') {
     try {
-      const senderEmail = (user && user.includes('@')) ? user : (emailReportConfig.from_address || 'gatepass-alerts@doenets.lk');
+      const senderEmail = (emailReportConfig.brevo_sender_email && emailReportConfig.brevo_sender_email.includes('@'))
+        ? emailReportConfig.brevo_sender_email.trim()
+        : ((user && user.includes('@')) ? user.trim() : 'sajithjayantha85@gmail.com');
       const info = await sendViaBrevoHttps(brevoKey, senderEmail, emailReportConfig.from_name, recipients, subject, htmlContent);
       console.log(`✓ Email report successfully dispatched via Brevo HTTPS API to ${recipientStr}: ${info.messageId}`);
       dispatchResult = { success: true, mode: 'BREVO_API', messageId: info.messageId, recipient: recipientStr, sentAt: new Date().toISOString(), reportSummary: report };
@@ -1673,6 +1677,7 @@ app.get('/api/admin/email-settings', authenticateToken, (req, res) => {
     has_smtp_pass: !!emailReportConfig.smtp_pass,
     has_resend_key: !!emailReportConfig.resend_api_key,
     has_brevo_key: !!emailReportConfig.brevo_api_key,
+    brevo_sender_email: emailReportConfig.brevo_sender_email || 'sajithjayantha85@gmail.com',
     from_address: emailReportConfig.from_address,
     last_sent_date: emailReportConfig.last_sent_date,
     last_sent_status: emailReportConfig.last_sent_status,
@@ -1685,7 +1690,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
     return res.status(403).json({ error: 'Super Admin privileges required / සුපිරි පාලක බලතල අවශ්‍යයි' });
   }
 
-  const { enabled, recipient, time, smtp_host, smtp_port, smtp_user, smtp_pass, resend_api_key, brevo_api_key } = req.body;
+  const { enabled, recipient, time, smtp_host, smtp_port, smtp_user, smtp_pass, resend_api_key, brevo_api_key, brevo_sender_email } = req.body;
   const adminUser = req.user.display_name || req.user.username || 'Super Admin';
 
   const enabledVal = enabled ? '1' : '0';
@@ -1706,6 +1711,11 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
     const val = String(brevo_api_key).trim();
     queries.push({ key: 'brevo_api_key', val });
     emailReportConfig.brevo_api_key = val;
+  }
+  if (brevo_sender_email !== undefined) {
+    const val = String(brevo_sender_email).trim();
+    queries.push({ key: 'brevo_sender_email', val });
+    emailReportConfig.brevo_sender_email = val;
   }
   if (smtp_host !== undefined) queries.push({ key: 'smtp_host', val: String(smtp_host).trim() });
   if (smtp_port !== undefined) queries.push({ key: 'smtp_port', val: String(smtp_port).trim() });
@@ -1740,6 +1750,7 @@ app.post('/api/admin/email-settings', authenticateToken, (req, res) => {
       time: emailReportConfig.time,
       has_resend_key: !!emailReportConfig.resend_api_key,
       has_brevo_key: !!emailReportConfig.brevo_api_key,
+      brevo_sender_email: emailReportConfig.brevo_sender_email || 'sajithjayantha85@gmail.com',
       smtp_host: emailReportConfig.smtp_host,
       smtp_port: emailReportConfig.smtp_port,
       smtp_user: emailReportConfig.smtp_user,
