@@ -1526,6 +1526,432 @@ app.post('/api/branch/passes/create', authenticateToken, async (req, res) => {
   }
 });
 
+// 7.2 Bulk Gate Pass Generation (Confidential, Evaluation, Admin / Visitors)
+app.post('/api/passes/bulk', authenticateToken, async (req, res) => {
+  const userRole = req.user.role;
+  const { category, batch_name, branch_name, purpose, valid_from, valid_to, valid_days, passes } = req.body;
+
+  if (!category) {
+    return res.status(400).json({ error: 'Pass category is required' });
+  }
+
+  // Permission Checks
+  if (category === 'CONFIDENTIAL' && !['CONFIDENTIAL_ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
+    return res.status(403).json({ error: 'Permission denied: Confidential Branch admin rights required' });
+  }
+  if (category === 'EVALUATION' && !['EVALUATION_ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
+    return res.status(403).json({ error: 'Permission denied: Evaluation Branch admin rights required' });
+  }
+  if (category === 'STAFF' && !['HR_ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
+    return res.status(403).json({ error: 'Permission denied: HR Admin rights required' });
+  }
+  if (category === 'VISITOR' && !['SUPER_ADMIN', 'ADMIN', 'MANAGEMENT', 'RECEPTIONIST'].includes(userRole)) {
+    return res.status(403).json({ error: 'Permission denied: Admin rights required' });
+  }
+
+  if (!Array.isArray(passes) || passes.length === 0) {
+    return res.status(400).json({ error: 'Please provide at least one person in the passes list' });
+  }
+
+  if (passes.length > 500) {
+    return res.status(400).json({ error: 'Maximum batch size is 500 passes per upload' });
+  }
+
+  const cleanBatchName = (batch_name && batch_name.trim()) 
+    ? batch_name.trim() 
+    : `${category}-${new Date().toISOString().slice(0, 10)}-B${Math.floor(100 + Math.random() * 900)}`;
+
+  const days = parseInt(valid_days, 10) || (category === 'STAFF' ? 365 : (category === 'EVALUATION' ? 14 : 1));
+  let validFrom = valid_from ? new Date(valid_from) : new Date();
+  let validTo = valid_to ? new Date(valid_to) : new Date(validFrom);
+  if (!valid_to) {
+    validTo.setDate(validTo.getDate() + days);
+  }
+
+  const branch = branch_name || req.user.branch_name || (category === 'EVALUATION' ? 'Evaluation Branch' : (category === 'CONFIDENTIAL' ? 'Confidential Branch' : 'General Administration'));
+  const defaultPurpose = purpose || (category === 'EVALUATION' ? 'Evaluation & Marking Panel' : (category === 'CONFIDENTIAL' ? 'Confidential Exam Duty' : 'Official Departmental Visit'));
+  const accessZoneVal = category === 'CONFIDENTIAL' ? 'CONFIDENTIAL_ZONE' : (category === 'EVALUATION' ? 'EVALUATION_ZONE' : category);
+
+  const createdList = [];
+  const errors = [];
+
+  for (let i = 0; i < passes.length; i++) {
+    const p = passes[i];
+    const name = p.person_name || p.name || p.FullName;
+    const nic = p.nic_number || p.nic || p.NIC;
+
+    if (!name || !nic) {
+      errors.push(`Row ${i + 1}: Name and NIC are required`);
+      continue;
+    }
+
+    const passCode = generatePassCode(category);
+    const cleanNic = String(nic).trim().toUpperCase();
+    const cleanVeh = p.vehicle_number ? String(p.vehicle_number).trim().toUpperCase() : null;
+    const cleanMob = p.mobile_number ? String(p.mobile_number).trim() : null;
+    const cleanEmp = (p.employee_number || p.panel_id || p.designation) ? String(p.employee_number || p.panel_id || p.designation).trim() : null;
+    const rowPurpose = p.purpose || defaultPurpose;
+
+    try {
+      const sql = `
+        INSERT INTO passes (
+          pass_code, category, person_name, nic_number, employee_number, 
+          mobile_number, vehicle_number, branch_name, purpose, 
+          access_zones, valid_from, valid_to, status, created_by, batch_name
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
+      `;
+
+      await new Promise((resolve, reject) => {
+        db.run(sql, [
+          passCode,
+          category,
+          String(name).trim(),
+          cleanNic,
+          cleanEmp,
+          cleanMob,
+          cleanVeh,
+          branch,
+          rowPurpose,
+          accessZoneVal,
+          validFrom.toISOString(),
+          validTo.toISOString(),
+          req.user.username,
+          cleanBatchName
+        ], function (err) {
+          if (err) reject(err);
+          else {
+            const passObj = {
+              id: this.lastID,
+              pass_code: passCode,
+              category,
+              person_name: String(name).trim(),
+              nic_number: cleanNic,
+              employee_number: cleanEmp,
+              mobile_number: cleanMob,
+              vehicle_number: cleanVeh,
+              branch_name: branch,
+              purpose: rowPurpose,
+              access_zones: accessZoneVal,
+              valid_from: validFrom.toISOString(),
+              valid_to: validTo.toISOString(),
+              status: 'ACTIVE',
+              batch_name: cleanBatchName
+            };
+            cachePass(passObj);
+            createdList.push(passObj);
+            resolve();
+          }
+        });
+      });
+    } catch (insertErr) {
+      console.error(`Bulk pass insert error row ${i + 1}:`, insertErr);
+      errors.push(`Row ${i + 1} (${name}): ${insertErr.message}`);
+    }
+  }
+
+  logAdminAuditAction(
+    req.user.username,
+    req.user.role,
+    'BULK_PASS_GENERATION',
+    cleanBatchName,
+    `Batch: "${cleanBatchName}" - Created ${createdList.length} ${category} passes (${errors.length} failed)`,
+    req.ip
+  );
+
+  res.status(201).json({
+    message: `Successfully generated ${createdList.length} passes for batch "${cleanBatchName}"`,
+    batch_name: cleanBatchName,
+    category,
+    total_requested: passes.length,
+    total_created: createdList.length,
+    errors,
+    passes: createdList
+  });
+});
+
+// 7.3 List Recent Bulk Pass Batches
+app.get('/api/passes/bulk/batches', authenticateToken, async (req, res) => {
+  const userRole = req.user.role;
+  let categoryFilter = '';
+  if (userRole === 'CONFIDENTIAL_ADMIN') categoryFilter = "WHERE category = 'CONFIDENTIAL'";
+  else if (userRole === 'EVALUATION_ADMIN') categoryFilter = "WHERE category = 'EVALUATION'";
+  else if (userRole === 'HR_ADMIN') categoryFilter = "WHERE category = 'STAFF'";
+
+  const whereClause = categoryFilter 
+    ? `${categoryFilter} AND batch_name IS NOT NULL`
+    : `WHERE batch_name IS NOT NULL`;
+
+  const sql = `
+    SELECT 
+      batch_name, 
+      category, 
+      branch_name, 
+      purpose, 
+      COUNT(*) as total_passes, 
+      MIN(valid_from) as valid_from, 
+      MAX(valid_to) as valid_to, 
+      MAX(created_at) as created_at
+    FROM passes 
+    ${whereClause}
+    GROUP BY batch_name, category
+    ORDER BY created_at DESC 
+    LIMIT 50
+  `;
+
+  db.all(sql, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch bulk batches' });
+    res.json({ batches: rows || [] });
+  });
+});
+
+// 7.4 Print Ready A4 Badge Sheet for Batch or Passes
+app.get('/api/passes/bulk/print', async (req, res) => {
+  const token = req.query.token;
+  if (!token) return res.status(401).send('<h3>Unauthorized: Access Token Required</h3>');
+
+  let user = null;
+  try {
+    user = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return res.status(403).send('<h3>Forbidden: Invalid or expired token</h3>');
+  }
+
+  const batchName = req.query.batch_name || req.query.batch;
+  const passCodesStr = req.query.codes;
+
+  let sql = '';
+  let params = [];
+
+  if (passCodesStr) {
+    const codes = passCodesStr.split(',').map(c => c.trim()).filter(Boolean);
+    const placeholders = codes.map(() => '?').join(',');
+    sql = `SELECT * FROM passes WHERE pass_code IN (${placeholders}) ORDER BY id ASC`;
+    params = codes;
+  } else if (batchName) {
+    sql = `SELECT * FROM passes WHERE batch_name = ? ORDER BY id ASC`;
+    params = [batchName];
+  } else {
+    return res.status(400).send('<h3>Please provide batch_name or codes parameter</h3>');
+  }
+
+  db.all(sql, params, async (err, rows) => {
+    if (err || !rows || rows.length === 0) {
+      return res.status(404).send('<h3>No passes found for the requested batch or codes</h3>');
+    }
+
+    // Role check if confidential
+    const hasConfidential = rows.some(r => r.category === 'CONFIDENTIAL');
+    if (hasConfidential && !['CONFIDENTIAL_ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+      return res.status(403).send('<h3>Permission Denied: Confidential passes cannot be viewed by this role</h3>');
+    }
+
+    // Generate QR codes for all passes
+    const badgeItems = [];
+    for (const p of rows) {
+      let qr = '';
+      try {
+        qr = await QRCode.toDataURL(p.pass_code, { margin: 1, width: 180 });
+      } catch (e) {
+        qr = '';
+      }
+      badgeItems.push({ ...p, qr });
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Department of Examinations - Official Gate Pass Badges (${batchName || 'Bulk Print'})</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 8mm;
+          }
+          * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+          body { background: #f1f5f9; padding: 15px; color: #0f172a; }
+          .toolbar { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto 20px auto; background: white; padding: 12px 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+          .print-sheet { max-width: 850px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+          
+          /* Individual Badge Card (Ready for standard Lanyard Holder ~ 95mm x 130mm) */
+          .badge-card {
+            background: white;
+            border: 2px dashed #94a3b8;
+            border-radius: 12px;
+            padding: 12px 14px;
+            page-break-inside: avoid;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+          }
+          
+          .badge-header {
+            text-align: center;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+          }
+          .badge-org {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #1e3a8a;
+            text-transform: uppercase;
+          }
+          .badge-sub {
+            font-size: 9px;
+            color: #64748b;
+            font-weight: 600;
+          }
+
+          .category-pill {
+            display: inline-block;
+            font-size: 9.5px;
+            font-weight: 900;
+            padding: 2px 9px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 3px;
+          }
+          .cat-EVALUATION { background: #dcfce7; color: #166534; border: 1.5px solid #86efac; }
+          .cat-CONFIDENTIAL { background: #ffe4e6; color: #9f1239; border: 1.5px solid #fecdd3; }
+          .cat-VISITOR { background: #dbeafe; color: #1e40af; border: 1.5px solid #93c5fd; }
+          .cat-STAFF { background: #ede9fe; color: #5b21b6; border: 1.5px solid #c4b5fd; }
+
+          .badge-body {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin: 4px 0;
+          }
+          .qr-box {
+            width: 95px;
+            height: 95px;
+            flex-shrink: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 3px;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .qr-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+          }
+          .info-box {
+            flex: 1;
+            font-size: 10.5px;
+            line-height: 1.35;
+          }
+          .person-name {
+            font-size: 13.5px;
+            font-weight: 900;
+            color: #0f172a;
+            margin-bottom: 2px;
+          }
+          .info-row {
+            margin-bottom: 2px;
+          }
+          .info-label {
+            color: #64748b;
+            font-weight: 700;
+            font-size: 9px;
+          }
+          .info-val {
+            font-weight: 800;
+            color: #1e293b;
+          }
+          
+          .pass-code-bar {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            text-align: center;
+            padding: 3px;
+            font-family: monospace;
+            font-size: 11.5px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #1e3a8a;
+            margin-top: 4px;
+          }
+
+          .badge-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 8.5px;
+            color: #64748b;
+          }
+
+          @media print {
+            body { background: white; padding: 0; }
+            .toolbar { display: none !important; }
+            .print-sheet { max-width: 100%; gap: 8mm; }
+            .badge-card { box-shadow: none; border: 1.5px dashed #64748b; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="toolbar">
+          <div>
+            <h2 style="font-size: 16px; color: #1e3a8a; margin-bottom: 2px;">Department of Examinations - Gate Pass Badge Sheet</h2>
+            <p style="font-size: 12px; color: #64748b;">Batch: <strong>${batchName || 'Selected Passes'}</strong> &bull; Total Badges: <strong>${badgeItems.length}</strong></p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="window.print()" style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer;">🖨️ Print Badge Sheet</button>
+            <button onclick="window.close()" style="background: #64748b; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; cursor: pointer;">Close</button>
+          </div>
+        </div>
+
+        <div class="print-sheet">
+          ${badgeItems.map(p => `
+            <div class="badge-card">
+              <div class="badge-header">
+                <div class="badge-org">Department of Examinations &bull; Sri Lanka</div>
+                <div class="badge-sub">Gate Security &amp; Access Authorization Pass</div>
+                <div class="category-pill cat-${p.category}">${p.category} DUTY PASS</div>
+              </div>
+              <div class="badge-body">
+                <div class="qr-box">
+                  <img src="${p.qr}" alt="QR">
+                </div>
+                <div class="info-box">
+                  <div class="person-name">${p.person_name}</div>
+                  <div class="info-row"><span class="info-label">NIC / ID:</span> <span class="info-val">${p.nic_number}</span></div>
+                  ${p.employee_number ? `<div class="info-row"><span class="info-label">Panel/Emp No:</span> <span class="info-val">${p.employee_number}</span></div>` : ''}
+                  ${p.vehicle_number ? `<div class="info-row"><span class="info-label">Vehicle:</span> <span class="info-val">${p.vehicle_number}</span></div>` : ''}
+                  <div class="info-row"><span class="info-label">Branch:</span> <span class="info-val">${p.branch_name}</span></div>
+                  <div class="info-row"><span class="info-label">Duty/Purpose:</span> <span class="info-val">${p.purpose || 'Official Duty'}</span></div>
+                  <div class="info-row"><span class="info-label">Valid Until:</span> <span class="info-val">${p.valid_to ? new Date(p.valid_to).toLocaleDateString() : 'Today'}</span></div>
+                </div>
+              </div>
+              <div class="pass-code-bar">${p.pass_code}</div>
+              <div class="badge-footer">
+                <span>Authorized Security Gate Pass</span>
+                <span>Batch: ${p.batch_name || 'Individual'}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <script>window.onload = function() { window.print(); }<\/script>
+      </body>
+      </html>
+    `;
+
+    res.send(html);
+  });
+});
+
 // 7.1 Link / Update RFID Card for Existing Staff Pass (Authenticated HR Admin or Super Admin)
 app.post('/api/branch/passes/:id/link-rfid', authenticateToken, async (req, res) => {
   const userRole = req.user.role;

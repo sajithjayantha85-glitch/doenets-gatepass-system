@@ -291,14 +291,16 @@ async function initDatabase() {
       )
     `);
 
-    // Migration: Add rfid_card_uid and employee_number to passes table if missing, and create high-speed indexes
+    // Migration: Add rfid_card_uid, employee_number, and batch_name to passes table if missing, and create high-speed indexes
     await runAsync("ALTER TABLE passes ADD COLUMN rfid_card_uid TEXT");
     await runAsync("ALTER TABLE passes ADD COLUMN employee_number TEXT");
+    await runAsync("ALTER TABLE passes ADD COLUMN batch_name TEXT");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_rfid ON passes (rfid_card_uid)");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_emp_no ON passes (employee_number)");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_nic ON passes (nic_number)");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_code ON passes (pass_code)");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_status ON passes (status)");
+    await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_batch ON passes (batch_name)");
     await runAsync("CREATE INDEX IF NOT EXISTS idx_passes_created ON passes (created_at)");
 
     // 3. Gate Logs Table
