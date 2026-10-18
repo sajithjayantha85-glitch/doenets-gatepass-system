@@ -834,6 +834,154 @@
       animation: fadeIn 0.25s ease;
     }
 
+    /* Executive Analytics Sub-Tabs Colorful Navigation */
+    .an-tabs-nav {
+      display: flex;
+      gap: 0.85rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      border: 2px solid #cbd5e1;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+    }
+
+    .an-tab-btn {
+      flex: 1;
+      min-width: 210px;
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      white-space: nowrap;
+      text-decoration: none;
+      outline: none;
+    }
+
+    /* Tab 1: Overview & Charts (Blue Theme) */
+    .an-tab-btn.btn-tab-overview {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 2px solid #93c5fd;
+    }
+    .an-tab-btn.btn-tab-overview i {
+      color: #2563eb;
+      font-size: 1.15rem;
+      transition: color 0.2s;
+    }
+    .an-tab-btn.btn-tab-overview:hover {
+      background: #dbeafe;
+      border-color: #60a5fa;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+    .an-tab-btn.btn-tab-overview.active {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      color: #ffffff;
+      border-color: #1d4ed8;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+      transform: translateY(-2px);
+    }
+    .an-tab-btn.btn-tab-overview.active i {
+      color: #ffffff;
+    }
+
+    /* Tab 2: Staff Attendance & Movement (Emerald Green Theme) */
+    .an-tab-btn.btn-tab-staff {
+      background: #f0fdf4;
+      color: #166534;
+      border: 2px solid #86efac;
+    }
+    .an-tab-btn.btn-tab-staff i {
+      color: #059669;
+      font-size: 1.15rem;
+      transition: color 0.2s;
+    }
+    .an-tab-btn.btn-tab-staff:hover {
+      background: #dcfce7;
+      border-color: #4ade80;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+    }
+    .an-tab-btn.btn-tab-staff.active {
+      background: linear-gradient(135deg, #047857 0%, #059669 100%);
+      color: #ffffff;
+      border-color: #047857;
+      box-shadow: 0 6px 18px rgba(5, 150, 105, 0.45);
+      transform: translateY(-2px);
+    }
+    .an-tab-btn.btn-tab-staff.active i {
+      color: #ffffff;
+    }
+
+    /* Tab 3: Overstay & Alerts (Crimson / Red Theme) */
+    .an-tab-btn.btn-tab-overstay {
+      background: #fff1f2;
+      color: #9f1239;
+      border: 2px solid #fca5a5;
+    }
+    .an-tab-btn.btn-tab-overstay i {
+      color: #e11d48;
+      font-size: 1.15rem;
+      transition: color 0.2s;
+    }
+    .an-tab-btn.btn-tab-overstay:hover {
+      background: #ffe4e6;
+      border-color: #f87171;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+    }
+    .an-tab-btn.btn-tab-overstay.active {
+      background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+      color: #ffffff;
+      border-color: #b91c1c;
+      box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+      transform: translateY(-2px);
+    }
+    .an-tab-btn.btn-tab-overstay.active i {
+      color: #ffffff;
+    }
+    .an-tab-btn.btn-tab-overstay.active #anTabBadgeOverstay {
+      background: #ffffff !important;
+      color: #dc2626 !important;
+      border-color: #ffffff !important;
+    }
+
+    /* Tab 4: Automated Email Reports (Purple / Violet Theme) */
+    .an-tab-btn.btn-tab-email {
+      background: #f5f3ff;
+      color: #5b21b6;
+      border: 2px solid #c4b5fd;
+    }
+    .an-tab-btn.btn-tab-email i {
+      color: #7c3aed;
+      font-size: 1.15rem;
+      transition: color 0.2s;
+    }
+    .an-tab-btn.btn-tab-email:hover {
+      background: #ede9fe;
+      border-color: #a78bfa;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+    }
+    .an-tab-btn.btn-tab-email.active {
+      background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
+      color: #ffffff;
+      border-color: #6d28d9;
+      box-shadow: 0 6px 18px rgba(124, 58, 237, 0.45);
+      transform: translateY(-2px);
+    }
+    .an-tab-btn.btn-tab-email.active i {
+      color: #ffffff;
+    }
+
     /* Dashboard Metrics Cards */
     .metrics-grid {
       display: grid;
@@ -2251,19 +2399,23 @@
         </div>
 
         <!-- Sub-Tabs Navigation Bar -->
-        <div class="an-tabs-nav" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; background: #f8fafc; padding: 6px; border-radius: 10px; border: 1.5px solid #e2e8f0;">
-          <button type="button" class="btn an-main-tab-btn active" id="tabBtnOverview" onclick="switchAnalyticsSubTab('an-pane-overview')" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem; background: #2563eb; color: #ffffff; border: none; cursor: pointer; transition: all 0.2s;">
-            <i class="fa-solid fa-chart-pie"></i> Overview & Charts
+        <div class="an-tabs-nav">
+          <button type="button" class="an-tab-btn btn-tab-overview active" id="tabBtnOverview" onclick="switchAnalyticsSubTab('an-pane-overview')">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Overview & Charts</span>
           </button>
-          <button type="button" class="btn an-main-tab-btn" id="tabBtnStaff" onclick="switchAnalyticsSubTab('an-pane-staff')" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem; background: transparent; color: #475569; border: none; cursor: pointer; transition: all 0.2s;">
-            <i class="fa-solid fa-user-clock"></i> Staff Attendance & Movement
+          <button type="button" class="an-tab-btn btn-tab-staff" id="tabBtnStaff" onclick="switchAnalyticsSubTab('an-pane-staff')">
+            <i class="fa-solid fa-user-clock"></i>
+            <span>Staff Attendance & Movement</span>
           </button>
-          <button type="button" class="btn an-main-tab-btn" id="tabBtnOverstay" onclick="switchAnalyticsSubTab('an-pane-overstay')" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem; background: transparent; color: #475569; border: none; cursor: pointer; transition: all 0.2s;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Overstay & Alerts
-            <span id="anTabBadgeOverstay" class="badge" style="background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 10px; font-size: 0.75rem; margin-left: 2px;">0</span>
+          <button type="button" class="an-tab-btn btn-tab-overstay" id="tabBtnOverstay" onclick="switchAnalyticsSubTab('an-pane-overstay')">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Overstay & Alerts</span>
+            <span id="anTabBadgeOverstay" class="badge" style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 900; border: 1.5px solid #f87171; margin-left: 4px;">0</span>
           </button>
-          <button type="button" class="btn an-main-tab-btn" id="tabBtnEmail" onclick="switchAnalyticsSubTab('an-pane-email')" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem; background: transparent; color: #475569; border: none; cursor: pointer; transition: all 0.2s;">
-            <i class="fa-solid fa-envelope-open-text"></i> Automated Daily Reports
+          <button type="button" class="an-tab-btn btn-tab-email" id="tabBtnEmail" onclick="switchAnalyticsSubTab('an-pane-email')">
+            <i class="fa-solid fa-envelope-open-text"></i>
+            <span>Automated Daily Reports</span>
           </button>
         </div>
 
@@ -6315,10 +6467,8 @@
         el.style.display = 'none';
         el.classList.remove('active');
       });
-      document.querySelectorAll('.an-main-tab-btn').forEach(btn => {
+      document.querySelectorAll('.an-tab-btn').forEach(btn => {
         btn.classList.remove('active');
-        btn.style.background = 'transparent';
-        btn.style.color = '#475569';
       });
 
       const targetPane = document.getElementById(paneId);
@@ -6336,8 +6486,6 @@
       const activeBtn = document.getElementById(activeBtnId);
       if (activeBtn) {
         activeBtn.classList.add('active');
-        activeBtn.style.background = '#2563eb';
-        activeBtn.style.color = '#ffffff';
       }
     }
 
